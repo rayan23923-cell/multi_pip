@@ -46,6 +46,8 @@ struct AppContainer: Sendable {
     let workflowRunner: WorkflowRunner
     /// Runs enabled workflows on items shared to the app.
     let workflowAutomation: WorkflowAutomation
+    /// Export and "delete everything" in Settings.
+    let dataControl: DataControl
     let logger: TLLogger
 
     init(
@@ -156,6 +158,9 @@ struct AppContainer: Sendable {
             ai: self.ai, reader: LensWorkflowReader()
         )
         self.workflowAutomation = WorkflowAutomation(service: self.workflows, runner: self.workflowRunner, documents: self.documents)
+        self.dataControl = DataControl(
+            repositories: repositories, filesDirectory: filesDirectory, otherDirectories: [self.shareOutbox.directory]
+        )
         self.logger = logger
     }
 
@@ -238,6 +243,20 @@ struct AppContainer: Sendable {
             logger.info("Delivered \(items.count) shared item(s)")
         }
         return items
+    }
+
+    /// Deletes every record, imported file, AI key and AI setting, then
+    /// refreshes widgets so nothing old stays on the Home Screen.
+    func deleteEverything() async throws {
+        try await dataControl.deleteEverything()
+        aiSecrets.setSecret(nil, for: AIServerProvider.apiKeySecret)
+        ai.update { $0 = AISettings() }
+        await refreshWidgets()
+    }
+
+    /// The export file, in a temporary folder the system cleans up.
+    func exportData() async throws -> URL {
+        try await dataControl.export(to: FileManager.default.temporaryDirectory.appendingPathComponent("Export", isDirectory: true))
     }
 
     /// Writes what widgets show and asks WidgetKit to redraw them.

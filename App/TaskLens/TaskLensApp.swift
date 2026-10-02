@@ -19,6 +19,8 @@ struct TaskLensApp: App {
 
     init() {
         // The same container App Intents use, so both see one store.
+        // Crash and hang reports from iOS go to the device log only.
+        CrashDiagnostics.shared.start()
         let container = AppContainer.shared
         _container = State(initialValue: container)
         _pip = State(initialValue: RootView.makePiP(container: container))

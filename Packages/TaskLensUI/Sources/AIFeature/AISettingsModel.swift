@@ -30,6 +30,8 @@ public final class AISettingsModel {
     }
 
     public func load() async {
+        settings = service.currentSettings
+        hasAPIKey = secrets.secret(for: AIServerProvider.apiKeySecret) != nil
         availability = await service.availability()
         history = (try? await service.history()) ?? []
     }

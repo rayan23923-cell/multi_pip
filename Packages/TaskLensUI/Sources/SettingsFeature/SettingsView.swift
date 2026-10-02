@@ -23,12 +23,14 @@ public struct SettingsView: View {
     private let version: String
     private let storage: StorageDescription
     private let ai: AISettingsModel?
+    private let data: DataControlModel?
     @Environment(\.openURL) private var openURL
 
-    public init(version: String, storage: StorageDescription, ai: AISettingsModel? = nil) {
+    public init(version: String, storage: StorageDescription, ai: AISettingsModel? = nil, data: DataControlModel? = nil) {
         self.version = version
         self.storage = storage
         self.ai = ai
+        self.data = data
     }
 
     public var body: some View {
@@ -42,6 +44,10 @@ public struct SettingsView: View {
 
             if let ai {
                 AISettingsSection(model: ai)
+            }
+
+            if let data {
+                DataControlSection(model: data)
             }
 
             Section {

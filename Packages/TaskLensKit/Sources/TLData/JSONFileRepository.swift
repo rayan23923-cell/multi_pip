@@ -70,27 +70,76 @@ public actor JSONFileRepository<Model: Entity>: Repository {
         var items: [Model]
     }
 
+    /// Reads records one by one, so one record this version can't read (a
+    /// damaged entry, or one written by a newer app) doesn't hide the rest.
+    private struct LossyEnvelope: Decodable {
+        var schemaVersion: Int
+        var items: [Model]
+        var skipped: Int
+
+        private enum CodingKeys: String, CodingKey { case schemaVersion, items }
+        /// Accepts any value, so the list moves past a record that didn't decode.
+        private struct Skip: Decodable {
+            init(from decoder: any Decoder) throws {}
+        }
+
+        init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+            var list = try container.nestedUnkeyedContainer(forKey: .items)
+            var items: [Model] = []
+            var skipped = 0
+            while !list.isAtEnd {
+                if let item = try? list.decode(Model.self) {
+                    items.append(item)
+                } else {
+                    guard (try? list.decode(Skip.self)) != nil else { break }
+                    skipped += 1
+                }
+            }
+            self.items = items
+            self.skipped = skipped
+        }
+    }
+
     private func load() throws -> [Identifier<Model>: Model] {
         if let cache { return cache }
 
-        let models: [Identifier<Model>: Model]
+        var models: [Identifier<Model>: Model] = [:]
         if FileManager.default.fileExists(atPath: fileURL.path) {
+            let data: Data
             do {
-                let data = try Data(contentsOf: fileURL)
-                let envelope = try JSONDecoder().decode(Envelope.self, from: data)
-                if envelope.schemaVersion > Self.currentSchemaVersion {
-                    logger.warning("\(Model.entityName) store has newer schema \(envelope.schemaVersion)")
-                }
-                models = Dictionary(envelope.items.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
+                data = try Data(contentsOf: fileURL)
             } catch {
+                // Not readable now (for example before first unlock): don't treat as empty.
                 logger.error("Failed to read \(Model.entityName) store: \(error)")
                 throw TaskLensError.persistenceFailed(operation: .read, details: "\(Model.entityName): \(error)")
             }
-        } else {
-            models = [:]
+            do {
+                let envelope = try JSONDecoder().decode(LossyEnvelope.self, from: data)
+                if envelope.schemaVersion > Self.currentSchemaVersion {
+                    logger.warning("\(Model.entityName) store has newer schema \(envelope.schemaVersion)")
+                }
+                if envelope.skipped > 0 {
+                    logger.error("Skipped \(envelope.skipped) unreadable \(Model.entityName) record(s); kept a copy")
+                    keepCopy(of: data)
+                }
+                models = Dictionary(envelope.items.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
+            } catch {
+                // A damaged file must not lock the user out: keep a copy and start over.
+                logger.error("Unreadable \(Model.entityName) store, kept a copy: \(error)")
+                keepCopy(of: data)
+            }
         }
         cache = models
         return models
+    }
+
+    /// Next to the store, so nothing is lost and support can recover it.
+    private func keepCopy(of data: Data) {
+        let stamp = Int(Date().timeIntervalSince1970)
+        let copy = fileURL.deletingPathExtension().appendingPathExtension("unreadable-\(stamp).json")
+        try? data.write(to: copy, options: Self.writingOptions)
     }
 
     private func save(_ models: [Identifier<Model>: Model]) throws {

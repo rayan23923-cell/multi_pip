@@ -242,6 +242,17 @@ STRINGS = [
     ("search.filter.address", "Addresses", "عناوين"),
     ("search.filter.code", "Code", "كود"),
 
+    ("settings.data", "Your Data", "بياناتك"),
+    ("settings.data.export", "Export a Copy", "تصدير نسخة"),
+    ("settings.data.shareExport", "Share Export File", "مشاركة ملف التصدير"),
+    ("settings.data.deleteAll", "Delete All Data", "حذف كل البيانات"),
+    ("settings.data.deleteAllTitle", "Delete all TaskLens data?", "حذف كل بيانات TaskLens؟"),
+    ("settings.data.deleteAllMessage", "Workspaces, sessions, notes, documents, clipboard, history, workflows and the AI server key are deleted from this iPhone. This can't be undone.",
+     "ستُحذف مساحات العمل والجلسات والملاحظات والمستندات والحافظة والسجل وسير العمل ومفتاح خادم الذكاء الاصطناعي من هذا الآيفون. لا يمكن التراجع."),
+    ("settings.data.deleted", "All data was deleted.", "تم حذف كل البيانات."),
+    ("settings.data.footer", "The export is a JSON file of your workspaces, sessions, notes, history and workflows. Imported files stay on this iPhone. TaskLens doesn't sync to iCloud; your data is included in your device backup.",
+     "التصدير ملف JSON يضم مساحات العمل والجلسات والملاحظات والسجل وسير العمل. تبقى الملفات المستوردة على هذا الآيفون. لا يتزامن TaskLens مع iCloud، وبياناتك ضمن النسخة الاحتياطية لجهازك."),
+
     ("workflows.title", "Workflows", "سير العمل"),
     ("workflows.new", "New Workflow", "سير عمل جديد"),
     ("workflows.templates", "Ready-made", "جاهزة"),

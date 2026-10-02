@@ -28,6 +28,7 @@ struct RootView: View {
     /// Screens App Intents asked to open.
     let navigator: IntentNavigator
     @State private var aiSettings: AISettingsModel
+    @State private var dataControl: DataControlModel
     @Environment(WorkflowsModel.self) private var workflows: WorkflowsModel?
 
     init(container: AppContainer, pip: PiPWorkspaceModel, navigator: IntentNavigator = .shared) {
@@ -38,6 +39,10 @@ struct RootView: View {
         browser.stateRecorder = container.toolState
         _browser = State(initialValue: browser)
         _aiSettings = State(initialValue: AISettingsModel(service: container.ai, secrets: container.aiSecrets))
+        _dataControl = State(initialValue: DataControlModel(
+            export: { try await container.exportData() },
+            deleteEverything: { try await container.deleteEverything() }
+        ))
     }
 
     var body: some View {
@@ -63,7 +68,15 @@ struct RootView: View {
             .tag(AppTab.workspaces)
 
             NavigationStack(path: $router.settingsPath) {
-                SettingsView(version: AppContainer.appVersion, storage: container.storage, ai: aiSettings)
+                SettingsView(version: AppContainer.appVersion, storage: container.storage, ai: aiSettings, data: dataControl)
+                    .onAppear {
+                        // Nothing deleted may stay on screen in other tabs.
+                        dataControl.onDeleted = { [router] in
+                            router.commandCenterPath = []
+                            router.workspacesPath = []
+                            Task { await aiSettings.load() }
+                        }
+                    }
                     .withAppDestinations(container, browser: browser, pip: pip)
             }
             .tabItem { tabLabel(.tabSettings, systemImage: "gearshape") }

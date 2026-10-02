@@ -7107,6 +7107,142 @@
         }
       }
     },
+    "settings.data": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بياناتك"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Data"
+          }
+        }
+      }
+    },
+    "settings.data.deleteAll": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حذف كل البيانات"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete All Data"
+          }
+        }
+      }
+    },
+    "settings.data.deleteAllMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ستُحذف مساحات العمل والجلسات والملاحظات والمستندات والحافظة والسجل وسير العمل ومفتاح خادم الذكاء الاصطناعي من هذا الآيفون. لا يمكن التراجع."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspaces, sessions, notes, documents, clipboard, history, workflows and the AI server key are deleted from this iPhone. This can't be undone."
+          }
+        }
+      }
+    },
+    "settings.data.deleteAllTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حذف كل بيانات TaskLens؟"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all TaskLens data?"
+          }
+        }
+      }
+    },
+    "settings.data.deleted": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم حذف كل البيانات."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All data was deleted."
+          }
+        }
+      }
+    },
+    "settings.data.export": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تصدير نسخة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export a Copy"
+          }
+        }
+      }
+    },
+    "settings.data.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التصدير ملف JSON يضم مساحات العمل والجلسات والملاحظات والسجل وسير العمل. تبقى الملفات المستوردة على هذا الآيفون. لا يتزامن TaskLens مع iCloud، وبياناتك ضمن النسخة الاحتياطية لجهازك."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The export is a JSON file of your workspaces, sessions, notes, history and workflows. Imported files stay on this iPhone. TaskLens doesn't sync to iCloud; your data is included in your device backup."
+          }
+        }
+      }
+    },
+    "settings.data.shareExport": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مشاركة ملف التصدير"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share Export File"
+          }
+        }
+      }
+    },
     "settings.language": {
       "extractionState": "manual",
       "localizations": {

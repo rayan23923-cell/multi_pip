@@ -30,6 +30,26 @@ step "Toolchain"
 xcodebuild -version
 swift --version
 
+step "Static checks: strings, hard-coded text, privacy manifests"
+# Every UI string comes from scripts/strings.py with English and Arabic.
+python3 scripts/strings.py >/dev/null
+if ! git diff --quiet -- Packages/TaskLensUI/Sources/TLLocalization App/TaskLens/Resources; then
+  echo "Generated string catalogs are out of date: run scripts/strings.py" >&2
+  git diff --stat >&2
+  exit 1
+fi
+HARDCODED=$(grep -rnE 'Text\("[^"]|Button\("[^"]|Label\("[^"]|navigationTitle\("[^"]|accessibilityLabel\("[^"]|TextField\("[^"]|Toggle\("[^"]' \
+  --include=*.swift Packages/TaskLensUI/Sources App/TaskLens App/TaskLensShare App/TaskLensWidgets App/Shared | grep -v '#Preview' || true)
+if [[ -n "$HARDCODED" ]]; then
+  echo "Hard-coded user-visible strings (use L10nKey):" >&2
+  echo "$HARDCODED" >&2
+  exit 1
+fi
+for manifest in App/TaskLens/Resources/PrivacyInfo.xcprivacy App/TaskLensShare/PrivacyInfo.xcprivacy App/TaskLensWidgets/PrivacyInfo.xcprivacy; do
+  plutil -lint "$manifest"
+done
+echo "Strings, text and privacy manifests OK"
+
 step "Pick the newest iOS runtime that supports iPhone 11"
 RUNTIME=$(xcrun simctl list runtimes --json | python3 -c '
 import json, sys
@@ -88,7 +108,7 @@ xcodebuild test \
   -derivedDataPath "$ROOT/build/DerivedData" \
   ${APP_TEST_FILTER[@]+"${APP_TEST_FILTER[@]}"} \
   CODE_SIGNING_ALLOWED=NO \
-  2>&1 | tee "$LOG_DIR/app-ios.log" | grep -E "error:|✔|✘|passed|failed|TEST (SUCCEEDED|FAILED)" || true
+  2>&1 | tee "$LOG_DIR/app-ios.log" | grep -E "error:|✔|✘|passed|failed|measured|TEST (SUCCEEDED|FAILED)" || true
 require_success "$LOG_DIR/app-ios.log"
 
 step "App Intents metadata and widget extension are in the app bundle"
@@ -106,5 +126,32 @@ test -d "$APP/PlugIns/TaskLensWidgets.appex" || { echo "Widget extension is not 
 test -f "$APP/PlugIns/TaskLensWidgets.appex/Metadata.appintents/extract.actionsdata" \
   || echo "note: the widget extension has no App Intents metadata of its own"
 echo "App Intents metadata lists every intent; widget extension embedded"
+for bundle in "$APP" "$APP/PlugIns/TaskLensShare.appex" "$APP/PlugIns/TaskLensWidgets.appex"; do
+  test -f "$bundle/PrivacyInfo.xcprivacy" || { echo "Missing privacy manifest in $bundle" >&2; exit 1; }
+done
+echo "Privacy manifests are in the app and both extensions"
+
+step "Release: archive for devices (unsigned)"
+xcodebuild archive \
+  -project TaskLens.xcodeproj \
+  -scheme TaskLens \
+  -configuration Release \
+  -destination "generic/platform=iOS" \
+  -archivePath "$ROOT/build/TaskLens.xcarchive" \
+  -derivedDataPath "$ROOT/build/DerivedDataRelease" \
+  CODE_SIGNING_ALLOWED=NO \
+  2>&1 | tee "$LOG_DIR/archive.log" | grep -E "error:|warning: .*TaskLens|ARCHIVE (SUCCEEDED|FAILED)" || true
+if ! grep -q "ARCHIVE SUCCEEDED" "$LOG_DIR/archive.log"; then
+  grep -E "error:" "$LOG_DIR/archive.log" | head -60 >&2 || true
+  tail -40 "$LOG_DIR/archive.log" >&2
+  exit 1
+fi
+ARCHIVED_APP="$ROOT/build/TaskLens.xcarchive/Products/Applications/TaskLens.app"
+test -d "$ARCHIVED_APP" || { echo "Archive has no app" >&2; exit 1; }
+for bundle in "$ARCHIVED_APP" "$ARCHIVED_APP/PlugIns/TaskLensShare.appex" "$ARCHIVED_APP/PlugIns/TaskLensWidgets.appex"; do
+  test -f "$bundle/PrivacyInfo.xcprivacy" || { echo "Missing privacy manifest in archived $bundle" >&2; exit 1; }
+done
+echo "Release archive size: $(du -sh "$ARCHIVED_APP" | cut -f1)"
+/usr/libexec/PlistBuddy -c "Print :MinimumOSVersion" "$ARCHIVED_APP/Info.plist" | sed 's/^/Minimum iOS: /'
 
 step "All builds and tests passed on $DEVICE_NAME ($RUNTIME)"
