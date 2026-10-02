@@ -140,7 +140,7 @@ public enum ShareIntake {
     /// Streams the file into `directory`. The provider's own URL is only valid
     /// inside the callback, so the copy happens there.
     private static func copyFile(_ provider: NSItemProvider, type: UTType, into directory: URL) async throws -> SharedAttachment.Payload {
-        let suggestedName = provider.suggestedName
+        let suggestedName = await originalFilename(of: provider)
         let progressBox = ProgressBox()
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
@@ -166,6 +166,17 @@ public enum ShareIntake {
         } onCancel: {
             progressBox.cancel()
         }
+    }
+
+    /// The shared file's own name. The copy handed to `loadFileRepresentation`
+    /// can have a generic name ("PDF document.pdf"), so prefer the provider's
+    /// suggested name, then the name of its file URL.
+    private static func originalFilename(of provider: NSItemProvider) async -> String? {
+        if let name = provider.suggestedName, !name.isEmpty { return name }
+        guard provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier),
+              let url = try? await loadURL(provider), url.isFileURL
+        else { return nil }
+        return url.lastPathComponent
     }
 
     /// Holds the loading progress so cancellation can stop a large transfer.
