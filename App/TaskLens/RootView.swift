@@ -71,9 +71,9 @@ struct RootView: View {
                 SettingsView(version: AppContainer.appVersion, storage: container.storage, ai: aiSettings, data: dataControl)
                     .onAppear {
                         // Nothing deleted may stay on screen in other tabs.
-                        dataControl.onDeleted = { [router] in
-                            router.commandCenterPath = []
-                            router.workspacesPath = []
+                        dataControl.onDeleted = { [appRouter = self.router, aiSettings] in
+                            appRouter.commandCenterPath = []
+                            appRouter.workspacesPath = []
                             Task { await aiSettings.load() }
                         }
                     }
