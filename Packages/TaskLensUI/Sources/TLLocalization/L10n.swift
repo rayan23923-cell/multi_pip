@@ -12,6 +12,11 @@ public enum L10n {
         bundle.localizedString(forKey: key.rawValue, value: nil, table: nil)
     }
 
+    /// Fills a key containing format specifiers such as `%@`.
+    public static func format(_ key: L10nKey, _ arguments: any CVarArg...) -> String {
+        String(format: string(key), locale: Locale.current, arguments: arguments)
+    }
+
     /// Looks up a key in a specific localization (used by tests and previews).
     public static func string(_ key: L10nKey, localization: String) -> String? {
         guard let path = bundle.path(forResource: localization, ofType: "lproj"),
@@ -49,6 +54,28 @@ extension L10nKey {
         case .study: .sessionKindStudy
         case .developer: .sessionKindDeveloper
         default: .sessionKindOther
+        }
+    }
+
+    public static func workspaceKind(_ kind: WorkspaceKind) -> L10nKey {
+        switch kind {
+        case .study: .workspaceKindStudy
+        case .work: .workspaceKindWork
+        case .shopping: .workspaceKindShopping
+        case .developer: .workspaceKindDeveloper
+        default: .workspaceKindCustom
+        }
+    }
+
+    public static func workspaceTool(_ tool: WorkspaceTool) -> L10nKey {
+        switch tool {
+        case .notes: .workspaceToolNotes
+        case .calculator: .workspaceToolCalculator
+        case .browser: .workspaceToolBrowser
+        case .documents: .workspaceToolDocuments
+        case .clipboard: .workspaceToolClipboard
+        case .lens: .workspaceToolLens
+        default: .workspaceToolOther
         }
     }
 

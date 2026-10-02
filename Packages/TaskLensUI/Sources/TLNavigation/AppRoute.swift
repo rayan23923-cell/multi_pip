@@ -14,6 +14,8 @@ public enum AppTab: String, Hashable, CaseIterable, Sendable {
 public enum AppRoute: Hashable, Sendable {
     case workspace(WorkspaceID)
     case session(SessionID)
+    case lens
+    case clipboard
 }
 
 /// Owns tab selection and one navigation stack per tab.

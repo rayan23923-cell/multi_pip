@@ -1,4 +1,6 @@
+import ClipboardFeature
 import CommandCenterFeature
+import LensFeature
 import SessionsFeature
 import SettingsFeature
 import SwiftUI
@@ -17,7 +19,8 @@ struct RootView: View {
                 CommandCenterView(model: CommandCenterModel(
                     workspaceService: container.workspaces,
                     sessionService: container.sessions,
-                    captureService: container.capture
+                    captureService: container.capture,
+                    searchService: container.search
                 ))
                 .withAppDestinations(container)
             }
@@ -66,12 +69,30 @@ private extension View {
                     sessionService: container.sessions,
                     captureService: container.capture
                 ))
+            case .lens:
+                LensView(model: LensModel(captureService: container.capture, sessionService: container.sessions))
+            case .clipboard:
+                ClipboardView(model: ClipboardModel(clipboardService: container.clipboard, sessionService: container.sessions))
             }
         }
     }
 }
 
-#Preview {
+#Preview("Light") {
     RootView(container: .preview())
         .environment(AppRouter())
+}
+
+#Preview("Dark, Arabic, RTL") {
+    RootView(container: .preview())
+        .environment(AppRouter())
+        .environment(\.locale, Locale(identifier: "ar"))
+        .environment(\.layoutDirection, .rightToLeft)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Accessibility text size") {
+    RootView(container: .preview())
+        .environment(AppRouter())
+        .dynamicTypeSize(.accessibility3)
 }

@@ -18,6 +18,8 @@ let package = Package(
         .library(name: "WorkspacesFeature", targets: ["WorkspacesFeature"]),
         .library(name: "SessionsFeature", targets: ["SessionsFeature"]),
         .library(name: "SettingsFeature", targets: ["SettingsFeature"]),
+        .library(name: "LensFeature", targets: ["LensFeature"]),
+        .library(name: "ClipboardFeature", targets: ["ClipboardFeature"]),
     ],
     dependencies: [
         .package(path: "../TaskLensKit"),
@@ -72,10 +74,27 @@ let package = Package(
             name: "SettingsFeature",
             dependencies: ["TLLocalization", "TLDesignSystem"]
         ),
+        .target(
+            name: "LensFeature",
+            dependencies: [
+                "TLLocalization", "TLDesignSystem",
+                .product(name: "TLDomain", package: "TaskLensKit"),
+                .product(name: "TLCoreServices", package: "TaskLensKit"),
+            ]
+        ),
+        .target(
+            name: "ClipboardFeature",
+            dependencies: [
+                "TLLocalization", "TLDesignSystem",
+                .product(name: "TLDomain", package: "TaskLensKit"),
+                .product(name: "TLCoreServices", package: "TaskLensKit"),
+            ]
+        ),
         .testTarget(
             name: "TaskLensUITests",
             dependencies: [
                 "TLLocalization", "TLNavigation", "CommandCenterFeature", "WorkspacesFeature", "SessionsFeature",
+                "LensFeature", "ClipboardFeature",
                 .product(name: "TLFoundation", package: "TaskLensKit"),
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLData", package: "TaskLensKit"),

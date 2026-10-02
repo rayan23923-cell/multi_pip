@@ -41,6 +41,13 @@ public struct SessionService: Sendable {
         try await sessionStore.fetchAll(where: \.isActive).sorted(by: Self.mostRecentFirst)
     }
 
+    /// Sessions that are not active, most recently used first.
+    public func recentSessions(limit: Int) async throws -> [Session] {
+        Array(try await sessionStore.fetchAll(where: { !$0.isActive })
+            .sorted(by: Self.mostRecentFirst)
+            .prefix(max(limit, 0)))
+    }
+
     public func activeSession(in workspaceID: WorkspaceID) async throws -> Session? {
         try await sessionStore.fetchAll(where: { $0.workspaceID == workspaceID && $0.isActive })
             .sorted(by: Self.mostRecentFirst)
@@ -50,11 +57,12 @@ public struct SessionService: Sendable {
     @discardableResult
     public func start(
         in workspaceID: WorkspaceID,
-        kind: SessionKind = .general,
+        kind: SessionKind? = nil,
         title: String? = nil
     ) async throws -> Session {
         let workspace = try await workspaces.require(id: workspaceID)
         guard !workspace.isArchived else { throw TaskLensError.invalidState(.workspaceArchived) }
+        let kind = kind ?? workspace.settings.defaultSessionKind
 
         let now = clock.now()
         let session = Session(

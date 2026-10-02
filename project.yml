@@ -85,6 +85,10 @@ targets:
         product: SessionsFeature
       - package: TaskLensUI
         product: SettingsFeature
+      - package: TaskLensUI
+        product: LensFeature
+      - package: TaskLensUI
+        product: ClipboardFeature
 
   TaskLensTests:
     type: bundle.unit-test
@@ -100,12 +104,26 @@ targets:
     dependencies:
       - target: TaskLens
 
+  TaskLensAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: App/TaskLensAppUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.tasklens.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: TaskLens
+    dependencies:
+      - target: TaskLens
+
 schemes:
   TaskLens:
     build:
       targets:
         TaskLens: all
         TaskLensTests: [test]
+        TaskLensAppUITests: [test]
     run:
       config: Debug
     test:
@@ -113,3 +131,4 @@ schemes:
       gatherCoverageData: true
       targets:
         - TaskLensTests
+        - TaskLensAppUITests

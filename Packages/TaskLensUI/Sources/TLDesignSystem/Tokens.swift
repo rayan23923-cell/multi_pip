@@ -27,6 +27,7 @@ extension WorkspaceColor {
         case .orange: .orange
         case .purple: .purple
         case .pink: .pink
+        case .teal: .teal
         default: .gray
         }
     }
@@ -64,4 +65,28 @@ extension SessionKind {
         default: "square.stack"
         }
     }
+}
+
+extension WorkspaceTool {
+    public var symbolName: String {
+        switch self {
+        case .notes: "note.text"
+        case .calculator: "plusminus"
+        case .browser: "safari"
+        case .documents: "doc.on.doc"
+        case .clipboard: "doc.on.clipboard"
+        case .lens: "viewfinder"
+        default: "wrench.and.screwdriver"
+        }
+    }
+}
+
+/// Curated SF Symbols offered in the workspace icon picker.
+public enum WorkspaceIconCatalog {
+    public static let symbols: [String] = [
+        "square.grid.2x2", "book.closed", "graduationcap", "briefcase", "building.2",
+        "cart", "bag", "creditcard", "chevron.left.forwardslash.chevron.right", "hammer",
+        "terminal", "lightbulb", "star", "heart", "house", "airplane", "car",
+        "figure.run", "fork.knife", "music.note", "camera", "paintpalette", "leaf", "globe",
+    ]
 }

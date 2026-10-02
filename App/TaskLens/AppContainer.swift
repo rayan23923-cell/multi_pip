@@ -13,6 +13,7 @@ struct AppContainer: Sendable {
     let capture: CaptureService
     let notes: NoteService
     let clipboard: ClipboardService
+    let search: SearchService
     let storage: SettingsView.StorageDescription
     let logger: TLLogger
 
@@ -51,6 +52,11 @@ struct AppContainer: Sendable {
             clock: clock,
             logger: logger.scoped("clipboard")
         )
+        self.search = SearchService(
+            workspaces: repositories.workspaces,
+            sessions: repositories.sessions,
+            contextItems: repositories.contextItems
+        )
         self.storage = storage
         self.logger = logger
     }
@@ -58,11 +64,15 @@ struct AppContainer: Sendable {
     /// Persistent container for the running app. Falls back to memory if the
     /// store cannot be opened, so the app still launches and the user is told
     /// (in Settings) that data is temporary.
-    static func live(bundle: Bundle = .main) -> AppContainer {
+    static func live(
+        bundle: Bundle = .main,
+        arguments: [String] = ProcessInfo.processInfo.arguments
+    ) -> AppContainer {
         let logger = TLLogger(category: "app")
         let groupIdentifier = bundle.object(forInfoDictionaryKey: "TLAppGroupIdentifier") as? String
         do {
-            let location = try StoreLocation.resolve(appGroupIdentifier: groupIdentifier, logger: logger)
+            let location = try uiTestStoreLocation(arguments: arguments)
+                ?? StoreLocation.resolve(appGroupIdentifier: groupIdentifier, logger: logger)
             let repositories = try Repositories.fileBacked(at: location, logger: logger.scoped("persistence"))
             logger.info("Store opened (\(location.kind.rawValue))")
             return AppContainer(
@@ -74,6 +84,17 @@ struct AppContainer: Sendable {
             logger.fault("Falling back to in-memory store: \(error)")
             return AppContainer(repositories: .inMemory(), storage: .memory, logger: logger)
         }
+    }
+
+    /// UI tests run against an isolated store so they never touch real data.
+    /// `-TaskLensUITestStore` selects it; `-TaskLensResetStore` wipes it first.
+    static func uiTestStoreLocation(arguments: [String]) throws -> StoreLocation? {
+        guard arguments.contains("-TaskLensUITestStore") else { return nil }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("TaskLensUITestStore", isDirectory: true)
+        if arguments.contains("-TaskLensResetStore") {
+            try? FileManager.default.removeItem(at: root)
+        }
+        return StoreLocation(rootURL: root, kind: .custom)
     }
 
     static func preview() -> AppContainer {

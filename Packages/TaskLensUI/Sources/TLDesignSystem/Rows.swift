@@ -11,16 +11,30 @@ public struct WorkspaceRow: View {
 
     public var body: some View {
         HStack(spacing: TLSpacing.m) {
-            Image(systemName: workspace.symbolName ?? "square.grid.2x2")
-                .foregroundStyle(.white)
-                .frame(width: 32, height: 32)
-                .background(workspace.color.color.gradient, in: RoundedRectangle(cornerRadius: TLRadius.small))
-                .accessibilityHidden(true)
-            Text(workspace.name)
-                .font(.body)
-                .lineLimit(1)
+            WorkspaceIcon(workspace: workspace)
+            VStack(alignment: .leading, spacing: TLSpacing.xxs) {
+                Text(workspace.name)
+                    .font(.body)
+                    .lineLimit(2)
+                HStack(spacing: TLSpacing.xs) {
+                    Text(L10nKey.workspaceKind(workspace.kind))
+                    if let opened = workspace.lastOpenedAt {
+                        Text(verbatim: "·")
+                        Text(opened, format: .relative(presentation: .named))
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: TLSpacing.s)
+            if workspace.isFavorite {
+                Image(systemName: "star.fill")
+                    .foregroundStyle(.yellow)
+                    .accessibilityLabel(Text(L10nKey.workspacesFavorites))
+            }
         }
         .padding(.vertical, TLSpacing.xxs)
+        .accessibilityElement(children: .combine)
     }
 }
 

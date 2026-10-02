@@ -7,6 +7,8 @@ import TLNavigation
 public struct WorkspaceListView: View {
     @State private var model: WorkspaceListModel
     @State private var isCreating = false
+    @State private var editing: Workspace?
+    @State private var pendingDeletion: Workspace?
 
     public init(model: WorkspaceListModel) {
         _model = State(initialValue: model)
@@ -18,19 +20,42 @@ public struct WorkspaceListView: View {
                 NavigationLink(value: AppRoute.workspace(workspace.id)) {
                     WorkspaceRow(workspace: workspace)
                 }
-                .swipeActions(edge: .trailing) {
+                .accessibilityIdentifier("workspaceRow.\(workspace.name)")
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button(role: .destructive) {
-                        Task { await model.delete(workspace.id) }
+                        pendingDeletion = workspace
                     } label: {
                         TLLabel(.commonDelete, systemImage: "trash")
                     }
                     Button {
-                        Task { await model.archive(workspace.id) }
+                        editing = workspace
                     } label: {
-                        TLLabel(.workspacesArchive, systemImage: "archivebox")
+                        TLLabel(.commonEdit, systemImage: "pencil")
                     }
-                    .tint(.indigo)
+                    .tint(.blue)
                 }
+                .swipeActions(edge: .leading) {
+                    Button {
+                        Task { await model.toggleFavorite(workspace) }
+                    } label: {
+                        favoriteLabel(for: workspace)
+                    }
+                    .tint(.yellow)
+                }
+                .contextMenu {
+                    Button { editing = workspace } label: { TLLabel(.commonEdit, systemImage: "pencil") }
+                    Button { Task { await model.duplicate(workspace) } } label: {
+                        TLLabel(.commonDuplicate, systemImage: "plus.square.on.square")
+                    }
+                    Button { Task { await model.toggleFavorite(workspace) } } label: { favoriteLabel(for: workspace) }
+                    Divider()
+                    Button(role: .destructive) { pendingDeletion = workspace } label: {
+                        TLLabel(.commonDelete, systemImage: "trash")
+                    }
+                }
+            }
+            .onMove { source, destination in
+                Task { await model.move(fromOffsets: source, toOffset: destination) }
             }
         }
         .overlay {
@@ -44,89 +69,65 @@ public struct WorkspaceListView: View {
         }
         .navigationTitle(Text(L10nKey.tabWorkspaces))
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if !model.workspaces.isEmpty {
+                    EditButton()
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     isCreating = true
                 } label: {
                     TLLabel(.workspacesCreate, systemImage: "plus")
                 }
+                .accessibilityIdentifier("workspaces.add")
             }
         }
         .sheet(isPresented: $isCreating) {
-            CreateWorkspaceView { name, color in
-                await model.create(name: name, color: color)
+            WorkspaceEditor(mode: .create) { draft in
+                await model.create(draft)
             }
+        }
+        .sheet(item: $editing) { workspace in
+            WorkspaceEditor(mode: .edit, draft: WorkspaceDraft(workspace)) { draft in
+                await model.update(workspace.id, with: draft)
+            }
+        }
+        .workspaceDeletionAlert(item: $pendingDeletion) { workspace in
+            Task { await model.delete(workspace.id) }
         }
         .task { await model.load() }
         .refreshable { await model.load() }
         .errorAlert(message: $model.errorMessage)
     }
+
+    private func favoriteLabel(for workspace: Workspace) -> some View {
+        workspace.isFavorite
+            ? TLLabel(.commonUnfavorite, systemImage: "star.slash")
+            : TLLabel(.commonFavorite, systemImage: "star")
+    }
 }
 
-struct CreateWorkspaceView: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var name = ""
-    @State private var color: WorkspaceColor = .blue
-    @State private var isSaving = false
-
-    private let onCreate: (String, WorkspaceColor) async -> Bool
-
-    init(onCreate: @escaping (String, WorkspaceColor) async -> Bool) {
-        self.onCreate = onCreate
-    }
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                TextField(L10n.string(.workspacesName), text: $name)
-                    .submitLabel(.done)
-                Section {
-                    HStack(spacing: TLSpacing.m) {
-                        ForEach(WorkspaceColor.allKnown, id: \.self) { option in
-                            Button {
-                                color = option
-                            } label: {
-                                Circle()
-                                    .fill(option.color)
-                                    .frame(width: 28, height: 28)
-                                    .overlay {
-                                        if option == color {
-                                            Image(systemName: "checkmark")
-                                                .font(.caption.bold())
-                                                .foregroundStyle(.white)
-                                        }
-                                    }
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(Text(verbatim: option.rawValue))
-                            .accessibilityAddTraits(option == color ? .isSelected : [])
-                        }
-                    }
-                } header: {
-                    Text(L10nKey.workspacesColor)
-                }
+extension View {
+    /// Asks before deleting, because deletion cascades to sessions and items.
+    func workspaceDeletionAlert(item: Binding<Workspace?>, onConfirm: @escaping (Workspace) -> Void) -> some View {
+        alert(
+            Text(L10nKey.workspaceDeleteTitle),
+            isPresented: Binding(
+                get: { item.wrappedValue != nil },
+                set: { if !$0 { item.wrappedValue = nil } }
+            ),
+            presenting: item.wrappedValue
+        ) { workspace in
+            Button(role: .destructive) {
+                onConfirm(workspace)
+            } label: {
+                Text(L10nKey.commonDelete)
             }
-            .navigationTitle(Text(L10nKey.workspacesCreate))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: { Text(L10nKey.commonCancel) }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        Task {
-                            isSaving = true
-                            let created = await onCreate(name, color)
-                            isSaving = false
-                            if created { dismiss() }
-                        }
-                    } label: {
-                        Text(L10nKey.commonCreate)
-                    }
-                    .disabled(isSaving || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
+            .accessibilityIdentifier("workspace.confirmDelete")
+            Button(role: .cancel) {} label: { Text(L10nKey.commonCancel) }
+        } message: { _ in
+            Text(L10nKey.workspaceDeleteMessage)
         }
-        .presentationDetents([.medium])
     }
 }
