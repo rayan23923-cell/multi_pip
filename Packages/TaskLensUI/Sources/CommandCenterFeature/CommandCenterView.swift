@@ -100,6 +100,10 @@ public struct CommandCenterView: View {
                     QuickActionTile(.pipTitle, systemImage: "pip", tint: .indigo)
                 }
                 .accessibilityIdentifier("commandCenter.pip")
+                Button { router.push(.workflows) } label: {
+                    QuickActionTile(.workflowsTitle, systemImage: "arrow.triangle.branch", tint: .pink)
+                }
+                .accessibilityIdentifier("commandCenter.workflows")
             }
             .buttonStyle(.borderless)
             .listRowInsets(EdgeInsets(top: TLSpacing.s, leading: TLSpacing.s, bottom: TLSpacing.s, trailing: TLSpacing.s))

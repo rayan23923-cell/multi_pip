@@ -74,7 +74,7 @@ struct ShareHarnessView: View {
                         outcome = "cancelled"
                     case .saved(let count):
                         let delivered = await container.deliverSharedItems()
-                        outcome = "saved \(count) delivered \(delivered)"
+                        outcome = "saved \(count) delivered \(delivered.count)"
                     }
                 }
             }

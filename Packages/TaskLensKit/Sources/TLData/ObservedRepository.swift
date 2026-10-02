@@ -72,7 +72,8 @@ extension Repositories {
             actionRecords: actionRecords,
             pipCards: pipCards,
             pipPresentation: pipPresentation,
-            aiRecords: aiRecords
+            aiRecords: aiRecords,
+            workflows: workflows
         )
     }
 }

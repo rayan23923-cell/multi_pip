@@ -36,6 +36,8 @@ public enum AppRoute: Hashable, Sendable {
     case browserPage(URL)
     /// Picture in Picture: the cards kept in view and the start/stop controls.
     case pip
+    /// Workflows: what runs on shared content, and what the user runs.
+    case workflows
     case documents(WorkspaceID?)
     /// Viewers, chosen by document kind.
     case pdf(DocumentID)

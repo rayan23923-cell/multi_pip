@@ -16,6 +16,8 @@ public struct Repositories: Sendable {
     public let pipPresentation: any Repository<PiPPresentation>
     /// AI requests, kept only while the user keeps AI history.
     public let aiRecords: any Repository<AIRecord>
+    /// Workflows the user made.
+    public let workflows: any Repository<Workflow>
 
     public init(
         workspaces: any Repository<Workspace>,
@@ -28,7 +30,8 @@ public struct Repositories: Sendable {
         actionRecords: any Repository<ActionRecord> = InMemoryRepository<ActionRecord>(),
         pipCards: any Repository<PiPCard> = InMemoryRepository<PiPCard>(),
         pipPresentation: any Repository<PiPPresentation> = InMemoryRepository<PiPPresentation>(),
-        aiRecords: any Repository<AIRecord> = InMemoryRepository<AIRecord>()
+        aiRecords: any Repository<AIRecord> = InMemoryRepository<AIRecord>(),
+        workflows: any Repository<Workflow> = InMemoryRepository<Workflow>()
     ) {
         self.workspaces = workspaces
         self.sessions = sessions
@@ -41,6 +44,7 @@ public struct Repositories: Sendable {
         self.pipCards = pipCards
         self.pipPresentation = pipPresentation
         self.aiRecords = aiRecords
+        self.workflows = workflows
     }
 
     public static func inMemory() -> Repositories {
@@ -55,7 +59,8 @@ public struct Repositories: Sendable {
             actionRecords: InMemoryRepository<ActionRecord>(),
             pipCards: InMemoryRepository<PiPCard>(),
             pipPresentation: InMemoryRepository<PiPPresentation>(),
-            aiRecords: InMemoryRepository<AIRecord>()
+            aiRecords: InMemoryRepository<AIRecord>(),
+            workflows: InMemoryRepository<Workflow>()
         )
     }
 
@@ -76,7 +81,8 @@ public struct Repositories: Sendable {
             actionRecords: JSONFileRepository<ActionRecord>(directory: directory, logger: logger),
             pipCards: JSONFileRepository<PiPCard>(directory: directory, logger: logger),
             pipPresentation: JSONFileRepository<PiPPresentation>(directory: directory, logger: logger),
-            aiRecords: JSONFileRepository<AIRecord>(directory: directory, logger: logger)
+            aiRecords: JSONFileRepository<AIRecord>(directory: directory, logger: logger),
+            workflows: JSONFileRepository<Workflow>(directory: directory, logger: logger)
         )
     }
 }

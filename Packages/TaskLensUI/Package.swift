@@ -20,6 +20,7 @@ let package = Package(
         .library(name: "SessionsFeature", targets: ["SessionsFeature"]),
         .library(name: "SettingsFeature", targets: ["SettingsFeature"]),
         .library(name: "AIFeature", targets: ["AIFeature"]),
+        .library(name: "WorkflowsFeature", targets: ["WorkflowsFeature"]),
         .library(name: "LensFeature", targets: ["LensFeature"]),
         .library(name: "ClipboardFeature", targets: ["ClipboardFeature"]),
         .library(name: "NotesFeature", targets: ["NotesFeature"]),
@@ -101,6 +102,16 @@ let package = Package(
             name: "AIFeature",
             dependencies: [
                 "TLLocalization", "TLDesignSystem", "TLActionsUI",
+                .product(name: "TLFoundation", package: "TaskLensKit"),
+                .product(name: "TLDomain", package: "TaskLensKit"),
+                .product(name: "TLCoreServices", package: "TaskLensKit"),
+            ]
+        ),
+        // User workflows: Trigger → Input → Detection → Actions → Result.
+        .target(
+            name: "WorkflowsFeature",
+            dependencies: [
+                "TLLocalization", "TLDesignSystem",
                 .product(name: "TLFoundation", package: "TaskLensKit"),
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
@@ -219,7 +230,7 @@ let package = Package(
                 "LensFeature", "ClipboardFeature",
                 "NotesFeature", "CalculatorFeature", "BrowserFeature", "DocumentsFeature",
                 "ImageViewerFeature", "TextViewerFeature", "TLActionsUI", "ShareFeature", "PiPFeature", "WidgetsFeature",
-                "LiveActivitiesFeature", "AIFeature", "SettingsFeature",
+                "LiveActivitiesFeature", "AIFeature", "SettingsFeature", "WorkflowsFeature",
                 .product(name: "TLFoundation", package: "TaskLensKit"),
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLData", package: "TaskLensKit"),

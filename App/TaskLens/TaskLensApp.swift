@@ -3,6 +3,7 @@ import LensFeature
 import LiveActivitiesFeature
 import PiPFeature
 import TLNavigation
+import WorkflowsFeature
 
 @main
 struct TaskLensApp: App {
@@ -12,6 +13,8 @@ struct TaskLensApp: App {
     @State private var liveActivities: LiveActivityController
     /// One Screen Lens per run, shared with every Lens screen and the Live Activity buttons.
     @State private var screenLens: ScreenLensModel
+    /// Workflows, and the runs shared items started that wait for the user's OK.
+    @State private var workflows: WorkflowsModel
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -24,6 +27,9 @@ struct TaskLensApp: App {
             client: ActivityKitLiveActivityClient()
         ))
         _screenLens = State(initialValue: ScreenLensSetup.make(container: container))
+        _workflows = State(initialValue: WorkflowsModel(
+            service: container.workflows, runner: container.workflowRunner, automation: container.workflowAutomation
+        ))
     }
 
     var body: some Scene {
@@ -34,6 +40,7 @@ struct TaskLensApp: App {
                 RootView(container: container, pip: pip)
                     .environment(router)
                     .environment(screenLens)
+                    .environment(workflows)
                     .task {
                         // A capture can't outlive the process: remove a status left by a closed run.
                         await ActivityKitScreenLensStatus.endLeftovers()
@@ -53,7 +60,9 @@ struct TaskLensApp: App {
                 screenLens.tick()
                 // Items shared from other apps wait in the outbox until the app is active.
                 Task {
-                    await container.deliverSharedItems()
+                    let shared = await container.deliverSharedItems()
+                    // Workflows the user turned on for shared content.
+                    await workflows.handleShared(shared)
                     // Also cleans up activities left from a previous run.
                     await liveActivities.refresh()
                     await container.refreshWidgets()

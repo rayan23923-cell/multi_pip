@@ -15,6 +15,7 @@ import SwiftUI
 import TextViewerFeature
 import TLLocalization
 import TLNavigation
+import WorkflowsFeature
 import WorkspacesFeature
 
 struct RootView: View {
@@ -27,6 +28,7 @@ struct RootView: View {
     /// Screens App Intents asked to open.
     let navigator: IntentNavigator
     @State private var aiSettings: AISettingsModel
+    @Environment(WorkflowsModel.self) private var workflows: WorkflowsModel?
 
     init(container: AppContainer, pip: PiPWorkspaceModel, navigator: IntentNavigator = .shared) {
         self.container = container
@@ -195,6 +197,8 @@ private extension View {
                 BrowserView(model: browser, opening: url)
             case .pip:
                 PiPWorkspaceView(model: pip)
+            case .workflows:
+                WorkflowsView(model: workflows ?? WorkflowsModel(service: container.workflows, runner: container.workflowRunner))
             case .documents(let workspaceID):
                 DocumentLibraryView(model: DocumentLibraryModel(
                     workspaceID: workspaceID,

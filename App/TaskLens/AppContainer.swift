@@ -1,4 +1,5 @@
 import Foundation
+import LensFeature
 import SettingsFeature
 import TLCoreServices
 import TLData
@@ -40,6 +41,11 @@ struct AppContainer: Sendable {
     let ai: AIService
     /// Where the AI server key is kept.
     let aiSecrets: any SecretStoring
+    /// User workflows and the runner that performs their steps.
+    let workflows: WorkflowService
+    let workflowRunner: WorkflowRunner
+    /// Runs enabled workflows on items shared to the app.
+    let workflowAutomation: WorkflowAutomation
     let logger: TLLogger
 
     init(
@@ -143,6 +149,13 @@ struct AppContainer: Sendable {
             clock: clock,
             logger: logger.scoped("ai")
         )
+        self.workflows = WorkflowService(workflows: repositories.workflows, clock: clock)
+        self.workflowRunner = WorkflowRunner(
+            capture: capture, notes: self.notes, calculator: self.calculator,
+            workspaces: self.workspaces, sessions: self.sessions,
+            ai: self.ai, reader: LensWorkflowReader()
+        )
+        self.workflowAutomation = WorkflowAutomation(service: self.workflows, runner: self.workflowRunner, documents: self.documents)
         self.logger = logger
     }
 
@@ -218,12 +231,13 @@ struct AppContainer: Sendable {
 
     /// Saves items left by the share extension into their sessions (or the inbox).
     @discardableResult
-    func deliverSharedItems() async -> Int {
+    @discardableResult
+    func deliverSharedItems() async -> [ContextItem] {
         let items = await shareOutbox.deliver(using: share, sessions: sessions)
         if !items.isEmpty {
             logger.info("Delivered \(items.count) shared item(s)")
         }
-        return items.count
+        return items
     }
 
     /// Writes what widgets show and asks WidgetKit to redraw them.
