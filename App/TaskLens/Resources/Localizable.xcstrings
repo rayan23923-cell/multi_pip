@@ -392,6 +392,23 @@
         }
       }
     },
+    "intent.param.sessionID": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "معرّف الجلسة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session ID"
+          }
+        }
+      }
+    },
     "intent.param.sessionKind": {
       "extractionState": "manual",
       "localizations": {
@@ -881,6 +898,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Start Workspace"
+          }
+        }
+      }
+    },
+    "intent.stopSession.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ينهي جلسة TaskLens ونشاطها المباشر."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ends a TaskLens session and its Live Activity."
+          }
+        }
+      }
+    },
+    "intent.stopSession.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إيقاف الجلسة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop Session"
           }
         }
       }

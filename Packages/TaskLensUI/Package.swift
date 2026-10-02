@@ -30,6 +30,7 @@ let package = Package(
         .library(name: "ShareFeature", targets: ["ShareFeature"]),
         .library(name: "PiPFeature", targets: ["PiPFeature"]),
         .library(name: "WidgetsFeature", targets: ["WidgetsFeature"]),
+        .library(name: "LiveActivitiesFeature", targets: ["LiveActivitiesFeature"]),
     ],
     dependencies: [
         .package(path: "../TaskLensKit"),
@@ -177,6 +178,18 @@ let package = Package(
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
             ]
         ),
+        // Starts, updates and ends session Live Activities. App only: ActivityKit
+        // requests are not allowed from extensions.
+        .target(
+            name: "LiveActivitiesFeature",
+            dependencies: [
+                "WidgetsFeature",
+                .product(name: "TLFoundation", package: "TaskLensKit"),
+                .product(name: "TLDomain", package: "TaskLensKit"),
+                .product(name: "TLData", package: "TaskLensKit"),
+                .product(name: "TLCoreServices", package: "TaskLensKit"),
+            ]
+        ),
         // UI of the share extension. Must stay app-extension safe (no UIApplication.shared).
         .target(
             name: "ShareFeature",
@@ -193,6 +206,7 @@ let package = Package(
                 "LensFeature", "ClipboardFeature",
                 "NotesFeature", "CalculatorFeature", "BrowserFeature", "DocumentsFeature",
                 "ImageViewerFeature", "TextViewerFeature", "TLActionsUI", "ShareFeature", "PiPFeature", "WidgetsFeature",
+                "LiveActivitiesFeature",
                 .product(name: "TLFoundation", package: "TaskLensKit"),
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLData", package: "TaskLensKit"),

@@ -21,6 +21,10 @@ struct AppContainer: Sendable {
     /// Where widgets read their snapshot. Nil when this build has no App Group
     /// container (unsigned simulator builds); widgets then show their empty state.
     let widgetStore: WidgetSnapshotStore?
+    /// Fires when sessions or their items change; drives Live Activities and widgets.
+    let storeChanges: StoreChangeSignal
+    /// Which session Live Activities should exist.
+    let sessionActivities: SessionActivityService
     let capture: CaptureService
     let notes: NoteService
     let clipboard: ClipboardService
@@ -40,9 +44,11 @@ struct AppContainer: Sendable {
         storeRoot: URL,
         storage: SettingsView.StorageDescription,
         widgetStore: WidgetSnapshotStore? = nil,
+        storeChanges: StoreChangeSignal = StoreChangeSignal(),
         clock: any DateProviding = SystemDateProvider(),
         logger: TLLogger = TLLogger(category: "app")
     ) {
+        let repositories = repositories.observingSessions(storeChanges)
         let capture = CaptureService(
             sessions: repositories.sessions,
             contextItems: repositories.contextItems,
@@ -111,6 +117,8 @@ struct AppContainer: Sendable {
         self.shareOutbox = ShareOutbox(storeRoot: storeRoot)
         self.systemActions = SystemActions(workspaces: self.workspaces, sessions: self.sessions, capture: capture, notes: self.notes)
         self.widgetStore = widgetStore
+        self.storeChanges = storeChanges
+        self.sessionActivities = SessionActivityService(workspaces: self.workspaces, sessions: self.sessions, capture: capture, clock: clock)
         self.storage = storage
         self.logger = logger
     }

@@ -111,6 +111,18 @@ struct IntentTests {
         #expect(ConvertCurrencyIntent.format(12.5, currencyCode: "nope") == (12.5 as Decimal).formatted(.number.precision(.fractionLength(0...4))))
     }
 
+    @Test func stopSessionFromTheLiveActivity() async throws {
+        let workspace = try await container.workspaces.create(name: "Trip")
+        let session = try await container.sessions.start(in: workspace.id)
+        _ = try await StopSessionIntent(sessionID: session.id).perform()
+        #expect(try await container.sessions.session(id: session.id).isEnded)
+        // Stopping again, or a stale id, is harmless.
+        _ = try await StopSessionIntent(sessionID: session.id).perform()
+        var unknown = StopSessionIntent()
+        unknown.sessionID = "not-an-id"
+        _ = try await unknown.perform()
+    }
+
     @Test func entityQueriesFindWorkspacesAndSessions() async throws {
         let trip = try await container.workspaces.create(name: "Trip")
         _ = try await container.workspaces.create(name: "Thesis")

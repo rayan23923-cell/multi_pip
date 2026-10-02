@@ -1,6 +1,10 @@
+import ActivityKit
 import SwiftUI
 import TLCoreServices
+import TLDomain
 import TLLocalization
+import TLDesignSystem
+import TLNavigation
 import WidgetKit
 import WidgetsFeature
 
@@ -8,6 +12,7 @@ import WidgetsFeature
 struct TaskLensWidgetBundle: WidgetBundle {
     var body: some Widget {
         TaskLensWidget()
+        SessionLiveActivity()
     }
 }
 
@@ -78,6 +83,80 @@ struct TaskLensWidgetView: View {
             WorkspaceWidgetView(snapshot: entry.snapshot)
         default:
             RecentSessionsWidgetView(snapshot: entry.snapshot)
+        }
+    }
+}
+
+/// The Live Activity of an ongoing session. On iPhones with the Dynamic Island
+/// it has compact, minimal and expanded forms; every iPhone shows the Lock
+/// Screen form. Tapping it opens the session (Open); Resume opens it where
+/// the user stopped; Stop ends the session.
+struct SessionLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: SessionActivityAttributes.self) { context in
+            SessionActivityLockScreenView(
+                attributes: context.attributes,
+                state: context.state,
+                isStale: context.isStale
+            ) {
+                SessionActivityButtons(sessionID: context.attributes.sessionID)
+            }
+            .widgetURL(DeepLink.session(context.attributes.sessionID))
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    Label {
+                        SessionActivityTitle(context.attributes, context.state)
+                            .lineLimit(1)
+                    } icon: {
+                        Image(systemName: context.attributes.kind.symbolName)
+                    }
+                    .font(.caption.weight(.semibold))
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    SessionActivityClock(context.state)
+                        .font(.callout.weight(.semibold))
+                        .frame(maxWidth: 80, alignment: .trailing)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        SessionActivityModeLine(context.state)
+                        HStack {
+                            SessionActivityCounts(context.state)
+                            Spacer(minLength: 8)
+                            SessionActivityButtons(sessionID: context.attributes.sessionID)
+                        }
+                    }
+                }
+            } compactLeading: {
+                Image(systemName: context.attributes.kind.symbolName)
+                    .foregroundStyle(.tint)
+            } compactTrailing: {
+                SessionActivityCompactTrailing(context.state)
+            } minimal: {
+                SessionActivityMinimal(context.attributes, context.state)
+            }
+            .widgetURL(DeepLink.session(context.attributes.sessionID))
+        }
+    }
+}
+
+/// Resume (opens TaskLens) and Stop (ends the session without opening it).
+struct SessionActivityButtons: View {
+    let sessionID: SessionID
+
+    var body: some View {
+        HStack(spacing: 8) {
+            SessionActivityResumeLink(sessionID)
+            Button(intent: StopSessionIntent(sessionID: sessionID)) {
+                Label {
+                    Text(L10nKey.activityStop)
+                } icon: {
+                    Image(systemName: "stop.fill")
+                }
+                .font(.caption.weight(.semibold))
+            }
+            .tint(.red)
         }
     }
 }

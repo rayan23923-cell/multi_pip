@@ -124,6 +124,17 @@ public final class SessionDetailModel {
         await transition { try await $0.rename(self.sessionID, to: title) }
     }
 
+    /// Starts (or with nil, stops) a focus timer; the Live Activity counts it down.
+    public func setFocus(minutes: Int?) async {
+        await transition { try await $0.setFocus(self.sessionID, minutes: minutes) }
+    }
+
+    /// True while a focus timer is running.
+    public func isFocusing(at now: Date = Date()) -> Bool {
+        guard let end = session?.focusEndsAt else { return false }
+        return end > now
+    }
+
     public func toggleFavorite() async {
         let isFavorite = session?.isFavorite ?? false
         await transition { try await $0.setFavorite(self.sessionID, !isFavorite) }

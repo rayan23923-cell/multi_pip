@@ -122,6 +122,24 @@ STRINGS = [
     ("widget.noWorkspaces", "Open TaskLens to create a workspace.", "افتح TaskLens لإنشاء مساحة عمل."),
     ("widget.itemCount", "%lld items", "%lld عناصر"),
 
+    # Live Activity and Dynamic Island.
+    ("activity.sessionTitle", "%@ Session", "جلسة %@"),
+    ("activity.links", "Links: %lld", "الروابط: %lld"),
+    ("activity.notes", "Notes: %lld", "الملاحظات: %lld"),
+    ("activity.documents", "Documents: %lld", "المستندات: %lld"),
+    ("activity.items", "Items: %lld", "العناصر: %lld"),
+    ("activity.processing", "Processing", "قيد المعالجة"),
+    ("activity.focus", "Focus", "تركيز"),
+    ("activity.task", "Active Task", "المهمة الحالية"),
+    ("activity.elapsed", "Elapsed", "المدة"),
+    ("activity.remaining", "Remaining", "المتبقي"),
+    ("activity.resume", "Resume", "استئناف"),
+    ("activity.stop", "Stop", "إيقاف"),
+    ("activity.stale", "No recent activity", "لا يوجد نشاط حديث"),
+    ("session.focus", "Focus Timer", "مؤقت التركيز"),
+    ("session.focus.minutes", "%lld minutes", "%lld دقيقة"),
+    ("session.focus.stop", "Stop Focus Timer", "إيقاف مؤقت التركيز"),
+
     # What Siri and Shortcuts say back after an action.
     ("intent.result.savedToSession", "Saved to %@.", "تم الحفظ في %@."),
     ("intent.result.savedToInbox", "Saved to the inbox.", "تم الحفظ في الوارد."),
@@ -431,6 +449,7 @@ STRINGS = [
     ("error.validation.contentTooLarge", "The content is too large.", "المحتوى كبير جداً."),
     ("error.validation.invalidURL", "The link is not valid.", "الرابط غير صالح."),
     ("error.validation.invalidExpression", "That is not a calculation TaskLens can do.", "هذه ليست عملية حسابية يستطيع TaskLens تنفيذها."),
+    ("error.validation.outOfRange", "That value is out of range.", "هذه القيمة خارج النطاق المسموح."),
     ("error.state.sessionEnded", "This session has ended.", "انتهت هذه الجلسة."),
     ("error.state.sessionAlreadyActive", "This session is already active.", "هذه الجلسة نشطة بالفعل."),
     ("error.state.workspaceArchived", "This workspace is archived.", "مساحة العمل هذه مؤرشفة."),
@@ -478,6 +497,9 @@ APP_INTENT_STRINGS = [
     ("intent.convertCurrency.title", "Convert Currency", "تحويل عملة"),
     ("intent.convertCurrency.description", "Multiplies an amount by the exchange rate you give. TaskLens does not download exchange rates.",
      "يضرب المبلغ في سعر الصرف الذي تحدده. لا يقوم TaskLens بتنزيل أسعار الصرف."),
+    ("intent.stopSession.title", "Stop Session", "إيقاف الجلسة"),
+    ("intent.stopSession.description", "Ends a TaskLens session and its Live Activity.", "ينهي جلسة TaskLens ونشاطها المباشر."),
+    ("intent.param.sessionID", "Session ID", "معرّف الجلسة"),
     ("intent.openDestination.title", "Open in TaskLens", "فتح في TaskLens"),
 
     ("intent.param.workspaceKind", "Workspace Kind", "نوع مساحة العمل"),

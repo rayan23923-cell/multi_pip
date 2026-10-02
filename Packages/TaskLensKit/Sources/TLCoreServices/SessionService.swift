@@ -164,6 +164,28 @@ public struct SessionService: Sendable {
         return session
     }
 
+    /// Focus timers the user can start, in minutes.
+    public static let focusDurations = [15, 25, 50]
+    public static let maximumFocusMinutes = 180
+
+    /// Starts a focus timer, shown as a countdown in the Live Activity. Nil
+    /// minutes stops it.
+    @discardableResult
+    public func setFocus(_ id: SessionID, minutes: Int?) async throws -> Session {
+        var session = try await sessionStore.require(id: id)
+        if let minutes {
+            guard !session.isEnded else { throw TaskLensError.invalidState(.sessionEnded) }
+            guard (1...Self.maximumFocusMinutes).contains(minutes) else {
+                throw TaskLensError.validationFailed(.outOfRange)
+            }
+            session.focusEndsAt = clock.now().addingTimeInterval(TimeInterval(minutes * 60))
+        } else {
+            session.focusEndsAt = nil
+        }
+        try await sessionStore.upsert(session)
+        return session
+    }
+
     /// Marks the session as just used. Ended sessions are rejected.
     @discardableResult
     public func recordActivity(_ id: SessionID) async throws -> Session {

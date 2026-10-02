@@ -309,6 +309,25 @@ public struct SessionDetailView: View {
                         TLLabel(.sessionResume, systemImage: "play")
                     }
                 }
+                if session.isActive {
+                    Menu {
+                        ForEach(SessionService.focusDurations, id: \.self) { minutes in
+                            Button { Task { await model.setFocus(minutes: minutes) } } label: {
+                                Text(verbatim: L10n.format(.sessionFocusMinutes, minutes))
+                            }
+                            .accessibilityIdentifier("session.focus.\(minutes)")
+                        }
+                        if model.isFocusing() {
+                            Button(role: .destructive) { Task { await model.setFocus(minutes: nil) } } label: {
+                                TLLabel(.sessionFocusStop, systemImage: "timer")
+                            }
+                            .accessibilityIdentifier("session.focus.stop")
+                        }
+                    } label: {
+                        TLLabel(.sessionFocus, systemImage: "timer")
+                    }
+                    .accessibilityIdentifier("session.focus")
+                }
                 if !session.isEnded {
                     Button { Task { await model.end() } } label: {
                         TLLabel(.sessionEnd, systemImage: "stop")

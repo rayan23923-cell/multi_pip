@@ -20,6 +20,7 @@ public enum ValidationFailure: String, Sendable, Codable, CaseIterable {
     case contentTooLarge
     case invalidURL
     case invalidExpression
+    case outOfRange
 }
 
 public enum InvalidStateReason: String, Sendable, Codable, CaseIterable {

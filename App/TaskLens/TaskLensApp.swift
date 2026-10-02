@@ -1,4 +1,5 @@
 import SwiftUI
+import LiveActivitiesFeature
 import PiPFeature
 import TLNavigation
 
@@ -7,6 +8,7 @@ struct TaskLensApp: App {
     @State private var container: AppContainer
     @State private var router = AppRouter()
     @State private var pip: PiPWorkspaceModel
+    @State private var liveActivities: LiveActivityController
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -14,6 +16,10 @@ struct TaskLensApp: App {
         let container = AppContainer.shared
         _container = State(initialValue: container)
         _pip = State(initialValue: RootView.makePiP(container: container))
+        _liveActivities = State(initialValue: LiveActivityController(
+            service: container.sessionActivities,
+            client: ActivityKitLiveActivityClient()
+        ))
     }
 
     var body: some Scene {
@@ -24,6 +30,12 @@ struct TaskLensApp: App {
                 RootView(container: container, pip: pip)
                     .environment(router)
                     .task { await SampleDocuments.seedIfRequested(container.documents) }
+                    .task {
+                        // Live Activities and widgets follow every session change.
+                        await liveActivities.follow(container.storeChanges) {
+                            await container.refreshWidgets()
+                        }
+                    }
             }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -32,6 +44,8 @@ struct TaskLensApp: App {
                 // Items shared from other apps wait in the outbox until the app is active.
                 Task {
                     await container.deliverSharedItems()
+                    // Also cleans up activities left from a previous run.
+                    await liveActivities.refresh()
                     await container.refreshWidgets()
                 }
             case .background:

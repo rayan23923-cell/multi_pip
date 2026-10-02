@@ -23,6 +23,8 @@ public struct Session: Entity {
     public private(set) var archivedAt: Date?
     /// Where the user was in TaskLens's own tools, for Resume.
     public var resumeState: SessionResumeState?
+    /// When a focus timer the user started for this session ends.
+    public var focusEndsAt: Date?
 
     public init(
         id: SessionID = SessionID(),
@@ -69,6 +71,7 @@ public struct Session: Entity {
         guard state != .ended else { throw TaskLensError.invalidState(.sessionEnded) }
         state = .ended
         endedAt = date
+        focusEndsAt = nil
         lastActivityAt = date
     }
 

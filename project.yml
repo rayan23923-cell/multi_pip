@@ -67,6 +67,8 @@ targets:
         # TaskLens plays no audio and does no other background work.
         UIBackgroundModes:
           - audio
+        # Session Live Activities (Lock Screen, and the Dynamic Island where present).
+        NSSupportsLiveActivities: true
     entitlements:
       path: App/TaskLens/TaskLens.entitlements
       properties:
@@ -129,6 +131,8 @@ targets:
         product: PiPFeature
       - package: TaskLensUI
         product: WidgetsFeature
+      - package: TaskLensUI
+        product: LiveActivitiesFeature
 
   # Share extension: accepts text, links, images, PDFs and other files.
   TaskLensShare:
