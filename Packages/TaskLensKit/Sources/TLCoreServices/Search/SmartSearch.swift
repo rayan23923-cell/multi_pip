@@ -49,6 +49,13 @@ public struct ParsedSearchQuery: Sendable, Equatable {
     public var kindHint: String?
 
     public var hasHints: Bool { !filters.isEmpty || dateRange != nil || kindHint != nil }
+
+    public init(keywords: [String] = [], filters: Set<SearchFilter> = [], dateRange: DateInterval? = nil, kindHint: String? = nil) {
+        self.keywords = keywords
+        self.filters = filters
+        self.dateRange = dateRange
+        self.kindHint = kindHint
+    }
 }
 
 public enum SearchQueryParser {
@@ -96,7 +103,7 @@ public enum SearchQueryParser {
         while index < tokens.count {
             let token = tokens[index]
             let next = index + 1 < tokens.count ? tokens[index + 1] : nil
-            if let range = dateRange(token, next: next, now: now, calendar: calendar) {
+            if let range = readDateRange(token, next: next, now: now, calendar: calendar) {
                 dateRange = range.interval
                 index += range.consumed
                 continue
@@ -115,7 +122,7 @@ public enum SearchQueryParser {
         return ParsedSearchQuery(keywords: keywords, filters: filters, dateRange: dateRange, kindHint: kindHint)
     }
 
-    static func dateRange(_ token: String, next: String?, now: Date, calendar: Calendar) -> (interval: DateInterval, consumed: Int)? {
+    static func readDateRange(_ token: String, next: String?, now: Date, calendar: Calendar) -> (interval: DateInterval, consumed: Int)? {
         let today = calendar.startOfDay(for: now)
         func days(_ start: Int, _ length: Int) -> DateInterval? {
             guard let from = calendar.date(byAdding: .day, value: start, to: today),
@@ -125,16 +132,16 @@ public enum SearchQueryParser {
         let isLast = ["last", "past", "ماضي", "ماضيه", "سابق"].contains(next ?? "")
         switch token {
         case "today", "يوم":
-            return days(0, 1).map { ($0, 1) }
+            return days(0, 1).map { (interval: $0, consumed: 1) }
         case "yesterday", "امس", "البارحه", "بارحه":
-            return days(-1, 1).map { ($0, 1) }
+            return days(-1, 1).map { (interval: $0, consumed: 1) }
         case "week", "اسبوع":
-            return days(-7, 8).map { ($0, isLast ? 2 : 1) }
+            return days(-7, 8).map { (interval: $0, consumed: isLast ? 2 : 1) }
         case "month", "شهر":
-            return days(-30, 31).map { ($0, isLast ? 2 : 1) }
+            return days(-30, 31).map { (interval: $0, consumed: isLast ? 2 : 1) }
         case "last", "past":
-            if next == "week" { return days(-7, 8).map { ($0, 2) } }
-            if next == "month" { return days(-30, 31).map { ($0, 2) } }
+            if next == "week" { return days(-7, 8).map { (interval: $0, consumed: 2) } }
+            if next == "month" { return days(-30, 31).map { (interval: $0, consumed: 2) } }
             return nil
         default:
             return nil
@@ -284,7 +291,7 @@ public struct SmartSearchService: Sendable {
         /// True when meaning-based ranking was used for this query.
         public var usedMeaning: Bool
 
-        public init(hits: [SearchHit] = [], query: ParsedSearchQuery = ParsedSearchQuery(keywords: [], filters: [], dateRange: nil, kindHint: nil), usedMeaning: Bool = false) {
+        public init(hits: [SearchHit] = [], query: ParsedSearchQuery = ParsedSearchQuery(), usedMeaning: Bool = false) {
             self.hits = hits
             self.query = query
             self.usedMeaning = usedMeaning
@@ -303,8 +310,8 @@ public struct SmartSearchService: Sendable {
 
     /// Everything searchable, flattened.
     public func index() async throws -> [SearchDocument] {
-        let workspaces = try await workspaces.fetchAll()
-        let sessions = try await sessions.fetchAll()
+        let workspaces = try await self.workspaces.fetchAll()
+        let sessions = try await self.sessions.fetchAll()
         let workspaceKinds = Dictionary(uniqueKeysWithValues: workspaces.map { ($0.id, $0.kind.rawValue) })
         let sessionKinds = Dictionary(uniqueKeysWithValues: sessions.map { ($0.id, $0.kind.rawValue) })
         func kinds(_ workspaceID: WorkspaceID?, _ sessionID: SessionID?) -> Set<String> {
@@ -506,7 +513,7 @@ public struct SmartSearchService: Sendable {
     }
 
     static func entityFilters(_ entities: [DetectedEntity]) -> Set<SearchFilter> {
-        Set(entities.compactMap { entity in
+        Set(entities.compactMap { entity -> SearchFilter? in
             switch entity.type {
             case .currencyAmount: .price
             case .phoneNumber: .phone
