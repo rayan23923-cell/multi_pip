@@ -39,7 +39,17 @@ public struct WorkspaceDetailView: View {
                 ForEach(model.currentSessions) { session in
                     sessionLink(session)
                 }
-                Menu {
+                Button {
+                    Task {
+                        if let session = await model.startSession() {
+                            router.push(.session(session.id))
+                        }
+                    }
+                } label: {
+                    TLLabel(.workspaceStartSession, systemImage: "plus.circle")
+                }
+                // Long press: start a session of another kind.
+                .contextMenu {
                     ForEach(SessionKind.allKnown, id: \.self) { kind in
                         Button {
                             Task {
@@ -51,14 +61,6 @@ public struct WorkspaceDetailView: View {
                             TLLabel(L10nKey.sessionKind(kind), systemImage: kind.symbolName)
                         }
                         .accessibilityIdentifier("workspaceDetail.startSession.\(kind.rawValue)")
-                    }
-                } label: {
-                    TLLabel(.workspaceStartSession, systemImage: "plus.circle")
-                } primaryAction: {
-                    Task {
-                        if let session = await model.startSession() {
-                            router.push(.session(session.id))
-                        }
                     }
                 }
                 .accessibilityIdentifier("workspaceDetail.startSession")

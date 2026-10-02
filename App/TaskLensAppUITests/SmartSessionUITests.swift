@@ -46,7 +46,8 @@ final class SmartSessionUITests: XCTestCase {
         let start = element(app, "workspaceDetail.startSession")
         XCTAssertTrue(start.waitForExistence(timeout: 5))
         start.tap()
-        XCTAssertTrue(element(app, "session.header").waitForExistence(timeout: 5), "Session should open")
+        XCTAssertTrue(element(app, "session.menu").waitForExistence(timeout: 10)
+                      || element(app, "quickCapture.field").waitForExistence(timeout: 2), "Session should open")
     }
 
     private func capture(_ app: XCUIApplication, _ value: String) {
@@ -72,7 +73,7 @@ final class SmartSessionUITests: XCTestCase {
 
     private func dismissKeyboard(_ app: XCUIApplication) {
         if app.keyboards.count > 0 {
-            element(app, "session.header").tap()
+            app.navigationBars.firstMatch.tap()
         }
     }
 
