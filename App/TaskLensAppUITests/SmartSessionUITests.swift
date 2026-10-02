@@ -104,7 +104,8 @@ final class SmartSessionUITests: XCTestCase {
         search.typeText("hotel")
         XCTAssertTrue(text(app, "Hotel booking 120").waitForExistence(timeout: 5))
         XCTAssertTrue(text(app, "What time is check in?").waitForNonExistence(timeout: 5))
-        app.buttons["Cancel"].firstMatch.tap()
+        // iOS 26 search fields have no Cancel button: clear the text instead.
+        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "hotel".count))
         XCTAssertTrue(text(app, "What time is check in?").waitForExistence(timeout: 5))
 
         // Rename.

@@ -41,7 +41,8 @@ final class PiPUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Picture in Picture"].waitForExistence(timeout: 5), "Keeping a card opens Picture in Picture")
         let card = element(app, "pipCard")
         XCTAssertTrue(card.waitForExistence(timeout: 5))
-        XCTAssertTrue(card.label.contains("12×3") || card.label.contains("36"), "Card label: \(card.label)")
+        // Title is the expression ("12 × 3"), the body the result ("= 36").
+        XCTAssertTrue(card.label.contains("36"), "Card label: \(card.label)")
     }
 
     func testUnsupportedDeviceExplainsAndNeverOffersStart() {
@@ -97,7 +98,8 @@ final class PiPUITests: XCTestCase {
         tap(relaunched, "commandCenter.pip")
         let card = element(relaunched, "pipCard")
         XCTAssertTrue(card.waitForExistence(timeout: 5), "Cards are kept across launches")
-        XCTAssertTrue(card.label.contains("12×3") || card.label.contains("36"), "Card label: \(card.label)")
+        // Title is the expression ("12 × 3"), the body the result ("= 36").
+        XCTAssertTrue(card.label.contains("36"), "Card label: \(card.label)")
     }
 
     func testCardsCanBeRemoved() {

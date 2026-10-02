@@ -171,6 +171,12 @@ public struct PiPWorkspaceView: View {
                         .foregroundStyle(.secondary)
                     Text(verbatim: card.title.isEmpty ? card.body : card.title)
                         .lineLimit(2)
+                    if !card.title.isEmpty && !card.body.isEmpty {
+                        Text(verbatim: card.body)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
                 Spacer()
                 if card.id == model.currentCard?.id {
