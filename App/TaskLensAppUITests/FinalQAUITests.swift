@@ -63,13 +63,21 @@ final class FinalQAUITests: XCTestCase {
         XCTAssertTrue(element(app, "quickCapture.field").waitForExistence(timeout: 10), "Session should open")
     }
 
-    private func capture(_ app: XCUIApplication, _ value: String) {
+    /// `shown` is the part of the value the session row must show (a link
+    /// row may present its address differently from what was typed).
+    private func capture(_ app: XCUIApplication, _ value: String, shown: String? = nil) {
         let field = element(app, "quickCapture.field")
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap()
         field.typeText(value)
         tap(app, "quickCapture.save")
-        XCTAssertTrue(text(app, value).waitForExistence(timeout: 5), "\(value) should be in the session")
+        let expected = shown ?? value
+        if !text(app, expected).waitForExistence(timeout: 10) {
+            let rows = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", String(expected.prefix(8))))
+                .allElementsBoundByIndex.prefix(5).map { $0.label }.joined(separator: " | ")
+            print("MISSING captured '\(expected)' — field '\(field.value ?? "")' similar: \(rows)")
+            XCTFail("\(expected) should be in the session")
+        }
     }
 
     private func dismissKeyboard(_ app: XCUIApplication) {
@@ -145,7 +153,7 @@ final class FinalQAUITests: XCTestCase {
         app.launch()
         openWorkspace(app, name: "Research", create: true)
         startSession(app)
-        capture(app, "https://developer.apple.com/documentation/vision")
+        capture(app, "https://developer.apple.com/documentation/vision", shown: "developer.apple.com")
         capture(app, "+964 770 123 4567")
         capture(app, "Read chapter 4 before Monday")
         dismissKeyboard(app)

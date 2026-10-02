@@ -49,7 +49,10 @@ struct WorkflowEditor: View {
                             .accessibilityIdentifier("workflowEditor.add.\(kind.rawValue)")
                         }
                     } label: {
+                        // The whole row opens the menu, not only its text.
                         TLLabel(.workflowsEditorAddStep, systemImage: "plus.circle")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
                     }
                     .accessibilityIdentifier("workflowEditor.addStep")
                 }
