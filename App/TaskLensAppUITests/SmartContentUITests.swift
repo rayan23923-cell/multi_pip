@@ -34,12 +34,10 @@ final class SmartContentUITests: XCTestCase {
         app.reveal(identifier, file: file, line: line)
     }
 
-    private func waitForLabel(_ app: XCUIApplication, _ identifier: String, containing expected: String, timeout: TimeInterval = 10) {
-        let target = element(app, identifier)
-        let predicate = NSPredicate(format: "label CONTAINS %@", expected)
-        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: target)
-        XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed,
-                       "\(identifier) label is '\(target.label)', expected to contain '\(expected)'")
+    private func waitForLabel(_ app: XCUIApplication, _ identifier: String, containing expected: String, timeout: TimeInterval = 10,
+                              file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(app.waitForLabel(identifier, timeout: timeout) { $0.contains(expected) },
+                      "\(identifier) label is '\(element(app, identifier).label)', expected to contain '\(expected)'", file: file, line: line)
     }
 
     private func analyzeInLens(_ app: XCUIApplication, _ text: String) {

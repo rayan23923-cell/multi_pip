@@ -31,8 +31,10 @@ final class SmartSessionUITests: XCTestCase {
             field.tap()
             field.typeText(name)
             element(app, "workspaceEditor.save").tap()
+            app.revealAndTap("workspaceRow.\(name)")
+        } else {
+            app.openSavedWorkspace(name)
         }
-        app.revealAndTap("workspaceRow.\(name)")
     }
 
     /// Rows are buttons, so their text is part of a combined label.

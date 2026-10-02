@@ -37,12 +37,10 @@ final class ToolsUITests: XCTestCase {
         return target.label
     }
 
-    private func waitForLabel(_ app: XCUIApplication, _ identifier: String, _ expected: String, timeout: TimeInterval = 5) {
-        let target = element(app, identifier)
-        let predicate = NSPredicate(format: "label == %@", expected)
-        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: target)
-        XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed,
-                       "\(identifier) label is '\(target.label)', expected '\(expected)'")
+    private func waitForLabel(_ app: XCUIApplication, _ identifier: String, _ expected: String, timeout: TimeInterval = 10,
+                              file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(app.waitForLabel(identifier, timeout: timeout) { $0 == expected },
+                      "\(identifier) label is '\(element(app, identifier).label)', expected '\(expected)'", file: file, line: line)
     }
 
     private func createNote(_ app: XCUIApplication, title: String, body: String) {

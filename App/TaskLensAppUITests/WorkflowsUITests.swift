@@ -46,9 +46,17 @@ final class WorkflowsUITests: XCTestCase {
         // identifiers or as menu items rather than buttons, so match labels too.
         let saveStep = element(app, "workflowEditor.add.save")
         let ocrStep = app.descendants(matching: .any).matching(NSPredicate(format: "label == 'Read text (OCR)'")).firstMatch
-        for _ in 0..<3 {
-            tap(app, "workflowEditor.addStep")
+        let addStep = element(app, "workflowEditor.addStep")
+        for attempt in 0..<3 {
+            XCTAssertTrue(addStep.waitForExistence(timeout: 5))
+            if attempt == 0 {
+                addStep.tap()
+            } else {
+                // Near the leading edge, on the label's text.
+                addStep.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.5)).tap()
+            }
             if saveStep.waitForExistence(timeout: 3) || ocrStep.exists { break }
+            print("MISSING step menu — attempt \(attempt), addStep hittable \(addStep.isHittable) frame \(addStep.frame), menus \(app.menus.count) menuItems \(app.menuItems.count) keyboards \(app.keyboards.count)")
         }
         if saveStep.exists {
             saveStep.tap()

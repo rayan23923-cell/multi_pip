@@ -35,11 +35,10 @@ final class FinalQAUITests: XCTestCase {
         if button.exists { button.tap() } else { alert.buttons["Convert"].firstMatch.tap() }
     }
 
-    private func waitForLabel(_ app: XCUIApplication, _ identifier: String, containing expected: String, timeout: TimeInterval = 10) {
-        let target = element(app, identifier)
-        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object: target)
-        XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed,
-                       "\(identifier) label is '\(target.label)', expected '\(expected)'")
+    private func waitForLabel(_ app: XCUIApplication, _ identifier: String, containing expected: String, timeout: TimeInterval = 10,
+                              file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(app.waitForLabel(identifier, timeout: timeout) { $0.contains(expected) },
+                      "\(identifier) label is '\(element(app, identifier).label)', expected '\(expected)'", file: file, line: line)
     }
 
     private func openWorkspace(_ app: XCUIApplication, name: String, create: Bool) {
@@ -53,8 +52,10 @@ final class FinalQAUITests: XCTestCase {
             field.tap()
             field.typeText(name)
             tap(app, "workspaceEditor.save")
+            tap(app, "workspaceRow.\(name)")
+        } else {
+            app.openSavedWorkspace(name)
         }
-        tap(app, "workspaceRow.\(name)")
     }
 
     private func startSession(_ app: XCUIApplication) {
