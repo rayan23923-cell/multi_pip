@@ -40,26 +40,15 @@ public struct ImageViewerView: View {
         }
         .clipped()
         .background(Color(.systemBackground))
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 0) {
+                Divider()
+                actionBar
+            }
+        }
         .navigationTitle(model.document?.title ?? "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItemGroup(placement: .bottomBar) {
-                if let url = model.fileURL {
-                    ShareLink(item: url) { TLLabel(.actionShare, systemImage: "square.and.arrow.up") }
-                }
-                Spacer()
-                // Entry point only: on-device text recognition arrives in a later phase.
-                Button { showsOCRNotice = true } label: {
-                    TLLabel(.imageRecognizeText, systemImage: "text.viewfinder")
-                }
-                .accessibilityIdentifier("image.recognizeText")
-                Spacer()
-                Button { Task { await model.save() } } label: {
-                    TLLabel(.commonSaveToSession, systemImage: "tray.and.arrow.down")
-                }
-                .disabled(model.document == nil)
-                .accessibilityIdentifier("image.save")
-            }
             ToolbarItem(placement: .primaryAction) {
                 if zoom != 1 {
                     Button { resetZoom() } label: {
@@ -68,7 +57,6 @@ public struct ImageViewerView: View {
                 }
             }
         }
-        .toolbar(.visible, for: .bottomBar)
         .alert(Text(L10nKey.imageRecognizeText), isPresented: $showsOCRNotice) {
             Button(role: .cancel) {} label: { Text(L10nKey.commonOk) }
         } message: {
@@ -77,6 +65,34 @@ public struct ImageViewerView: View {
         .sensoryFeedback(.success, trigger: model.savedItemCount)
         .task { await model.load() }
         .errorAlert(message: $model.errorMessage)
+    }
+
+    /// Actions. Kept in the content rather than the bottom toolbar so they lay
+    /// out and respond the same on every iOS version.
+    private var actionBar: some View {
+        HStack {
+            if let url = model.fileURL {
+                ShareLink(item: url) { TLLabel(.actionShare, systemImage: "square.and.arrow.up") }
+            }
+            Spacer()
+            // Entry point only: on-device text recognition arrives in a later phase.
+            Button { showsOCRNotice = true } label: {
+                TLLabel(.imageRecognizeText, systemImage: "text.viewfinder")
+            }
+            .accessibilityIdentifier("image.recognizeText")
+            Spacer()
+            Button { Task { await model.save() } } label: {
+                TLLabel(.commonSaveToSession, systemImage: "tray.and.arrow.down")
+            }
+            .disabled(model.document == nil)
+            .accessibilityIdentifier("image.save")
+        }
+        .buttonStyle(.borderless)
+        .labelStyle(.iconOnly)
+        .imageScale(.large)
+        .padding(.horizontal, TLSpacing.l)
+        .padding(.vertical, TLSpacing.s)
+        .background(.bar)
     }
 
     private var magnify: some Gesture {

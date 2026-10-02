@@ -19,11 +19,17 @@ public struct BrowserView: View {
             addressBar
             Divider()
             content
+            Divider()
+            bottomBar
+                .buttonStyle(.borderless)
+                .labelStyle(.iconOnly)
+                .imageScale(.large)
+                .padding(.horizontal, TLSpacing.l)
+                .padding(.vertical, TLSpacing.s)
+                .background(.bar)
         }
         .navigationTitle(Text(L10nKey.workspaceToolBrowser))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar { bottomBar }
-        .toolbar(.visible, for: .bottomBar)
         .sheet(isPresented: $showsTabs) {
             BrowserTabsView(model: model) { closed in
                 store.remove(closed)
@@ -93,9 +99,10 @@ public struct BrowserView: View {
         }
     }
 
-    @ToolbarContentBuilder
-    private var bottomBar: some ToolbarContent {
-        ToolbarItemGroup(placement: .bottomBar) {
+    /// Navigation controls. Kept in the content rather than the bottom toolbar so
+    /// they lay out and respond the same on every iOS version.
+    private var bottomBar: some View {
+        HStack {
             Button { store.goBack(model.selectedTabID) } label: {
                 TLLabel(.browserBack, systemImage: "chevron.backward")
             }
