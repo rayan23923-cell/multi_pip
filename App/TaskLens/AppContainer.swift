@@ -28,7 +28,7 @@ struct AppContainer: Sendable {
     let capture: CaptureService
     let notes: NoteService
     let clipboard: ClipboardService
-    let search: SearchService
+    let search: SmartSearchService
     let calculator: CalculatorService
     let documents: DocumentService
     let toolCapture: ToolCaptureService
@@ -103,10 +103,15 @@ struct AppContainer: Sendable {
             clock: clock,
             logger: logger.scoped("clipboard")
         )
-        self.search = SearchService(
+        self.search = SmartSearchService(
             workspaces: repositories.workspaces,
             sessions: repositories.sessions,
-            contextItems: repositories.contextItems
+            contextItems: repositories.contextItems,
+            notes: repositories.notes,
+            documents: repositories.documents,
+            clipboardItems: repositories.clipboardItems,
+            semantic: OnDeviceSemanticRanker(),
+            clock: clock
         )
         self.calculator = CalculatorService(
             records: repositories.calculations,

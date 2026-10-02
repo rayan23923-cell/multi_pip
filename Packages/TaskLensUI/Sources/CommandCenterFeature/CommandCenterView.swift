@@ -1,4 +1,5 @@
 import SwiftUI
+import TLCoreServices
 import TLDesignSystem
 import TLDomain
 import TLLocalization
@@ -210,42 +211,143 @@ public struct CommandCenterView: View {
 
     @ViewBuilder
     private var searchResults: some View {
-        let results = model.searchResults
-        if results.isEmpty {
+        let response = model.searchResults
+        if response.query.hasHints {
+            Section {
+                SearchHintsRow(query: response.query)
+            }
+        }
+        if response.hits.isEmpty {
             ContentUnavailableView.search(text: model.query)
                 .listRowBackground(Color.clear)
         } else {
-            if !results.workspaces.isEmpty {
-                Section {
-                    ForEach(results.workspaces) { workspace in
-                        NavigationLink(value: AppRoute.workspace(workspace.id)) {
-                            WorkspaceRow(workspace: workspace)
-                        }
+            Section {
+                ForEach(response.hits) { hit in
+                    NavigationLink(value: Self.route(for: hit.document)) {
+                        SearchHitRow(hit: hit)
                     }
-                } header: {
-                    Text(L10nKey.tabWorkspaces)
+                    .accessibilityIdentifier("search.hit")
                 }
-            }
-            if !results.sessions.isEmpty {
-                Section {
-                    ForEach(results.sessions) { session in
-                        NavigationLink(value: AppRoute.session(session.id)) {
-                            SessionRow(session: session, workspaceName: model.workspaceName(for: session.workspaceID))
-                        }
-                    }
-                } header: {
-                    Text(L10nKey.workspaceSessions)
-                }
-            }
-            if !results.items.isEmpty {
-                Section {
-                    ForEach(results.items) { item in
-                        ContextItemRow(item: item)
-                    }
-                } header: {
-                    Text(L10nKey.sessionItems)
-                }
+            } footer: {
+                Text(response.usedMeaning ? L10nKey.searchOnDeviceMeaning : L10nKey.searchOnDevice)
             }
         }
+    }
+
+    /// Where a result opens.
+    static func route(for document: SearchDocument) -> AppRoute {
+        switch document.kind {
+        case .workspace:
+            return .workspace(WorkspaceID(document.targetID))
+        case .session:
+            return .session(SessionID(document.targetID))
+        case .note:
+            return .note(NoteID(document.targetID))
+        case .document:
+            switch document.fileKind {
+            case .some(.image): return .image(DocumentID(document.targetID))
+            case .some(.text): return .textDocument(DocumentID(document.targetID))
+            default: return .pdf(DocumentID(document.targetID))
+            }
+        case .clipboard:
+            if let url = document.url { return .browserPage(url) }
+            return .clipboard
+        case .item:
+            if let sessionID = document.sessionID { return .session(sessionID) }
+            if let url = document.url { return .browserPage(url) }
+            return .lensInput(document.body)
+        }
+    }
+}
+
+/// One result: what it is, its title, the matching text, and how it matched.
+struct SearchHitRow: View {
+    let hit: SearchHit
+
+    var body: some View {
+        HStack(alignment: .top, spacing: TLSpacing.s) {
+            Image(systemName: symbol)
+                .foregroundStyle(.tint)
+                .frame(minWidth: 24)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: hit.document.title.isEmpty ? hit.snippet : hit.document.title)
+                    .font(.body)
+                    .lineLimit(2)
+                if !hit.snippet.isEmpty && !hit.document.title.isEmpty {
+                    Text(verbatim: hit.snippet)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                }
+                HStack(spacing: TLSpacing.xs) {
+                    Text(Self.kindKey(hit.document.kind))
+                    Text(verbatim: "·")
+                        .accessibilityHidden(true)
+                    Text(hit.document.date, style: .date)
+                    if hit.match == .meaning {
+                        Text(verbatim: "·")
+                            .accessibilityHidden(true)
+                        Text(L10nKey.searchMeaning)
+                            .accessibilityIdentifier("search.meaning")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var symbol: String {
+        switch hit.document.kind {
+        case .workspace: "square.stack"
+        case .session: "clock"
+        case .note: "note.text"
+        case .document: hit.document.fileKind == .image ? "photo" : "doc.richtext"
+        case .clipboard: "doc.on.clipboard"
+        case .item: hit.document.url != nil ? "link" : hit.document.fileKind == .image ? "photo" : "text.alignleft"
+        }
+    }
+
+    static func kindKey(_ kind: SearchResultKind) -> L10nKey {
+        L10nKey(rawValue: "search.kind.\(kind.rawValue)") ?? .searchKindItem
+    }
+}
+
+/// "Looking for: Prices · Yesterday · Study", read from the query.
+struct SearchHintsRow: View {
+    let query: ParsedSearchQuery
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: TLSpacing.xs) { content }
+            VStack(alignment: .leading, spacing: TLSpacing.xs) { content }
+        }
+        .font(.footnote)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("search.hints")
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        Text(L10nKey.searchLookingFor)
+            .foregroundStyle(.secondary)
+        ForEach(SearchFilter.allCases.filter { query.filters.contains($0) && !($0 == .document && query.filters.contains(.pdf)) }, id: \.self) { filter in
+            chip(Text(L10nKey(rawValue: "search.filter.\(filter.rawValue)") ?? .searchFilterText))
+        }
+        if let range = query.dateRange {
+            chip(Text(range.start, format: .dateTime.day().month()))
+        }
+        if let kind = query.kindHint {
+            chip(Text(L10nKey(rawValue: "workspace.kind.\(kind)") ?? .workspaceKindCustom))
+        }
+    }
+
+    private func chip(_ text: Text) -> some View {
+        text
+            .padding(.horizontal, TLSpacing.s)
+            .padding(.vertical, 2)
+            .background(.tint.opacity(0.15), in: Capsule())
     }
 }

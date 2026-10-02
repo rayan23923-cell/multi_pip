@@ -113,7 +113,7 @@ public struct DocumentService: Sendable {
         }
 
         let title = Self.title(fromFilename: filename)
-        let document = Document(
+        var document = Document(
             workspaceID: workspaceID,
             sessionID: sessionID,
             title: title,
@@ -126,6 +126,10 @@ public struct DocumentService: Sendable {
             ),
             createdAt: clock.now()
         )
+        // Text files are searchable right away; PDFs are indexed by the app (PDFKit).
+        if kind == .text, let text = Self.decodeText(data) {
+            document.metadata[Self.searchTextKey] = .string(String(text.prefix(Self.maximumSearchTextLength)))
+        }
         do {
             try await documentStore.upsert(document)
         } catch {
@@ -137,6 +141,23 @@ public struct DocumentService: Sendable {
     }
 
     // MARK: Updates
+
+    /// Where a document's text is kept for Smart Search, on this device.
+    public static let searchTextKey = "searchText"
+    public static let maximumSearchTextLength = 20_000
+
+    /// Stores the document's text (for example a PDF's text layer) for search.
+    @discardableResult
+    public func setSearchText(_ id: DocumentID, text: String) async throws -> Document {
+        var document = try await documentStore.require(id: id)
+        document.metadata[Self.searchTextKey] = .string(String(text.prefix(Self.maximumSearchTextLength)))
+        try await documentStore.upsert(document)
+        return document
+    }
+
+    public static func searchText(of document: Document) -> String? {
+        document.metadata[searchTextKey]?.stringValue
+    }
 
     @discardableResult
     public func markOpened(_ id: DocumentID, pageCount: Int? = nil) async throws -> Document {

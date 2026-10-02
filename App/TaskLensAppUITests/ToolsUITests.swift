@@ -212,4 +212,27 @@ final class ToolsUITests: XCTestCase {
         waitForLabel(app, "calculator.display", "63")
         XCTAssertTrue(app.navigationBars["الآلة الحاسبة"].exists)
     }
+
+    // MARK: Smart Search
+
+    func testSmartSearchFindsSavedTextsAndOpensThem() {
+        let app = launch()
+        tap(app, "commandCenter.notes")
+        createNote(app, title: "Flutter state", body: "Use providers")
+        createNote(app, title: "Groceries", body: "Milk and eggs")
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+
+        let search = app.searchFields.firstMatch
+        if !search.waitForExistence(timeout: 2) { app.swipeDown() }
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap()
+        search.typeText("texts about Flutter")
+
+        // The query is read for hints ("texts") and keywords ("Flutter").
+        XCTAssertTrue(element(app, "search.hints").waitForExistence(timeout: 5))
+        let hits = app.descendants(matching: .any).matching(identifier: "search.hit")
+        XCTAssertTrue(hits.firstMatch.waitForExistence(timeout: 5))
+        hits.firstMatch.tap()
+        XCTAssertTrue(element(app, "noteEditor.title").waitForExistence(timeout: 5))
+    }
 }

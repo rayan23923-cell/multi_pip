@@ -62,7 +62,10 @@ public final class PDFViewerModel: ContextProducing {
                 return
             }
             self.pdf = pdf
-            self.document = try await documentService.markOpened(documentID, pageCount: pdf.pageCount)
+            let opened = try await documentService.markOpened(documentID, pageCount: pdf.pageCount)
+            self.document = opened
+            let documentService = documentService
+            Task { await PDFSearchIndexer.indexMissing([opened], service: documentService) }
             currentPage = min(document.lastReadPage ?? 0, max(pdf.pageCount - 1, 0))
             recordPosition()
         } catch {

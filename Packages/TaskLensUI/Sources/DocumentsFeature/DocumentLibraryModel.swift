@@ -30,6 +30,8 @@ public final class DocumentLibraryModel {
             hasLoaded = true
             // Clean up files left behind by deleted workspaces.
             try? await documentService.removeOrphanedFiles()
+            // Make new PDFs searchable (their text stays on this device).
+            await PDFSearchIndexer.indexMissing(documents, service: documentService)
         } catch {
             errorMessage = L10n.message(for: error)
         }

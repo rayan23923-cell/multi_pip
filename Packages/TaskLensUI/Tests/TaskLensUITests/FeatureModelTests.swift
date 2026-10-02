@@ -59,8 +59,11 @@ struct Services {
         CaptureService(sessions: repositories.sessions, contextItems: repositories.contextItems, clock: clock, logger: .disabled())
     }
 
-    var search: SearchService {
-        SearchService(workspaces: repositories.workspaces, sessions: repositories.sessions, contextItems: repositories.contextItems)
+    var search: SmartSearchService {
+        SmartSearchService(
+            workspaces: repositories.workspaces, sessions: repositories.sessions, contextItems: repositories.contextItems,
+            notes: repositories.notes, documents: repositories.documents, clipboardItems: repositories.clipboardItems
+        )
     }
 
     var clipboard: ClipboardService {
@@ -217,12 +220,12 @@ struct CommandCenterModelTests {
         model.query = "phys"
         await model.search()
         #expect(model.isSearching)
-        #expect(model.searchResults.workspaces.map(\.id) == [workspace.id])
+        #expect(model.searchResults.hits.map(\.document.targetID) == [workspace.id.rawValue])
 
         model.query = " "
         await model.search()
         #expect(!model.isSearching)
-        #expect(model.searchResults.isEmpty)
+        #expect(model.searchResults.hits.isEmpty)
     }
 
     @Test func featuredOrderPutsFavoritesThenRecentlyOpened() {

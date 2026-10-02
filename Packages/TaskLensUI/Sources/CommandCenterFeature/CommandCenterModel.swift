@@ -17,7 +17,7 @@ public final class CommandCenterModel {
     public private(set) var activeSessions: [Session] = []
     public private(set) var recentSessions: [Session] = []
     public private(set) var recentItems: [ContextItem] = []
-    public private(set) var searchResults = SearchService.Results()
+    public private(set) var searchResults = SmartSearchService.Response()
     public private(set) var hasLoaded = false
     public private(set) var isSaving = false
     public var draft = ""
@@ -27,13 +27,13 @@ public final class CommandCenterModel {
     private let workspaceService: WorkspaceService
     private let sessionService: SessionService
     private let captureService: CaptureService
-    private let searchService: SearchService
+    private let searchService: SmartSearchService
 
     public init(
         workspaceService: WorkspaceService,
         sessionService: SessionService,
         captureService: CaptureService,
-        searchService: SearchService
+        searchService: SmartSearchService
     ) {
         self.workspaceService = workspaceService
         self.sessionService = sessionService
@@ -65,7 +65,7 @@ public final class CommandCenterModel {
 
     public func search() async {
         guard isSearching else {
-            searchResults = SearchService.Results()
+            searchResults = SmartSearchService.Response()
             return
         }
         do {
