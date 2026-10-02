@@ -71,7 +71,8 @@ extension Repositories {
             calculations: calculations,
             actionRecords: actionRecords,
             pipCards: pipCards,
-            pipPresentation: pipPresentation
+            pipPresentation: pipPresentation,
+            aiRecords: aiRecords
         )
     }
 }

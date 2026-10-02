@@ -14,6 +14,8 @@ public struct Repositories: Sendable {
     public let actionRecords: any Repository<ActionRecord>
     public let pipCards: any Repository<PiPCard>
     public let pipPresentation: any Repository<PiPPresentation>
+    /// AI requests, kept only while the user keeps AI history.
+    public let aiRecords: any Repository<AIRecord>
 
     public init(
         workspaces: any Repository<Workspace>,
@@ -25,7 +27,8 @@ public struct Repositories: Sendable {
         calculations: any Repository<CalculationRecord> = InMemoryRepository<CalculationRecord>(),
         actionRecords: any Repository<ActionRecord> = InMemoryRepository<ActionRecord>(),
         pipCards: any Repository<PiPCard> = InMemoryRepository<PiPCard>(),
-        pipPresentation: any Repository<PiPPresentation> = InMemoryRepository<PiPPresentation>()
+        pipPresentation: any Repository<PiPPresentation> = InMemoryRepository<PiPPresentation>(),
+        aiRecords: any Repository<AIRecord> = InMemoryRepository<AIRecord>()
     ) {
         self.workspaces = workspaces
         self.sessions = sessions
@@ -37,6 +40,7 @@ public struct Repositories: Sendable {
         self.actionRecords = actionRecords
         self.pipCards = pipCards
         self.pipPresentation = pipPresentation
+        self.aiRecords = aiRecords
     }
 
     public static func inMemory() -> Repositories {
@@ -50,7 +54,8 @@ public struct Repositories: Sendable {
             calculations: InMemoryRepository<CalculationRecord>(),
             actionRecords: InMemoryRepository<ActionRecord>(),
             pipCards: InMemoryRepository<PiPCard>(),
-            pipPresentation: InMemoryRepository<PiPPresentation>()
+            pipPresentation: InMemoryRepository<PiPPresentation>(),
+            aiRecords: InMemoryRepository<AIRecord>()
         )
     }
 
@@ -70,7 +75,8 @@ public struct Repositories: Sendable {
             calculations: JSONFileRepository<CalculationRecord>(directory: directory, logger: logger),
             actionRecords: JSONFileRepository<ActionRecord>(directory: directory, logger: logger),
             pipCards: JSONFileRepository<PiPCard>(directory: directory, logger: logger),
-            pipPresentation: JSONFileRepository<PiPPresentation>(directory: directory, logger: logger)
+            pipPresentation: JSONFileRepository<PiPPresentation>(directory: directory, logger: logger),
+            aiRecords: JSONFileRepository<AIRecord>(directory: directory, logger: logger)
         )
     }
 }

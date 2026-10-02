@@ -1,3 +1,5 @@
+import AIFeature
+import TLCoreServices
 import BrowserFeature
 import CalculatorFeature
 import ClipboardFeature
@@ -24,6 +26,7 @@ struct RootView: View {
     let pip: PiPWorkspaceModel
     /// Screens App Intents asked to open.
     let navigator: IntentNavigator
+    @State private var aiSettings: AISettingsModel
 
     init(container: AppContainer, pip: PiPWorkspaceModel, navigator: IntentNavigator = .shared) {
         self.container = container
@@ -32,6 +35,7 @@ struct RootView: View {
         let browser = BrowserModel(toolCapture: container.toolCapture)
         browser.stateRecorder = container.toolState
         _browser = State(initialValue: browser)
+        _aiSettings = State(initialValue: AISettingsModel(service: container.ai, secrets: container.aiSecrets))
     }
 
     var body: some View {
@@ -57,7 +61,7 @@ struct RootView: View {
             .tag(AppTab.workspaces)
 
             NavigationStack(path: $router.settingsPath) {
-                SettingsView(version: AppContainer.appVersion, storage: container.storage)
+                SettingsView(version: AppContainer.appVersion, storage: container.storage, ai: aiSettings)
                     .withAppDestinations(container, browser: browser, pip: pip)
             }
             .tabItem { tabLabel(.tabSettings, systemImage: "gearshape") }
@@ -143,20 +147,13 @@ private extension View {
                     resume: true
                 ))
             case .lens:
-                LensView(model: LensModel(captureService: container.capture, sessionService: container.sessions))
+                LensView(model: container.makeLens())
             case .clipboard:
                 ClipboardView(model: ClipboardModel(clipboardService: container.clipboard, sessionService: container.sessions))
             case .lensInput(let input):
-                LensView(model: LensModel(
-                    captureService: container.capture,
-                    sessionService: container.sessions,
-                    initialInput: input
-                ))
+                LensView(model: container.makeLens(initialInput: input))
             case .lensFile(let url):
-                LensView(
-                    model: LensModel(captureService: container.capture, sessionService: container.sessions),
-                    openingFile: url
-                )
+                LensView(model: container.makeLens(), openingFile: url)
             case .notes(let workspaceID):
                 NotesView(model: NotesModel(
                     workspaceID: workspaceID,
@@ -245,4 +242,26 @@ private extension View {
     RootView(container: .preview(), pip: RootView.makePiP(container: .preview()))
         .environment(AppRouter())
         .dynamicTypeSize(.accessibility3)
+}
+
+extension AppContainer {
+    /// Lens with optional AI. AI may include the active session's item titles,
+    /// only when the user turns that on for a request.
+    @MainActor
+    func makeLens(initialInput: String = "") -> LensModel {
+        let sessions = self.sessions
+        let capture = self.capture
+        let ai = AIAssistModel(service: ai) {
+            guard let session = try? await sessions.activeSessions().first,
+                  let items = try? await capture.items(in: session.id) else { return [] }
+            return items.prefix(AIRequestBuilder.maximumSessionItems).map { item in
+                switch item.content {
+                case .text(let text): String(text.prefix(200))
+                case .url(let url): url.absoluteString
+                case .file(let file): file.originalFilename ?? ""
+                }
+            }
+        }
+        return LensModel(captureService: capture, sessionService: sessions, initialInput: initialInput, ai: ai)
+    }
 }

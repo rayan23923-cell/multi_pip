@@ -1,3 +1,4 @@
+import AIFeature
 import SwiftUI
 import TLDesignSystem
 import TLLocalization
@@ -21,11 +22,13 @@ public struct SettingsView: View {
 
     private let version: String
     private let storage: StorageDescription
+    private let ai: AISettingsModel?
     @Environment(\.openURL) private var openURL
 
-    public init(version: String, storage: StorageDescription) {
+    public init(version: String, storage: StorageDescription, ai: AISettingsModel? = nil) {
         self.version = version
         self.storage = storage
+        self.ai = ai
     }
 
     public var body: some View {
@@ -35,6 +38,10 @@ public struct SettingsView: View {
                     .font(.callout)
             } header: {
                 Text(L10nKey.settingsPrivacy)
+            }
+
+            if let ai {
+                AISettingsSection(model: ai)
             }
 
             Section {

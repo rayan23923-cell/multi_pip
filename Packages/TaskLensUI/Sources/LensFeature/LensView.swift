@@ -1,5 +1,7 @@
+import AIFeature
 import SwiftUI
 import TLActionsUI
+import TLCoreServices
 import TLDesignSystem
 import TLDomain
 import TLLocalization
@@ -18,6 +20,21 @@ public struct LensView: View {
     public init(model: LensModel, openingFile: URL? = nil) {
         _model = State(initialValue: model)
         self.openingFile = openingFile
+    }
+
+    /// What AI would work on: the image or screen text when Lens read one,
+    /// otherwise the analyzed text. Nil until Lens has something.
+    private var aiSource: (text: String, entities: [String])? {
+        if model.imageLens.phase == .done, let report = model.imageLens.report, !report.text.text.isEmpty {
+            return (report.text.text, LensModel.entityLines(report.findings))
+        }
+        if let screenLens, screenLens.state == .done, let report = screenLens.results.report, !report.text.text.isEmpty {
+            return (report.text.text, LensModel.entityLines(report.findings))
+        }
+        if model.imageLens.phase == .idle, model.content != nil, let analysis = model.analysis {
+            return (model.input, LensModel.entityLines(analysis.entities))
+        }
+        return nil
     }
 
     public var body: some View {
@@ -99,6 +116,21 @@ public struct LensView: View {
                 )
 
                 EntitiesSection(analysis.entities)
+            }
+
+            if let ai = model.ai, let source = aiSource {
+                AIAssistSection(
+                    model: ai,
+                    content: source.text,
+                    entities: source.entities,
+                    feedback: feedback,
+                    handlers: ActionHandlers(
+                        onCalculate: { router.push(.calculatorInput($0)) },
+                        onCreateNote: { router.push(.noteDraft($0)) },
+                        onSearch: { router.search($0) }
+                    ),
+                    saveText: { await model.saveText($0) }
+                )
             }
         }
         .navigationTitle(Text(L10nKey.lensTitle))

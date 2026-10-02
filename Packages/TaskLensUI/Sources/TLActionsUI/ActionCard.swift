@@ -82,8 +82,12 @@ public struct ActionCard: View {
     private let isSaved: Bool
     private let feedback: ActionFeedback
     private let handlers: ActionHandlers
+    /// Actions that ask "Are you sure?" before running (AI suggestions that
+    /// reach outside TaskLens).
+    private let confirming: Set<ActionType>
 
     @State private var showsMore = false
+    @State private var pending: PendingAction?
     @Environment(\.openURL) private var openURL
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -96,6 +100,7 @@ public struct ActionCard: View {
         capabilities: ActionCapabilities = .app,
         isSaved: Bool = false,
         hiding hiddenTypes: Set<ActionType> = [],
+        confirming: Set<ActionType> = [],
         handlers: ActionHandlers = ActionHandlers()
     ) {
         self.suggestions = ActionSuggestions(ranked: analysis.actions.filter { !hiddenTypes.contains($0.type) })
@@ -104,6 +109,13 @@ public struct ActionCard: View {
         self.capabilities = capabilities
         self.isSaved = isSaved
         self.handlers = handlers
+        self.confirming = confirming
+    }
+
+    private struct PendingAction: Identifiable {
+        let action: Action
+        let plan: ActionPlan
+        var id: ActionID { action.id }
     }
 
     public var body: some View {
@@ -112,6 +124,19 @@ public struct ActionCard: View {
                 recommended
             } header: {
                 Text(L10nKey.actionsRecommended)
+            }
+            .confirmationDialog(
+                Text(L10nKey.actionsConfirmTitle),
+                isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }),
+                titleVisibility: .visible,
+                presenting: pending
+            ) { pending in
+                Button { perform(pending.action, plan: pending.plan) } label: {
+                    title(pending.action, saved: false, copied: false)
+                }
+                Button(role: .cancel) {} label: { Text(L10nKey.commonCancel) }
+            } message: { _ in
+                Text(L10nKey.actionsConfirmMessage)
             }
             if !suggestions.secondary.isEmpty || !suggestions.more.isEmpty {
                 Section {
@@ -186,7 +211,13 @@ public struct ActionCard: View {
             }
             .disabled(isSaved || handlers.onSave == nil)
         default:
-            Button { perform(action, plan: plan) } label: { label(action, plan: plan, style: style) }
+            Button {
+                if confirming.contains(action.type) {
+                    pending = PendingAction(action: action, plan: plan)
+                } else {
+                    perform(action, plan: plan)
+                }
+            } label: { label(action, plan: plan, style: style) }
         }
     }
 

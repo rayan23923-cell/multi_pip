@@ -19,6 +19,7 @@ let package = Package(
         .library(name: "WorkspacesFeature", targets: ["WorkspacesFeature"]),
         .library(name: "SessionsFeature", targets: ["SessionsFeature"]),
         .library(name: "SettingsFeature", targets: ["SettingsFeature"]),
+        .library(name: "AIFeature", targets: ["AIFeature"]),
         .library(name: "LensFeature", targets: ["LensFeature"]),
         .library(name: "ClipboardFeature", targets: ["ClipboardFeature"]),
         .library(name: "NotesFeature", targets: ["NotesFeature"]),
@@ -92,12 +93,23 @@ let package = Package(
         ),
         .target(
             name: "SettingsFeature",
-            dependencies: ["TLLocalization", "TLDesignSystem"]
+            dependencies: ["TLLocalization", "TLDesignSystem", "AIFeature"]
+        ),
+        // Optional AI on top of the deterministic engines. Off-device only with a
+        // server the user adds; works offline by falling back to Lens actions.
+        .target(
+            name: "AIFeature",
+            dependencies: [
+                "TLLocalization", "TLDesignSystem", "TLActionsUI",
+                .product(name: "TLFoundation", package: "TaskLensKit"),
+                .product(name: "TLDomain", package: "TaskLensKit"),
+                .product(name: "TLCoreServices", package: "TaskLensKit"),
+            ]
         ),
         .target(
             name: "LensFeature",
             dependencies: [
-                "TLLocalization", "TLDesignSystem", "TLNavigation", "TLActionsUI",
+                "TLLocalization", "TLDesignSystem", "TLNavigation", "TLActionsUI", "AIFeature",
                 .product(name: "TLFoundation", package: "TaskLensKit"),
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
@@ -207,7 +219,7 @@ let package = Package(
                 "LensFeature", "ClipboardFeature",
                 "NotesFeature", "CalculatorFeature", "BrowserFeature", "DocumentsFeature",
                 "ImageViewerFeature", "TextViewerFeature", "TLActionsUI", "ShareFeature", "PiPFeature", "WidgetsFeature",
-                "LiveActivitiesFeature",
+                "LiveActivitiesFeature", "AIFeature", "SettingsFeature",
                 .product(name: "TLFoundation", package: "TaskLensKit"),
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLData", package: "TaskLensKit"),

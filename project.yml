@@ -114,6 +114,8 @@ targets:
       - package: TaskLensUI
         product: SettingsFeature
       - package: TaskLensUI
+        product: AIFeature
+      - package: TaskLensUI
         product: LensFeature
       - package: TaskLensUI
         product: ClipboardFeature

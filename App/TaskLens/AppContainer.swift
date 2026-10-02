@@ -36,6 +36,10 @@ struct AppContainer: Sendable {
     /// Where the share extension leaves shared items for the app.
     let shareOutbox: ShareOutbox
     let storage: SettingsView.StorageDescription
+    /// Optional AI over Lens; the app works fully without it.
+    let ai: AIService
+    /// Where the AI server key is kept.
+    let aiSecrets: any SecretStoring
     let logger: TLLogger
 
     init(
@@ -46,6 +50,9 @@ struct AppContainer: Sendable {
         widgetStore: WidgetSnapshotStore? = nil,
         storeChanges: StoreChangeSignal = StoreChangeSignal(),
         clock: any DateProviding = SystemDateProvider(),
+        aiSettings: any AISettingsStoring = InMemoryAISettingsStore(),
+        aiSecrets: any SecretStoring = InMemorySecretStore(),
+        aiProviders: [any AIProvider]? = nil,
         logger: TLLogger = TLLogger(category: "app")
     ) {
         let repositories = repositories.observingSessions(storeChanges)
@@ -120,6 +127,17 @@ struct AppContainer: Sendable {
         self.storeChanges = storeChanges
         self.sessionActivities = SessionActivityService(workspaces: self.workspaces, sessions: self.sessions, capture: capture, clock: clock)
         self.storage = storage
+        self.aiSecrets = aiSecrets
+        self.ai = AIService(
+            providers: aiProviders ?? [
+                AppleIntelligenceProvider(),
+                AIServerProvider(settings: aiSettings, secrets: aiSecrets, network: NetworkMonitor.shared),
+            ],
+            settings: aiSettings,
+            records: repositories.aiRecords,
+            clock: clock,
+            logger: logger.scoped("ai")
+        )
         self.logger = logger
     }
 
@@ -136,6 +154,7 @@ struct AppContainer: Sendable {
     ) -> AppContainer {
         let logger = TLLogger(category: "app")
         let groupIdentifier = bundle.object(forInfoDictionaryKey: "TLAppGroupIdentifier") as? String
+        let isUITest = arguments.contains("-TaskLensUITestStore")
         do {
             let location = try uiTestStoreLocation(arguments: arguments)
                 ?? StoreLocation.resolve(appGroupIdentifier: groupIdentifier, logger: logger)
@@ -147,6 +166,11 @@ struct AppContainer: Sendable {
                 storeRoot: location.rootURL,
                 storage: location.kind == .appGroup ? .appGroup : .local,
                 widgetStore: WidgetSnapshotStore.shared(appGroupIdentifier: groupIdentifier),
+                aiSettings: isUITest
+                    ? InMemoryAISettingsStore(AISettings(allowsServer: arguments.contains("-TaskLensAIOffline")))
+                    : UserDefaultsAISettingsStore(),
+                aiSecrets: isUITest ? InMemorySecretStore() : KeychainSecretStore(),
+                aiProviders: AITestProviders.make(arguments: arguments),
                 logger: logger
             )
         } catch {
