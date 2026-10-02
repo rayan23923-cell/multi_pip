@@ -43,6 +43,8 @@ struct EventEditor: UIViewControllerRepresentable {
             _ controller: EKEventEditViewController,
             didCompleteWith action: EKEventEditViewAction
         ) {
+            // The editor calls back on the main thread.
+            let onFinish = onFinish
             MainActor.assumeIsolated { onFinish() }
         }
     }
