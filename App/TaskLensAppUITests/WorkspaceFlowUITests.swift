@@ -97,7 +97,8 @@ final class WorkspaceFlowUITests: XCTestCase {
         openMenuItem(app, identifier: "workspaceDetail.delete", fallbackLabel: "Delete")
         let alert = app.alerts.firstMatch
         XCTAssertTrue(alert.waitForExistence(timeout: 5), "Delete must ask for confirmation")
-        alert.buttons["Delete"].tap()
+        // iOS 26 alerts can expose the same button twice in the hierarchy.
+        alert.buttons["Delete"].firstMatch.tap()
 
         let row = element(app, "workspaceRow.Temporary")
         XCTAssertTrue(row.waitForNonExistence(timeout: 5))
