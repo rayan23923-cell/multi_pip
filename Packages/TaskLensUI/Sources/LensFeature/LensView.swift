@@ -9,6 +9,8 @@ public struct LensView: View {
     @State private var model: LensModel
     @State private var feedback = ActionFeedback()
     @Environment(AppRouter.self) private var router
+    /// Owned by the app so a capture outlives this screen; nil in previews.
+    @Environment(ScreenLensModel.self) private var screenLens: ScreenLensModel?
     @FocusState private var isInputFocused: Bool
     /// An image or PDF to read as soon as the screen opens.
     private let openingFile: URL?
@@ -51,10 +53,24 @@ public struct LensView: View {
 
             ImageLensInputSection(model: model.imageLens)
 
+            if let screenLens {
+                ScreenLensSection(model: screenLens)
+            }
+
             if model.imageLens.phase != .idle {
                 ImageLensResultSections(model: model.imageLens, feedback: feedback) { finding in
                     ActionHandlers(
                         onSave: { await model.imageLens.save(finding) },
+                        onCalculate: { router.push(.calculatorInput($0)) },
+                        onCreateNote: { router.push(.noteDraft($0)) },
+                        onSearch: { router.search($0) }
+                    )
+                }
+            } else if let screenLens, screenLens.state == .done {
+                ScreenLensFoundSection(model: screenLens)
+                SelectedFindingSection(model: screenLens.results, feedback: feedback) { finding in
+                    ActionHandlers(
+                        onSave: { await screenLens.results.save(finding) },
                         onCalculate: { router.push(.calculatorInput($0)) },
                         onCreateNote: { router.push(.noteDraft($0)) },
                         onSearch: { router.search($0) }

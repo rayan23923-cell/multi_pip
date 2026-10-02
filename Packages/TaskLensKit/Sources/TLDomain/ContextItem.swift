@@ -66,6 +66,8 @@ public struct ContextSource: ExtensibleKind {
     public static let fileImport: ContextSource = "fileImport"
     public static let photoLibrary: ContextSource = "photoLibrary"
     public static let camera: ContextSource = "camera"
+    /// A frame the user captured with Screen Lens.
+    public static let screenCapture: ContextSource = "screenCapture"
     public static let browser: ContextSource = "browser"
     public static let appIntent: ContextSource = "appIntent"
     public static let notes: ContextSource = "notes"

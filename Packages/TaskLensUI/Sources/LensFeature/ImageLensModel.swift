@@ -109,6 +109,11 @@ public final class ImageLensModel {
         savedIDs = []
     }
 
+    /// Drops the image but keeps what was read from it (Screen Lens keeps no frame).
+    public func discardPreview() {
+        preview = nil
+    }
+
     // MARK: Findings and actions
 
     /// True when actions may be offered: read clearly, or checked by the user.

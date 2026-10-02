@@ -69,6 +69,10 @@ targets:
         # TaskLens plays no audio and does no other background work.
         UIBackgroundModes:
           - audio
+          # Screen Lens (iOS 27+): the capture the user started keeps running
+          # while they switch to the app they want read. It stops after one frame.
+          - screen-capture
+        NSScreenCaptureUsageDescription: TaskLens reads one frame of the screen you choose, only after you tap Start and Capture. It is read on your device and not saved or uploaded.
         # Session Live Activities (Lock Screen, and the Dynamic Island where present).
         NSSupportsLiveActivities: true
     entitlements:

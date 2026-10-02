@@ -1,4 +1,5 @@
 import SwiftUI
+import LensFeature
 import LiveActivitiesFeature
 import PiPFeature
 import TLNavigation
@@ -9,6 +10,8 @@ struct TaskLensApp: App {
     @State private var router = AppRouter()
     @State private var pip: PiPWorkspaceModel
     @State private var liveActivities: LiveActivityController
+    /// One Screen Lens per run, shared with every Lens screen and the Live Activity buttons.
+    @State private var screenLens: ScreenLensModel
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -20,6 +23,7 @@ struct TaskLensApp: App {
             service: container.sessionActivities,
             client: ActivityKitLiveActivityClient()
         ))
+        _screenLens = State(initialValue: ScreenLensSetup.make(container: container))
     }
 
     var body: some Scene {
@@ -29,6 +33,11 @@ struct TaskLensApp: App {
             } else {
                 RootView(container: container, pip: pip)
                     .environment(router)
+                    .environment(screenLens)
+                    .task {
+                        // A capture can't outlive the process: remove a status left by a closed run.
+                        await ActivityKitScreenLensStatus.endLeftovers()
+                    }
                     .task { await SampleDocuments.seedIfRequested(container.documents) }
                     .task {
                         // Live Activities and widgets follow every session change.
@@ -41,6 +50,7 @@ struct TaskLensApp: App {
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active:
+                screenLens.tick()
                 // Items shared from other apps wait in the outbox until the app is active.
                 Task {
                     await container.deliverSharedItems()

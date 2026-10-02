@@ -98,6 +98,7 @@ let package = Package(
             name: "LensFeature",
             dependencies: [
                 "TLLocalization", "TLDesignSystem", "TLNavigation", "TLActionsUI",
+                .product(name: "TLFoundation", package: "TaskLensKit"),
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
             ]

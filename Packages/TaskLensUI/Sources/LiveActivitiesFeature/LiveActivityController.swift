@@ -126,13 +126,25 @@ public final class ActivityKitLiveActivityClient: LiveActivityClient {
     }
 
     public func update(_ request: SessionActivityRequest) async {
-        for activity in activities where activity.attributes.sessionID == request.sessionID {
-            await activity.update(ActivityContent(state: request.content, staleDate: request.staleDate))
-        }
+        await Self.update(request)
     }
 
     public func end(_ sessionID: SessionID) async {
-        for activity in activities where activity.attributes.sessionID == sessionID {
+        await Self.end(sessionID)
+    }
+
+    // Activities are not Sendable: they are found and changed off the main actor.
+
+    @concurrent private nonisolated static func update(_ request: SessionActivityRequest) async {
+        let content = ActivityContent(state: request.content, staleDate: request.staleDate)
+        for activity in Activity<SessionActivityAttributes>.activities
+        where activity.attributes.sessionID == request.sessionID && activity.activityState != .ended && activity.activityState != .dismissed {
+            await activity.update(content)
+        }
+    }
+
+    @concurrent private nonisolated static func end(_ sessionID: SessionID) async {
+        for activity in Activity<SessionActivityAttributes>.activities where activity.attributes.sessionID == sessionID {
             await activity.end(nil, dismissalPolicy: .immediate)
         }
     }

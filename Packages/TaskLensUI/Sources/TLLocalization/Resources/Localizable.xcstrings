@@ -4370,6 +4370,414 @@
         }
       }
     },
+    "screenLens.activity.countdown": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الالتقاط بعد لحظات"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capturing soon"
+          }
+        }
+      }
+    },
+    "screenLens.activity.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "انتقل إلى الشاشة المراد قراءتها ثم اضغط التقاط."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go to the screen to read, then tap Capture."
+          }
+        }
+      }
+    },
+    "screenLens.activity.live": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عدسة الشاشة تعمل"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Lens is on"
+          }
+        }
+      }
+    },
+    "screenLens.activity.stopsIn": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تتوقف بعد"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stops in"
+          }
+        }
+      }
+    },
+    "screenLens.capture": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التقاط بعد 3 ثوانٍ"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture in 3 Seconds"
+          }
+        }
+      }
+    },
+    "screenLens.captureHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اضغط التقاط ثم انتقل إلى الشاشة التي تريد قراءتها. يمكنك أيضاً الالتقاط من النشاط المباشر."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap Capture, then go to the screen you want read. You can also capture from the Live Activity."
+          }
+        }
+      }
+    },
+    "screenLens.choosing": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اختر ما تريد مشاركته…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose what to share…"
+          }
+        }
+      }
+    },
+    "screenLens.clear": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حذف النتائج"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Results"
+          }
+        }
+      }
+    },
+    "screenLens.failed.noFrame": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم تصل صورة للشاشة. بعض التطبيقات تحمي محتواها من الالتقاط."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No screen image arrived. Some apps protect their content from capture."
+          }
+        }
+      }
+    },
+    "screenLens.failed.start": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر بدء التقاط الشاشة. قد يكون مقيّداً على هذا الجهاز."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen capture couldn't start. It may be restricted on this device."
+          }
+        }
+      }
+    },
+    "screenLens.found": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "وجدت العدسة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lens Found"
+          }
+        }
+      }
+    },
+    "screenLens.nothing": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يُعثر على شيء مفيد في هذه الشاشة."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing useful was found on this screen."
+          }
+        }
+      }
+    },
+    "screenLens.privacy": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعمل عدسة الشاشة فقط بعد أن تضغط بدء وتختار ما تشاركه. يعرض iOS مؤشر التسجيل طوال عملها. يُقرأ إطار واحد على هذا الجهاز ثم يتوقف الالتقاط تلقائياً. لا تُحفظ الإطارات ولا تُرفع."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Lens runs only after you tap Start and choose what to share. iOS shows its recording indicator while it runs. One frame is read on this device, then capture stops on its own. Frames are never saved or uploaded."
+          }
+        }
+      }
+    },
+    "screenLens.reading": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جارٍ قراءة الشاشة…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading the screen…"
+          }
+        }
+      }
+    },
+    "screenLens.section": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قراءة الشاشة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read the Screen"
+          }
+        }
+      }
+    },
+    "screenLens.start": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بدء عدسة الشاشة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Screen Lens"
+          }
+        }
+      }
+    },
+    "screenLens.startAgain": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بدء عدسة الشاشة مجدداً"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Screen Lens Again"
+          }
+        }
+      }
+    },
+    "screenLens.stop": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إيقاف"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        }
+      }
+    },
+    "screenLens.stopped.cancelled": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم تتم مشاركة شيء."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing was shared."
+          }
+        }
+      }
+    },
+    "screenLens.stopped.system": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أوقف iOS التقاط الشاشة."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS stopped the screen capture."
+          }
+        }
+      }
+    },
+    "screenLens.stopped.timeLimit": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "توقفت عدسة الشاشة تلقائياً بعد 5 دقائق."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Lens stopped on its own after 5 minutes."
+          }
+        }
+      }
+    },
+    "screenLens.stopped.user": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "توقفت عدسة الشاشة."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Lens stopped."
+          }
+        }
+      }
+    },
+    "screenLens.unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تحتاج عدسة الشاشة إلى iOS 27 أو أحدث."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Lens needs iOS 27 or later."
+          }
+        }
+      }
+    },
+    "screenLens.unavailableFooter": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التقط لقطة شاشة بدلاً من ذلك (الزر الجانبي ورفع الصوت)، ثم اخترها من الصور في الأعلى. تقرأها العدسة بالطريقة نفسها."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Take a screenshot instead (side button and volume up), then choose it with Photos above. Lens reads it the same way."
+          }
+        }
+      }
+    },
     "session.actionHistory": {
       "extractionState": "manual",
       "localizations": {

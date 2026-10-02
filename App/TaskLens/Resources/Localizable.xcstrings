@@ -35,6 +35,40 @@
         }
       }
     },
+    "intent.captureScreen.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يقرأ الشاشة مرة واحدة بعدسة الشاشة التي بدأتها."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reads the screen once with the Screen Lens you started."
+          }
+        }
+      }
+    },
+    "intent.captureScreen.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التقاط الشاشة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture Screen"
+          }
+        }
+      }
+    },
     "intent.convertCurrency.description": {
       "extractionState": "manual",
       "localizations": {
@@ -898,6 +932,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Start Workspace"
+          }
+        }
+      }
+    },
+    "intent.stopScreenLens.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يوقف التقاط الشاشة."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stops screen capture."
+          }
+        }
+      }
+    },
+    "intent.stopScreenLens.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إيقاف عدسة الشاشة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop Screen Lens"
           }
         }
       }

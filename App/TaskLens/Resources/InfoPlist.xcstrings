@@ -34,6 +34,23 @@
           }
         }
       }
+    },
+    "NSScreenCaptureUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يقرأ TaskLens إطاراً واحداً من الشاشة التي تختارها، فقط بعد أن تضغط بدء ثم التقاط. يُقرأ على جهازك ولا يُحفظ ولا يُرفع."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TaskLens reads one frame of the screen you choose, only after you tap Start and Capture. It is read on your device and not saved or uploaded."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -97,7 +97,8 @@ ACTIONS="$APP/Metadata.appintents/extract.actionsdata"
 test -f "$ACTIONS" || { echo "Missing $ACTIONS: Siri and Shortcuts would not see the intents" >&2; exit 1; }
 for intent in StartWorkspaceIntent OpenWorkspaceIntent StartSessionIntent OpenSessionIntent SaveContentIntent SaveToSessionIntent \
               SendToTaskLensIntent StartLensIntent OpenClipboardIntent CreateNoteIntent CalculateIntent \
-              ConvertCurrencyIntent OpenDestinationIntent StopSessionIntent; do
+              ConvertCurrencyIntent OpenDestinationIntent StopSessionIntent \
+              CaptureScreenIntent StopScreenLensIntent; do
   grep -q "$intent" "$ACTIONS" || { echo "$intent is not in the App Intents metadata" >&2; exit 1; }
 done
 python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print("metadata keys:", sorted(d)); print("app shortcuts:", len(d.get("autoShortcuts", [])))' "$ACTIONS" || true

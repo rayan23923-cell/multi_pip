@@ -1,4 +1,5 @@
 import Foundation
+import LensFeature
 import Observation
 
 /// Hands a screen to open from App Intents (Siri, Shortcuts, widget buttons)
@@ -28,4 +29,6 @@ final class IntentNavigator {
 enum IntentDependencies {
     static var container: AppContainer = .shared
     static var navigator: IntentNavigator = .shared
+    /// Screen Lens of this app run; nil when the process was started only for an intent.
+    static var screenLens: ScreenLensModel?
 }

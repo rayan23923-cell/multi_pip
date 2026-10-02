@@ -69,7 +69,6 @@ struct ImageLensResultSections: View {
     @Bindable var model: ImageLensModel
     let feedback: ActionFeedback
     let handlers: (LensFinding) -> ActionHandlers
-    @State private var correction = ""
 
     var body: some View {
         Section {
@@ -112,7 +111,6 @@ struct ImageLensResultSections: View {
                 ForEach(model.findings) { finding in
                     FindingRow(finding: finding, isSelected: finding.id == model.selectedID) {
                         model.selectedID = finding.id
-                        correction = finding.text
                     }
                 }
                 if let structure = model.report?.structure, let title = structure.title {
@@ -129,6 +127,19 @@ struct ImageLensResultSections: View {
             .accessibilityIdentifier("lens.image.found")
         }
 
+        SelectedFindingSection(model: model, feedback: feedback, handlers: handlers)
+    }
+}
+
+/// Recommended actions for the chosen finding, or, for a possible match, the
+/// field to check it first. Shared by image and Screen Lens results.
+struct SelectedFindingSection: View {
+    @Bindable var model: ImageLensModel
+    let feedback: ActionFeedback
+    let handlers: (LensFinding) -> ActionHandlers
+    @State private var correction = ""
+
+    var body: some View {
         if let finding = model.selected {
             if let analysis = model.analysis(for: finding) {
                 ActionCard(
@@ -155,6 +166,7 @@ struct ImageLensResultSections: View {
                     Text(L10nKey.lensImagePossible)
                 }
                 .onAppear { correction = finding.text }
+                .onChange(of: model.selectedID) { _, _ in correction = model.selected?.text ?? "" }
             }
         }
     }

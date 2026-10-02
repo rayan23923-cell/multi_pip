@@ -13,6 +13,7 @@ struct TaskLensWidgetBundle: WidgetBundle {
     var body: some Widget {
         TaskLensWidget()
         SessionLiveActivity()
+        ScreenLensLiveActivity()
     }
 }
 
@@ -151,6 +152,91 @@ struct SessionActivityButtons: View {
             Button(intent: StopSessionIntent(sessionID: sessionID)) {
                 Label {
                     Text(L10nKey.activityStop)
+                } icon: {
+                    Image(systemName: "stop.fill")
+                }
+                .font(.caption.weight(.semibold))
+            }
+            .tint(.red)
+        }
+    }
+}
+
+/// The Screen Lens Live Activity: shown only while the user's own capture is
+/// running (with the time left and Capture / Stop), then briefly with what
+/// Lens found. Tapping it opens Lens with the results.
+struct ScreenLensLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: ScreenLensActivityAttributes.self) { context in
+            ScreenLensActivityLockScreenView(state: context.state) {
+                ScreenLensActivityButtons(state: context.state)
+            }
+            .widgetURL(DeepLink.lens)
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    ScreenLensActivityHeadline(context.state)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    ScreenLensActivityClock(context.state)
+                        .font(.callout.weight(.semibold))
+                        .frame(maxWidth: 80, alignment: .trailing)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    HStack(alignment: .top) {
+                        ScreenLensActivityHighlights(context.state)
+                        Spacer(minLength: 8)
+                        ScreenLensActivityButtons(state: context.state)
+                    }
+                }
+            } compactLeading: {
+                Image(systemName: "record.circle")
+                    .foregroundStyle(.red)
+                    .accessibilityLabel(Text(L10nKey.screenLensActivityLive))
+            } compactTrailing: {
+                ScreenLensActivityClock(context.state)
+                    .frame(maxWidth: 52)
+            } minimal: {
+                Image(systemName: "record.circle")
+                    .foregroundStyle(.red)
+                    .accessibilityLabel(Text(L10nKey.screenLensActivityLive))
+            }
+            .widgetURL(DeepLink.lens)
+        }
+    }
+}
+
+/// Capture and Stop while live; nothing once the capture is over.
+struct ScreenLensActivityButtons: View {
+    let state: ScreenLensStatus
+
+    var body: some View {
+        if state.phase == .live {
+            HStack(spacing: 8) {
+                Button(intent: CaptureScreenIntent()) {
+                    Label {
+                        Text(L10nKey.screenLensCapture)
+                    } icon: {
+                        Image(systemName: "camera.viewfinder")
+                    }
+                    .font(.caption.weight(.semibold))
+                }
+                Button(intent: StopScreenLensIntent()) {
+                    Label {
+                        Text(L10nKey.screenLensStop)
+                    } icon: {
+                        Image(systemName: "stop.fill")
+                    }
+                    .font(.caption.weight(.semibold))
+                }
+                .tint(.red)
+            }
+        } else if state.phase == .countdown {
+            Button(intent: StopScreenLensIntent()) {
+                Label {
+                    Text(L10nKey.screenLensStop)
                 } icon: {
                     Image(systemName: "stop.fill")
                 }
