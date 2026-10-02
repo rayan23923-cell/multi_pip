@@ -35,7 +35,7 @@ struct SessionContentRulesTests {
         #expect(SessionContent.kind(of: item(photo, at: 0)) == .image)
         #expect(SessionContent.kind(of: item(.text("What is entropy?"), at: 0)) == .question)
         #expect(SessionContent.kind(of: item(.text("ما هي الطاقة؟"), at: 0)) == .question)
-        #expect(SessionContent.kind(of: item(.text("www.apple.com"), at: 0)) == .link)
+        #expect(SessionContent.kind(of: item(.text("https://apple.com"), at: 0)) == .link)
         let code = DetectedEntity(type: .code, confidence: .high, value: .text("let x = 1"))
         #expect(SessionContent.kind(of: item(.text("let x = 1"), entities: [code], at: 0)) == .code)
         #expect(SessionContent.kind(of: item(.text("plain words"), at: 0)) == .text)

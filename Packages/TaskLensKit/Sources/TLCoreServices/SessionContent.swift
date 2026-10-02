@@ -155,7 +155,12 @@ public enum SessionContent {
     }
 
     static func fold(_ text: String) -> String {
-        Normalizer.whitespace(Normalizer.digits(text))
+        let folded = Normalizer.whitespace(Normalizer.digits(text))
             .folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: nil)
+        // Foundation's diacritic folding keeps Arabic harakat; drop them and tatweel.
+        return String(String.UnicodeScalarView(folded.unicodeScalars.filter { !arabicMarks.contains($0.value) }))
     }
+
+    /// Arabic short vowels, shadda, sukun, Quranic marks, superscript alef and tatweel.
+    static let arabicMarks: Set<UInt32> = Set(Array(0x064B...0x065F) + [0x0670, 0x0640] + Array(0x06D6...0x06ED))
 }
