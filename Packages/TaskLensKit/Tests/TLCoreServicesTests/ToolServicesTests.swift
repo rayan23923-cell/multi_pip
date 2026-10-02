@@ -193,26 +193,6 @@ struct NoteToolTests {
     }
 }
 
-@Suite("Basic action suggester")
-struct BasicActionSuggesterTests {
-    @Test func suggestsByContentType() async throws {
-        let url = try #require(URL(string: "https://example.com"))
-        #expect(BasicActionSuggester.actions(for: .url(url)).first?.type == .openURL)
-        let numberActions = BasicActionSuggester.actions(for: .text("1,250.75")).map(\.type)
-        #expect(numberActions.contains(.calculate))
-        #expect(numberActions.contains(.createNote))
-        #expect(!BasicActionSuggester.actions(for: .text("12 apples")).map(\.type).contains(.calculate))
-        #expect(BasicActionSuggester.actions(for: .text("hi")).first?.type == .saveToSession)
-    }
-
-    @Test func targetsTheItem() async throws {
-        let env = TestEnvironment()
-        let item = try await env.capture.capture(.text("42"), source: .manualEntry)
-        let actions = await BasicActionSuggester().suggestActions(for: item)
-        #expect(actions.allSatisfy { $0.targetItemID == item.id })
-    }
-}
-
 @Suite("Capture target")
 struct CaptureTargetTests {
     @Test func prefersTheWorkspaceSession() async throws {

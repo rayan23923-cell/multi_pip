@@ -4,6 +4,8 @@
 !Packages/**/.swiftpm/xcode/package.xcworkspace/
 App/TaskLens/Info.plist
 App/TaskLens/TaskLens.entitlements
+App/TaskLensShare/Info.plist
+App/TaskLensShare/TaskLensShare.entitlements
 DerivedData/
 build/
 *.xcresult

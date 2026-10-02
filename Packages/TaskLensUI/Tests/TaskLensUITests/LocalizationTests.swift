@@ -40,6 +40,16 @@ struct LocalizationTests {
         #expect(arabic.map { String(format: $0, "متجر") } == "نسخة من متجر")
     }
 
+    @Test func everyCategoryAndActionHasALabel() {
+        let categoryKeys = ContentCategory.allCases.map(L10nKey.category)
+        #expect(Set(categoryKeys).count == ContentCategory.allCases.count)
+        for type in ActionType.allKnown {
+            #expect(L10nKey.action(Action(type: type)) != nil, "No title for action \(type.rawValue)")
+        }
+        #expect(L10nKey.entityType(.phoneNumber) == .categoryPhone)
+        #expect(L10nKey.entityType("future") == .categoryUnknown)
+    }
+
     @Test func everyKnownKindAndToolHasItsOwnLabel() {
         let kindKeys = WorkspaceKind.allKnown.map(L10nKey.workspaceKind)
         let toolKeys = WorkspaceTool.allKnown.map(L10nKey.workspaceTool)

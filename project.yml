@@ -66,7 +66,10 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.tasklens
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        # Translation (iOS 17.4+) is weak-linked so the app still runs on iOS 17.0.
+        OTHER_LDFLAGS: "$(inherited) -weak_framework Translation"
     dependencies:
+      - target: TaskLensShare
       - package: TaskLensKit
         product: TLFoundation
       - package: TaskLensKit
@@ -105,6 +108,64 @@ targets:
         product: ImageViewerFeature
       - package: TaskLensUI
         product: TextViewerFeature
+      - package: TaskLensUI
+        product: TLActionsUI
+      - package: TaskLensUI
+        product: ShareFeature
+
+  # Share extension: accepts text, links, images, PDFs and other files.
+  TaskLensShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: App/TaskLensShare
+    info:
+      path: App/TaskLensShare/Info.plist
+      properties:
+        CFBundleDisplayName: TaskLens
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, ar]
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        TLAppGroupIdentifier: $(APP_GROUP_IDENTIFIER)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsText: true
+              NSExtensionActivationSupportsWebURLWithMaxCount: 10
+              NSExtensionActivationSupportsImageWithMaxCount: 10
+              NSExtensionActivationSupportsFileWithMaxCount: 10
+              NSExtensionActivationSupportsAttachmentsWithMaxCount: 10
+    entitlements:
+      path: App/TaskLensShare/TaskLensShare.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - $(APP_GROUP_IDENTIFIER)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.tasklens.share
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        OTHER_LDFLAGS: "$(inherited) -weak_framework Translation"
+    dependencies:
+      - package: TaskLensKit
+        product: TLFoundation
+      - package: TaskLensKit
+        product: TLDomain
+      - package: TaskLensKit
+        product: TLData
+      - package: TaskLensKit
+        product: TLCoreServices
+      - package: TaskLensUI
+        product: TLLocalization
+      - package: TaskLensUI
+        product: TLDesignSystem
+      - package: TaskLensUI
+        product: TLActionsUI
+      - package: TaskLensUI
+        product: ShareFeature
 
   TaskLensTests:
     type: bundle.unit-test
@@ -138,6 +199,7 @@ schemes:
     build:
       targets:
         TaskLens: all
+        TaskLensShare: all
         TaskLensTests: [test]
         TaskLensAppUITests: [test]
     run:

@@ -18,10 +18,18 @@ public final class CalculatorModel: ContextProducing {
     private let calculatorService: CalculatorService
     private let toolCapture: ToolCaptureService
 
-    public init(workspaceID: WorkspaceID?, calculatorService: CalculatorService, toolCapture: ToolCaptureService) {
+    public init(
+        workspaceID: WorkspaceID?,
+        calculatorService: CalculatorService,
+        toolCapture: ToolCaptureService,
+        initialValue: Decimal? = nil
+    ) {
         self.workspaceID = workspaceID
         self.calculatorService = calculatorService
         self.toolCapture = toolCapture
+        if let initialValue {
+            engine = CalculatorEngine(value: initialValue)
+        }
     }
 
     /// Main display text, or nil while showing an error.

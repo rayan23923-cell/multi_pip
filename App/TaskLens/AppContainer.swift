@@ -17,12 +17,16 @@ struct AppContainer: Sendable {
     let calculator: CalculatorService
     let documents: DocumentService
     let toolCapture: ToolCaptureService
+    let share: ShareService
+    /// Where the share extension leaves shared items for the app.
+    let shareOutbox: ShareOutbox
     let storage: SettingsView.StorageDescription
     let logger: TLLogger
 
     init(
         repositories: Repositories,
         filesDirectory: URL,
+        storeRoot: URL,
         storage: SettingsView.StorageDescription,
         clock: any DateProviding = SystemDateProvider(),
         logger: TLLogger = TLLogger(category: "app")
@@ -30,6 +34,7 @@ struct AppContainer: Sendable {
         let capture = CaptureService(
             sessions: repositories.sessions,
             contextItems: repositories.contextItems,
+            detector: ContextEngine(),
             clock: clock,
             logger: logger.scoped("capture")
         )
@@ -73,6 +78,8 @@ struct AppContainer: Sendable {
             logger: logger.scoped("documents")
         )
         self.toolCapture = ToolCaptureService(capture: capture, sessions: self.sessions)
+        self.share = ShareService(capture: capture, documents: self.documents)
+        self.shareOutbox = ShareOutbox(storeRoot: storeRoot)
         self.storage = storage
         self.logger = logger
     }
@@ -94,6 +101,7 @@ struct AppContainer: Sendable {
             return AppContainer(
                 repositories: repositories,
                 filesDirectory: location.filesDirectory,
+                storeRoot: location.rootURL,
                 storage: location.kind == .appGroup ? .appGroup : .local,
                 logger: logger
             )
@@ -102,6 +110,7 @@ struct AppContainer: Sendable {
             return AppContainer(
                 repositories: .inMemory(),
                 filesDirectory: temporaryFilesDirectory(),
+                storeRoot: temporaryFilesDirectory(),
                 storage: .memory,
                 logger: logger
             )
@@ -123,6 +132,7 @@ struct AppContainer: Sendable {
         AppContainer(
             repositories: .inMemory(),
             filesDirectory: temporaryFilesDirectory(),
+            storeRoot: temporaryFilesDirectory(),
             storage: .memory,
             logger: .disabled()
         )
@@ -131,6 +141,16 @@ struct AppContainer: Sendable {
     /// Files for in-memory stores go to a throwaway folder.
     private static func temporaryFilesDirectory() -> URL {
         FileManager.default.temporaryDirectory.appendingPathComponent("TaskLensFiles-\(UUID().uuidString)", isDirectory: true)
+    }
+
+    /// Saves items left by the share extension into their sessions (or the inbox).
+    @discardableResult
+    func deliverSharedItems() async -> Int {
+        let items = await shareOutbox.deliver(using: share, sessions: sessions)
+        if !items.isEmpty {
+            logger.info("Delivered \(items.count) shared item(s)")
+        }
+        return items.count
     }
 
     static var appVersion: String {

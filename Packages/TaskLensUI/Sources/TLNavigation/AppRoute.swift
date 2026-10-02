@@ -21,6 +21,8 @@ public enum AppRoute: Hashable, Sendable {
     /// Tools. The workspace, when given, scopes lists and picks the session to save to.
     case notes(WorkspaceID?)
     case calculator(WorkspaceID?)
+    /// Calculator starting from a value the Action Engine found (a price, a number).
+    case calculatorInput(Decimal)
     case browser(WorkspaceID?)
     case documents(WorkspaceID?)
     /// Viewers, chosen by document kind.

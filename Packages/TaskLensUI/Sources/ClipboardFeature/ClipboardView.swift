@@ -1,11 +1,17 @@
+import Combine
 import SwiftUI
+import TLActionsUI
 import TLDesignSystem
 import TLDomain
 import TLLocalization
+import TLNavigation
+import UIKit
 
 public struct ClipboardView: View {
     @State private var model: ClipboardModel
     @State private var isConfirmingClear = false
+    @Environment(AppRouter.self) private var router
+    @Environment(\.scenePhase) private var scenePhase
 
     public init(model: ClipboardModel) {
         _model = State(initialValue: model)
@@ -14,6 +20,15 @@ public struct ClipboardView: View {
     public var body: some View {
         List {
             Section {
+                if model.hasNewContent {
+                    Label {
+                        Text(L10nKey.clipboardNewContent)
+                    } icon: {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(.tint)
+                    }
+                    .accessibilityIdentifier("clipboard.newContent")
+                }
                 PasteButton(payloadType: String.self) { [model] strings in
                     Task { @MainActor in await model.paste(strings) }
                 }
@@ -21,8 +36,9 @@ public struct ClipboardView: View {
                 .buttonBorderShape(.capsule)
                 .frame(maxWidth: .infinity)
                 .listRowBackground(Color.clear)
+                .accessibilityIdentifier("clipboard.paste")
             } footer: {
-                Text(L10nKey.clipboardSubtitle)
+                Text(L10nKey.clipboardPrivacyNote)
                     .frame(maxWidth: .infinity)
                     .multilineTextAlignment(.center)
             }
@@ -74,25 +90,59 @@ public struct ClipboardView: View {
             }
             Button(role: .cancel) {} label: { Text(L10nKey.commonCancel) }
         }
-        .task { await model.load() }
+        .sheet(item: Binding(
+            get: { model.selectedItem },
+            set: { model.selectedItemID = $0?.id }
+        )) { item in
+            ClipboardItemDetail(item: item, model: model) { value in
+                model.selectedItemID = nil
+                router.push(.calculatorInput(value))
+            }
+        }
+        .task {
+            await model.load()
+            model.refreshPasteboardHint()
+        }
         .refreshable { await model.load() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { model.refreshPasteboardHint() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIPasteboard.changedNotification)) { _ in
+            model.refreshPasteboardHint()
+        }
         .errorAlert(message: $model.errorMessage)
     }
 
     private func row(_ item: ClipboardItem) -> some View {
-        HStack(alignment: .top, spacing: TLSpacing.m) {
-            Image(systemName: item.content.itemType.symbolName)
-                .foregroundStyle(.secondary)
-                .frame(width: 24)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: TLSpacing.xxs) {
-                preview(item.content)
-                    .lineLimit(3)
-                Text(item.capturedAt, format: .relative(presentation: .named))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        let category = model.analysis(for: item).category
+        return HStack(alignment: .top, spacing: TLSpacing.m) {
+            Button {
+                model.selectedItemID = item.id
+            } label: {
+                HStack(alignment: .top, spacing: TLSpacing.m) {
+                    Image(systemName: category.symbolName)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 24)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: TLSpacing.xxs) {
+                        ContentPreview(item.content, lineLimit: 3)
+                            .foregroundStyle(.primary)
+                        HStack(spacing: TLSpacing.xs) {
+                            Text(L10nKey.category(category))
+                            Text(verbatim: "·")
+                                .accessibilityHidden(true)
+                            Text(item.capturedAt, format: .relative(presentation: .named))
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
             }
-            Spacer(minLength: TLSpacing.s)
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("clipboardRow.\(category.rawValue)")
+
             if item.promotedItemID != nil {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
@@ -108,18 +158,53 @@ public struct ClipboardView: View {
             }
         }
     }
+}
 
-    @ViewBuilder
-    private func preview(_ content: ContextContent) -> some View {
-        switch content {
-        case .text(let text):
-            Text(text)
-        case .url(let url):
-            Text(url.absoluteString)
-                .foregroundStyle(.tint)
-                .environment(\.layoutDirection, .leftToRight)
-        case .file(let reference):
-            Text(reference.originalFilename ?? reference.relativePath)
+/// Detected type, preview, entities and suggested actions for one entry.
+private struct ClipboardItemDetail: View {
+    let item: ClipboardItem
+    let model: ClipboardModel
+    let onCalculate: (Decimal) -> Void
+    @State private var feedback = ActionFeedback()
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        let analysis = model.analysis(for: item)
+        NavigationStack {
+            List {
+                Section {
+                    DetectedTypeRow(analysis.category)
+                } header: {
+                    Text(L10nKey.lensPreview)
+                } footer: {
+                    ContentPreview(item.content, lineLimit: 12)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                        .textSelection(.enabled)
+                        .padding(.top, TLSpacing.s)
+                }
+
+                EntitiesSection(analysis.entities)
+
+                ContextActionsSection(
+                    actions: analysis.actions,
+                    content: item.content,
+                    feedback: feedback,
+                    isSaved: model.history.first(where: { $0.id == item.id })?.promotedItemID != nil,
+                    onSave: { await model.save(item) },
+                    onCalculate: onCalculate
+                )
+            }
+            .navigationTitle(Text(L10nKey.commonDetails))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button { dismiss() } label: { Text(L10nKey.commonDone) }
+                        .accessibilityIdentifier("clipboardDetail.done")
+                }
+            }
+            .actionFeedback(feedback)
         }
+        .presentationDetents([.medium, .large])
     }
 }

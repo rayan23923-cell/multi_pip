@@ -58,10 +58,11 @@ public struct DocumentService: Sendable {
     @discardableResult
     public func importFile(
         at sourceURL: URL,
+        filename: String? = nil,
         workspaceID: WorkspaceID? = nil,
         sessionID: SessionID? = nil
     ) async throws -> Document {
-        let filename = sourceURL.lastPathComponent
+        let filename = filename ?? sourceURL.lastPathComponent
         let type = (try? sourceURL.resourceValues(forKeys: [.contentTypeKey]).contentType)
             ?? UTType(filenameExtension: sourceURL.pathExtension)
         let data: Data

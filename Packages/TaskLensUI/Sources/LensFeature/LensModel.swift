@@ -6,15 +6,16 @@ import TLLocalization
 
 /// Lens entry point: the user gives TaskLens some content and gets actions for it.
 ///
+/// Content → normalize → Context Engine (category + entities) → rule-based
+/// Action Engine. Everything runs on device; nothing uses AI or the network.
 /// Content sent from other tools (e.g. a calculator result) arrives as
 /// `initialInput` and is analyzed right away.
-/// This phase classifies text versus links only. Entity detection (phones,
-/// prices, dates) plugs in through `EntityDetecting` in the Context Engine phase.
 @MainActor
 @Observable
 public final class LensModel {
     public var input = ""
     public private(set) var content: ContextContent?
+    public private(set) var analysis: ContextAnalysis?
     public private(set) var savedItem: ContextItem?
     public private(set) var captureTarget: Session?
     public var errorMessage: String?
@@ -33,14 +34,10 @@ public final class LensModel {
 
     public var canAnalyze: Bool { !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
-    /// Action types this screen can perform today.
-    public static let supportedActions: Set<ActionType> = [.openURL, .copy, .share, .saveToSession]
+    public var category: ContentCategory? { analysis?.category }
 
-    /// Actions from the rule-based Action Engine that this screen can perform, best first.
-    public var actions: [Action] {
-        guard let content else { return [] }
-        return BasicActionSuggester.actions(for: content).filter { Self.supportedActions.contains($0.type) }
-    }
+    /// Suggested actions, best first.
+    public var actions: [Action] { analysis?.actions ?? [] }
 
     public func loadTarget() async {
         captureTarget = try? await sessionService.activeSessions().first
@@ -49,9 +46,12 @@ public final class LensModel {
     public func analyze() {
         guard canAnalyze else {
             content = nil
+            analysis = nil
             return
         }
-        content = ContentClassifier.classify(input)
+        let content = ContentClassifier.classify(input)
+        self.content = content
+        analysis = RuleActionEngine.analyze(content)
         savedItem = nil
     }
 
@@ -64,18 +64,14 @@ public final class LensModel {
     public func save() async {
         guard let content, savedItem == nil else { return }
         do {
-            savedItem = try await captureService.capture(content, source: .manualEntry, into: captureTarget?.id)
+            savedItem = try await captureService.capture(
+                content,
+                source: .manualEntry,
+                into: captureTarget?.id,
+                metadata: category.map { ["category": .string($0.rawValue)] } ?? [:]
+            )
         } catch {
             errorMessage = L10n.message(for: error)
-        }
-    }
-
-    /// Plain text used by copy and share.
-    public var shareableText: String? {
-        switch content {
-        case .text(let text): text
-        case .url(let url): url.absoluteString
-        case .file, nil: nil
         }
     }
 }

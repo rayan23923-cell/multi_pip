@@ -48,6 +48,8 @@ public struct EntityType: ExtensibleKind {
     public static let qrCode: EntityType = "qrCode"
     public static let barcode: EntityType = "barcode"
     public static let language: EntityType = "language"
+    public static let json: EntityType = "json"
+    public static let code: EntityType = "code"
 }
 
 /// Typed value of a detected entity.

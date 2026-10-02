@@ -88,6 +88,31 @@ extension L10nKey {
         case .document: .itemTypeDocument
         }
     }
+
+    public static func category(_ category: ContentCategory) -> L10nKey {
+        L10nKey(rawValue: "category.\(category.rawValue)") ?? .categoryUnknown
+    }
+
+    /// Entity types are labelled with the matching content category.
+    public static func entityType(_ type: EntityType) -> L10nKey {
+        switch type {
+        case .url: .categoryUrl
+        case .email: .categoryEmail
+        case .phoneNumber: .categoryPhone
+        case .date: .categoryDate
+        case .address: .categoryAddress
+        case .currencyAmount: .categoryCurrency
+        case .number: .categoryNumber
+        case .json: .categoryJson
+        case .code: .categoryCode
+        default: .categoryUnknown
+        }
+    }
+
+    /// Title of an action, if the catalog has one for its key.
+    public static func action(_ action: Action) -> L10nKey? {
+        L10nKey(rawValue: action.titleKey) ?? L10nKey(rawValue: action.type.defaultTitleKey)
+    }
 }
 
 // MARK: - SwiftUI

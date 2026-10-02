@@ -14,6 +14,7 @@ let package = Package(
         .library(name: "TLLocalization", targets: ["TLLocalization"]),
         .library(name: "TLDesignSystem", targets: ["TLDesignSystem"]),
         .library(name: "TLNavigation", targets: ["TLNavigation"]),
+        .library(name: "TLActionsUI", targets: ["TLActionsUI"]),
         .library(name: "CommandCenterFeature", targets: ["CommandCenterFeature"]),
         .library(name: "WorkspacesFeature", targets: ["WorkspacesFeature"]),
         .library(name: "SessionsFeature", targets: ["SessionsFeature"]),
@@ -26,6 +27,7 @@ let package = Package(
         .library(name: "DocumentsFeature", targets: ["DocumentsFeature"]),
         .library(name: "ImageViewerFeature", targets: ["ImageViewerFeature"]),
         .library(name: "TextViewerFeature", targets: ["TextViewerFeature"]),
+        .library(name: "ShareFeature", targets: ["ShareFeature"]),
     ],
     dependencies: [
         .package(path: "../TaskLensKit"),
@@ -50,6 +52,15 @@ let package = Package(
             name: "TLNavigation",
             dependencies: [
                 .product(name: "TLDomain", package: "TaskLensKit"),
+            ]
+        ),
+        // Suggested actions UI shared by Lens, Clipboard and the share extension.
+        .target(
+            name: "TLActionsUI",
+            dependencies: [
+                "TLLocalization", "TLDesignSystem",
+                .product(name: "TLDomain", package: "TaskLensKit"),
+                .product(name: "TLCoreServices", package: "TaskLensKit"),
             ]
         ),
         .target(
@@ -83,7 +94,7 @@ let package = Package(
         .target(
             name: "LensFeature",
             dependencies: [
-                "TLLocalization", "TLDesignSystem",
+                "TLLocalization", "TLDesignSystem", "TLNavigation", "TLActionsUI",
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
             ]
@@ -91,7 +102,7 @@ let package = Package(
         .target(
             name: "ClipboardFeature",
             dependencies: [
-                "TLLocalization", "TLDesignSystem",
+                "TLLocalization", "TLDesignSystem", "TLNavigation", "TLActionsUI",
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
             ]
@@ -144,13 +155,22 @@ let package = Package(
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
             ]
         ),
+        // UI of the share extension. Must stay app-extension safe (no UIApplication.shared).
+        .target(
+            name: "ShareFeature",
+            dependencies: [
+                "TLLocalization", "TLDesignSystem", "TLActionsUI",
+                .product(name: "TLDomain", package: "TaskLensKit"),
+                .product(name: "TLCoreServices", package: "TaskLensKit"),
+            ]
+        ),
         .testTarget(
             name: "TaskLensUITests",
             dependencies: [
                 "TLLocalization", "TLNavigation", "CommandCenterFeature", "WorkspacesFeature", "SessionsFeature",
                 "LensFeature", "ClipboardFeature",
                 "NotesFeature", "CalculatorFeature", "BrowserFeature", "DocumentsFeature",
-                "ImageViewerFeature", "TextViewerFeature",
+                "ImageViewerFeature", "TextViewerFeature", "TLActionsUI", "ShareFeature",
                 .product(name: "TLFoundation", package: "TaskLensKit"),
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLData", package: "TaskLensKit"),

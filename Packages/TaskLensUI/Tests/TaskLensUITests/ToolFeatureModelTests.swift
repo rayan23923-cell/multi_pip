@@ -352,7 +352,8 @@ struct ToolActionTests {
         let model = LensModel(captureService: services.capture, sessionService: services.sessions, initialInput: "42")
         #expect(model.content == .text("42"))
         #expect(model.actions.map(\.type).contains(.saveToSession))
-        #expect(model.actions.allSatisfy { LensModel.supportedActions.contains($0.type) })
+        #expect(model.category == .number)
+        #expect(model.actions.first?.type == .calculate)
     }
 
     @Test func everyToolHasAScreen() {

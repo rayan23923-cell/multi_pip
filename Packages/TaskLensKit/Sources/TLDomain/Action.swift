@@ -41,6 +41,25 @@ public struct Action: Codable, Sendable, Hashable, Identifiable {
 }
 
 extension Action {
+    /// Parameter keys shared by the Action Engine and the code that performs actions.
+    public enum ParameterKey {
+        /// The value the action works on (phone number, URL, amount...).
+        public static let value = "value"
+        public static let currencyCode = "currencyCode"
+        /// True when the action is shown but not implemented yet.
+        public static let placeholder = "placeholder"
+    }
+
+    /// Shown so the user knows it is coming, but not performed yet.
+    public var isPlaceholder: Bool {
+        parameters[ParameterKey.placeholder]?.boolValue ?? false
+    }
+
+    /// The `value` parameter as text.
+    public var valueText: String? {
+        parameters[ParameterKey.value]?.stringValue
+    }
+
     /// Highest priority first; ties broken by type name so ordering is stable.
     public static func ranked(_ actions: [Action]) -> [Action] {
         actions.sorted { lhs, rhs in
@@ -71,6 +90,13 @@ public struct ActionType: ExtensibleKind {
     public static let convertCurrency: ActionType = "convertCurrency"
     public static let extractText: ActionType = "extractText"
     public static let translate: ActionType = "translate"
+    public static let summarize: ActionType = "summarize"
+    public static let createReminder: ActionType = "createReminder"
+
+    public static let allKnown: [ActionType] = [
+        .copy, .share, .saveToSession, .createNote, .openURL, .call, .sendMessage, .sendEmail, .addContact,
+        .addToCalendar, .openInMaps, .calculate, .convertCurrency, .extractText, .translate, .summarize, .createReminder,
+    ]
 }
 
 /// Ordering weight for actions. Higher is shown first.

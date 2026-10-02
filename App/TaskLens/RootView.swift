@@ -104,6 +104,13 @@ private extension View {
                     calculatorService: container.calculator,
                     toolCapture: container.toolCapture
                 ))
+            case .calculatorInput(let value):
+                CalculatorView(model: CalculatorModel(
+                    workspaceID: nil,
+                    calculatorService: container.calculator,
+                    toolCapture: container.toolCapture,
+                    initialValue: value
+                ))
             case .browser(let workspaceID):
                 BrowserView(model: browser)
                     .onAppear { browser.workspaceID = workspaceID }
