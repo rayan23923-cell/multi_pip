@@ -15,6 +15,35 @@ public struct PDFViewerView: View {
         _model = State(initialValue: model)
     }
 
+    /// Page navigation. Kept in the content rather than the bottom toolbar so
+    /// it lays out (and is exposed to accessibility) the same on every iOS version.
+    private var pageBar: some View {
+        HStack {
+            Button { model.previousPage() } label: {
+                Image(systemName: "chevron.backward")
+                    .accessibilityLabel(Text(L10nKey.pdfPreviousPage))
+            }
+            .disabled(!model.canGoBack)
+            .accessibilityIdentifier("pdf.previousPage")
+            Spacer()
+            Text(L10n.format(.pdfPage, model.currentPage + 1, model.pageCount))
+                .font(.footnote.monospacedDigit())
+                .accessibilityIdentifier("pdf.pageLabel")
+            Spacer()
+            Button { model.nextPage() } label: {
+                Image(systemName: "chevron.forward")
+                    .accessibilityLabel(Text(L10nKey.pdfNextPage))
+            }
+            .disabled(!model.canGoForward)
+            .accessibilityIdentifier("pdf.nextPage")
+        }
+        .buttonStyle(.borderless)
+        .imageScale(.large)
+        .padding(.horizontal, TLSpacing.l)
+        .padding(.vertical, TLSpacing.s)
+        .background(.bar)
+    }
+
     public var body: some View {
         VStack(spacing: 0) {
             if isSearching {
@@ -26,6 +55,8 @@ public struct PDFViewerView: View {
                     model.pageDidChange(to: page)
                 }
                 .accessibilityIdentifier("pdf.view")
+                Divider()
+                pageBar
             } else if model.failedToOpen {
                 TLEmptyState(title: .documentsOpenFailed, message: .documentsEmptyMessage, symbolName: "exclamationmark.triangle")
                     .frame(maxHeight: .infinity)
@@ -64,25 +95,7 @@ public struct PDFViewerView: View {
                 }
                 .accessibilityIdentifier("pdf.menu")
             }
-            ToolbarItemGroup(placement: .bottomBar) {
-                Button { model.previousPage() } label: {
-                    TLLabel(.pdfPreviousPage, systemImage: "chevron.backward")
-                }
-                .disabled(!model.canGoBack)
-                .accessibilityIdentifier("pdf.previousPage")
-                Spacer()
-                Text(L10n.format(.pdfPage, model.currentPage + 1, model.pageCount))
-                    .font(.footnote.monospacedDigit())
-                    .accessibilityIdentifier("pdf.pageLabel")
-                Spacer()
-                Button { model.nextPage() } label: {
-                    TLLabel(.pdfNextPage, systemImage: "chevron.forward")
-                }
-                .disabled(!model.canGoForward)
-                .accessibilityIdentifier("pdf.nextPage")
-            }
         }
-        .toolbar(.visible, for: .bottomBar)
         .sheet(isPresented: $showsText) {
             ExtractedTextSheet(model: model)
         }

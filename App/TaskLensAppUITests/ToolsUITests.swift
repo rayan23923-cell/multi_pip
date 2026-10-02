@@ -76,7 +76,13 @@ final class ToolsUITests: XCTestCase {
         search.typeText("eggs")
         XCTAssertTrue(element(app, "noteRow.Groceries").waitForExistence(timeout: 5))
         XCTAssertTrue(element(app, "noteRow.Meeting").waitForNonExistence(timeout: 5))
-        app.buttons["Cancel"].firstMatch.tap()
+        // iOS 26 search bars may have no "Cancel" button; clearing the text ends the search either way.
+        let cancel = app.buttons["Cancel"].firstMatch
+        if cancel.waitForExistence(timeout: 2) {
+            cancel.tap()
+        } else {
+            search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4) + "\n")
+        }
 
         // Pin from the context menu.
         let meeting = element(app, "noteRow.Meeting")
@@ -139,8 +145,10 @@ final class ToolsUITests: XCTestCase {
         address.tap()
         tap(app, "browser.clear", timeout: 3)
         address.typeText("example.com\n")
-        let predicate = NSPredicate(format: "value == %@", "https://example.com")
-        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: address)], timeout: 5), .completed)
+        // The web view may report the loaded page with a trailing slash.
+        let predicate = NSPredicate(format: "value BEGINSWITH %@", "https://example.com")
+        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: address)], timeout: 10), .completed,
+                       "Address is '\(address.value as? String ?? "nil")', alert shown: \(app.alerts.firstMatch.exists)")
 
         tap(app, "browser.tabs")
         tap(app, "browser.newTab")
