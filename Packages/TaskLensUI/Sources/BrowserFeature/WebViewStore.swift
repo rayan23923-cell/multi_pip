@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import WebKit
 
 /// Owns one `WKWebView` per tab so switching tabs keeps each page.
