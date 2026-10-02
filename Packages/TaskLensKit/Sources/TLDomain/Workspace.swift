@@ -100,8 +100,9 @@ public struct WorkspaceKind: ExtensibleKind {
     public static let shopping: WorkspaceKind = "shopping"
     public static let developer: WorkspaceKind = "developer"
     public static let custom: WorkspaceKind = "custom"
+    public static let research: WorkspaceKind = "research"
 
-    public static let allKnown: [WorkspaceKind] = [.study, .work, .shopping, .developer, .custom]
+    public static let allKnown: [WorkspaceKind] = [.study, .research, .work, .shopping, .developer, .custom]
 
     public var defaultSymbolName: String {
         switch self {
@@ -109,6 +110,7 @@ public struct WorkspaceKind: ExtensibleKind {
         case .work: "briefcase"
         case .shopping: "cart"
         case .developer: "chevron.left.forwardslash.chevron.right"
+        case .research: "magnifyingglass"
         default: "square.grid.2x2"
         }
     }
@@ -119,6 +121,7 @@ public struct WorkspaceKind: ExtensibleKind {
         case .work: .blue
         case .shopping: .orange
         case .developer: .green
+        case .research: .teal
         default: .gray
         }
     }
@@ -129,6 +132,7 @@ public struct WorkspaceKind: ExtensibleKind {
         case .work: [.notes, .documents, .browser, .clipboard]
         case .shopping: [.browser, .calculator, .clipboard, .lens]
         case .developer: [.browser, .clipboard, .notes, .lens]
+        case .research: [.browser, .documents, .notes, .lens]
         default: [.notes, .clipboard]
         }
     }
@@ -138,6 +142,7 @@ public struct WorkspaceKind: ExtensibleKind {
         case .study: .study
         case .shopping: .shopping
         case .developer: .developer
+        case .research: .research
         default: .general
         }
     }

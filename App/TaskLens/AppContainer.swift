@@ -4,6 +4,7 @@ import TLCoreServices
 import TLData
 import TLDomain
 import TLFoundation
+import WidgetKit
 
 /// Composition root: the only place that knows concrete implementations.
 /// Features receive services; services receive repository protocols.
@@ -15,6 +16,11 @@ struct AppContainer: Sendable {
     let toolState: ToolStateRecorder
     /// Cards kept for Picture in Picture.
     let pip: PiPWorkspaceService
+    /// What Siri, Shortcuts and widgets can ask for.
+    let systemActions: SystemActions
+    /// Where widgets read their snapshot. Nil when this build has no App Group
+    /// container (unsigned simulator builds); widgets then show their empty state.
+    let widgetStore: WidgetSnapshotStore?
     let capture: CaptureService
     let notes: NoteService
     let clipboard: ClipboardService
@@ -33,6 +39,7 @@ struct AppContainer: Sendable {
         filesDirectory: URL,
         storeRoot: URL,
         storage: SettingsView.StorageDescription,
+        widgetStore: WidgetSnapshotStore? = nil,
         clock: any DateProviding = SystemDateProvider(),
         logger: TLLogger = TLLogger(category: "app")
     ) {
@@ -102,9 +109,15 @@ struct AppContainer: Sendable {
         self.toolCapture = ToolCaptureService(capture: capture, sessions: self.sessions)
         self.share = ShareService(capture: capture, documents: self.documents)
         self.shareOutbox = ShareOutbox(storeRoot: storeRoot)
+        self.systemActions = SystemActions(workspaces: self.workspaces, sessions: self.sessions, capture: capture, notes: self.notes)
+        self.widgetStore = widgetStore
         self.storage = storage
         self.logger = logger
     }
+
+    /// The one container of this process, shared by the app and its App Intents
+    /// so both read and write the same store.
+    static let shared = AppContainer.live()
 
     /// Persistent container for the running app. Falls back to memory if the
     /// store cannot be opened, so the app still launches and the user is told
@@ -125,6 +138,7 @@ struct AppContainer: Sendable {
                 filesDirectory: location.filesDirectory,
                 storeRoot: location.rootURL,
                 storage: location.kind == .appGroup ? .appGroup : .local,
+                widgetStore: WidgetSnapshotStore.shared(appGroupIdentifier: groupIdentifier),
                 logger: logger
             )
         } catch {
@@ -173,6 +187,18 @@ struct AppContainer: Sendable {
             logger.info("Delivered \(items.count) shared item(s)")
         }
         return items.count
+    }
+
+    /// Writes what widgets show and asks WidgetKit to redraw them.
+    func refreshWidgets() async {
+        guard let widgetStore else { return }
+        do {
+            let snapshot = try await WidgetSnapshot.make(workspaces: workspaces, sessions: sessions, capture: capture, now: Date())
+            try widgetStore.write(snapshot)
+            WidgetCenter.shared.reloadAllTimelines()
+        } catch {
+            logger.error("Widget snapshot failed: \(error)")
+        }
     }
 
     static var appVersion: String {

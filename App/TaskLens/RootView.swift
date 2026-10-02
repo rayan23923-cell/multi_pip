@@ -22,10 +22,13 @@ struct RootView: View {
     @State private var browser: BrowserModel
     /// Owned by the app so the Picture in Picture window outlives any one screen.
     let pip: PiPWorkspaceModel
+    /// Screens App Intents asked to open.
+    let navigator: IntentNavigator
 
-    init(container: AppContainer, pip: PiPWorkspaceModel) {
+    init(container: AppContainer, pip: PiPWorkspaceModel, navigator: IntentNavigator = .shared) {
         self.container = container
         self.pip = pip
+        self.navigator = navigator
         let browser = BrowserModel(toolCapture: container.toolCapture)
         browser.stateRecorder = container.toolState
         _browser = State(initialValue: browser)
@@ -67,6 +70,18 @@ struct RootView: View {
                 if router.path(for: router.selectedTab).last != route { router.push(route) }
             }
             await pip.load(afterLaunch: true)
+        }
+        // tasklens:// links from widgets, App Shortcuts and Live Activities.
+        .onOpenURL { url in
+            router.open(url)
+        }
+        .task {
+            // An intent that launched the app may have run before this view existed.
+            if let url = navigator.take() { router.open(url) }
+        }
+        .onChange(of: navigator.pendingURL) { _, url in
+            guard url != nil, let url = navigator.take() else { return }
+            router.open(url)
         }
         .onChange(of: router.pendingPiP) { _, request in
             guard let request else { return }

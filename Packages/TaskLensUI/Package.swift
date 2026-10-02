@@ -29,6 +29,7 @@ let package = Package(
         .library(name: "TextViewerFeature", targets: ["TextViewerFeature"]),
         .library(name: "ShareFeature", targets: ["ShareFeature"]),
         .library(name: "PiPFeature", targets: ["PiPFeature"]),
+        .library(name: "WidgetsFeature", targets: ["WidgetsFeature"]),
     ],
     dependencies: [
         .package(path: "../TaskLensKit"),
@@ -166,6 +167,16 @@ let package = Package(
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
             ]
         ),
+        // Widget and Live Activity views. Used by the widget extension; must stay
+        // app-extension safe and never touch the app's store or the network.
+        .target(
+            name: "WidgetsFeature",
+            dependencies: [
+                "TLLocalization", "TLDesignSystem", "TLNavigation",
+                .product(name: "TLDomain", package: "TaskLensKit"),
+                .product(name: "TLCoreServices", package: "TaskLensKit"),
+            ]
+        ),
         // UI of the share extension. Must stay app-extension safe (no UIApplication.shared).
         .target(
             name: "ShareFeature",
@@ -181,7 +192,7 @@ let package = Package(
                 "TLLocalization", "TLNavigation", "CommandCenterFeature", "WorkspacesFeature", "SessionsFeature",
                 "LensFeature", "ClipboardFeature",
                 "NotesFeature", "CalculatorFeature", "BrowserFeature", "DocumentsFeature",
-                "ImageViewerFeature", "TextViewerFeature", "TLActionsUI", "ShareFeature", "PiPFeature",
+                "ImageViewerFeature", "TextViewerFeature", "TLActionsUI", "ShareFeature", "PiPFeature", "WidgetsFeature",
                 .product(name: "TLFoundation", package: "TaskLensKit"),
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLData", package: "TaskLensKit"),

@@ -91,4 +91,19 @@ xcodebuild test \
   2>&1 | tee "$LOG_DIR/app-ios.log" | grep -E "error:|✔|✘|passed|failed|TEST (SUCCEEDED|FAILED)" || true
 require_success "$LOG_DIR/app-ios.log"
 
+step "App Intents metadata and widget extension are in the app bundle"
+APP="$ROOT/build/DerivedData/Build/Products/Debug-iphonesimulator/TaskLens.app"
+ACTIONS="$APP/Metadata.appintents/extract.actionsdata"
+test -f "$ACTIONS" || { echo "Missing $ACTIONS: Siri and Shortcuts would not see the intents" >&2; exit 1; }
+for intent in StartWorkspaceIntent OpenWorkspaceIntent StartSessionIntent OpenSessionIntent SaveContentIntent SaveToSessionIntent \
+              SendToTaskLensIntent StartLensIntent OpenClipboardIntent CreateNoteIntent CalculateIntent \
+              ConvertCurrencyIntent OpenDestinationIntent; do
+  grep -q "$intent" "$ACTIONS" || { echo "$intent is not in the App Intents metadata" >&2; exit 1; }
+done
+python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print("metadata keys:", sorted(d)); print("app shortcuts:", len(d.get("autoShortcuts", [])))' "$ACTIONS" || true
+test -d "$APP/PlugIns/TaskLensWidgets.appex" || { echo "Widget extension is not embedded" >&2; exit 1; }
+test -f "$APP/PlugIns/TaskLensWidgets.appex/Metadata.appintents/extract.actionsdata" \
+  || echo "note: the widget extension has no App Intents metadata of its own"
+echo "App Intents metadata lists every intent; widget extension embedded"
+
 step "All builds and tests passed on $DEVICE_NAME ($RUNTIME)"

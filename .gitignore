@@ -6,6 +6,8 @@ App/TaskLens/Info.plist
 App/TaskLens/TaskLens.entitlements
 App/TaskLensShare/Info.plist
 App/TaskLensShare/TaskLensShare.entitlements
+App/TaskLensWidgets/Info.plist
+App/TaskLensWidgets/TaskLensWidgets.entitlements
 DerivedData/
 build/
 *.xcresult

@@ -10,7 +10,8 @@ struct TaskLensApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
-        let container = AppContainer.live()
+        // The same container App Intents use, so both see one store.
+        let container = AppContainer.shared
         _container = State(initialValue: container)
         _pip = State(initialValue: RootView.makePiP(container: container))
     }
@@ -26,9 +27,18 @@ struct TaskLensApp: App {
             }
         }
         .onChange(of: scenePhase) { _, phase in
-            // Items shared from other apps wait in the outbox until the app is active.
-            if phase == .active {
-                Task { await container.deliverSharedItems() }
+            switch phase {
+            case .active:
+                // Items shared from other apps wait in the outbox until the app is active.
+                Task {
+                    await container.deliverSharedItems()
+                    await container.refreshWidgets()
+                }
+            case .background:
+                // Widgets show what changed while the app was open.
+                Task { await container.refreshWidgets() }
+            default:
+                break
             }
         }
     }

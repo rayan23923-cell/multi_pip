@@ -34,6 +34,8 @@ targets:
     platform: iOS
     sources:
       - path: App/TaskLens
+      # Intents the widget's buttons name; compiled into the widget too.
+      - path: App/Shared
     info:
       path: App/TaskLens/Info.plist
       properties:
@@ -52,6 +54,10 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         TLAppGroupIdentifier: $(APP_GROUP_IDENTIFIER)
+        # tasklens:// links from widgets, App Shortcuts and Live Activities.
+        CFBundleURLTypes:
+          - CFBundleURLName: com.example.tasklens
+            CFBundleURLSchemes: [tasklens]
         # The in-app browser may open plain http pages the user types; the
         # rest of the app keeps App Transport Security fully on.
         NSAppTransportSecurity:
@@ -73,8 +79,10 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         # Translation (iOS 17.4+) is weak-linked so the app still runs on iOS 17.0.
         OTHER_LDFLAGS: "$(inherited) -weak_framework Translation"
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) TASKLENS_APP"
     dependencies:
       - target: TaskLensShare
+      - target: TaskLensWidgets
       - package: TaskLensKit
         product: TLFoundation
       - package: TaskLensKit
@@ -119,6 +127,8 @@ targets:
         product: ShareFeature
       - package: TaskLensUI
         product: PiPFeature
+      - package: TaskLensUI
+        product: WidgetsFeature
 
   # Share extension: accepts text, links, images, PDFs and other files.
   TaskLensShare:
@@ -174,6 +184,52 @@ targets:
       - package: TaskLensUI
         product: ShareFeature
 
+  # Home Screen widget: small = quick actions, medium = recent sessions,
+  # large = workspace + recent sessions. Reads the app's snapshot file only.
+  TaskLensWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: App/TaskLensWidgets
+      - path: App/Shared
+      - path: App/TaskLens/Resources/Localizable.xcstrings
+    info:
+      path: App/TaskLensWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: TaskLens
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, ar]
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        TLAppGroupIdentifier: $(APP_GROUP_IDENTIFIER)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: App/TaskLensWidgets/TaskLensWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - $(APP_GROUP_IDENTIFIER)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.tasklens.widgets
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+    dependencies:
+      - package: TaskLensKit
+        product: TLFoundation
+      - package: TaskLensKit
+        product: TLDomain
+      - package: TaskLensKit
+        product: TLCoreServices
+      - package: TaskLensUI
+        product: TLLocalization
+      - package: TaskLensUI
+        product: TLDesignSystem
+      - package: TaskLensUI
+        product: TLNavigation
+      - package: TaskLensUI
+        product: WidgetsFeature
+
   TaskLensTests:
     type: bundle.unit-test
     platform: iOS
@@ -207,6 +263,7 @@ schemes:
       targets:
         TaskLens: all
         TaskLensShare: all
+        TaskLensWidgets: all
         TaskLensTests: [test]
         TaskLensAppUITests: [test]
     run:

@@ -4,6 +4,8 @@
 Running this script regenerates:
   Packages/TaskLensUI/Sources/TLLocalization/Resources/Localizable.xcstrings
   Packages/TaskLensUI/Sources/TLLocalization/L10nKey.swift
+  App/TaskLens/Resources/Localizable.xcstrings   (App Intents metadata)
+  App/TaskLens/Resources/AppShortcuts.xcstrings  (App Shortcut phrases)
 
 Add a key here (with both English and Arabic) instead of editing those files.
 """
@@ -112,6 +114,19 @@ STRINGS = [
     ("actionRecord.completed", "Done", "تم"),
     ("actionRecord.handedOff", "Opened", "فُتح"),
     ("actionRecord.failed", "Failed", "فشل"),
+    # Widgets and Siri
+    ("widget.name", "TaskLens", "TaskLens"),
+    ("widget.description", "Quick actions, recent sessions and your workspace.", "إجراءات سريعة وآخر الجلسات ومساحة عملك."),
+    ("widget.recentSessions", "Recent Sessions", "آخر الجلسات"),
+    ("widget.noSessions", "No sessions yet. Start one in TaskLens.", "لا توجد جلسات بعد. ابدأ واحدة في TaskLens."),
+    ("widget.noWorkspaces", "Open TaskLens to create a workspace.", "افتح TaskLens لإنشاء مساحة عمل."),
+    ("widget.itemCount", "%lld items", "%lld عناصر"),
+
+    # What Siri and Shortcuts say back after an action.
+    ("intent.result.savedToSession", "Saved to %@.", "تم الحفظ في %@."),
+    ("intent.result.savedToInbox", "Saved to the inbox.", "تم الحفظ في الوارد."),
+    ("intent.result.noteCreated", "Note created: %@", "تم إنشاء الملاحظة: %@"),
+    ("intent.result.equals", "%@ = %@", "%@ = %@"),
     # Picture in Picture
     ("pip.title", "Picture in Picture", "صورة داخل صورة"),
     ("pip.keep", "Keep in Picture in Picture", "إبقاء في صورة داخل صورة"),
@@ -190,6 +205,7 @@ STRINGS = [
     ("workspace.kind.shopping", "Shopping", "تسوق"),
     ("workspace.kind.developer", "Developer", "تطوير"),
     ("workspace.kind.custom", "Custom", "مخصصة"),
+    ("workspace.kind.research", "Research", "بحث"),
     ("workspace.tools", "Tools", "الأدوات"),
     ("workspace.tool.notes", "Notes", "الملاحظات"),
     ("workspace.tool.calculator", "Calculator", "الآلة الحاسبة"),
@@ -414,6 +430,7 @@ STRINGS = [
     ("error.validation.emptyContent", "There is nothing to save.", "لا يوجد شيء لحفظه."),
     ("error.validation.contentTooLarge", "The content is too large.", "المحتوى كبير جداً."),
     ("error.validation.invalidURL", "The link is not valid.", "الرابط غير صالح."),
+    ("error.validation.invalidExpression", "That is not a calculation TaskLens can do.", "هذه ليست عملية حسابية يستطيع TaskLens تنفيذها."),
     ("error.state.sessionEnded", "This session has ended.", "انتهت هذه الجلسة."),
     ("error.state.sessionAlreadyActive", "This session is already active.", "هذه الجلسة نشطة بالفعل."),
     ("error.state.workspaceArchived", "This workspace is archived.", "مساحة العمل هذه مؤرشفة."),
@@ -425,6 +442,140 @@ STRINGS = [
      "هذه الميزة غير متاحة على هذا الجهاز."),
     ("error.generic", "Please try again.", "يرجى المحاولة مرة أخرى."),
 ]
+
+
+# App Intents metadata (titles, parameters, enum cases). The system reads these
+# from the app's own catalog: App/TaskLens/Resources/Localizable.xcstrings.
+APP_INTENT_STRINGS = [
+    ("intent.startWorkspace.title", "Start Workspace", "بدء مساحة عمل"),
+    ("intent.startWorkspace.description", "Opens your most recent workspace of a kind, or creates one.",
+     "يفتح آخر مساحة عمل من نوع معيّن، أو ينشئ واحدة."),
+    ("intent.openWorkspace.title", "Open Workspace", "فتح مساحة عمل"),
+    ("intent.openWorkspace.description", "Opens a workspace in TaskLens.", "يفتح مساحة عمل في TaskLens."),
+    ("intent.startSession.title", "Start Session", "بدء جلسة"),
+    ("intent.startSession.description", "Starts a session in a workspace and opens it.", "يبدأ جلسة في مساحة عمل ويفتحها."),
+    ("intent.openSession.title", "Open Session", "فتح جلسة"),
+    ("intent.openSession.description", "Opens a session and continues where you stopped.", "يفتح جلسة ويتابع من حيث توقفت."),
+    ("intent.saveContent.title", "Save Content", "حفظ محتوى"),
+    ("intent.saveContent.description", "Saves text or a link to a session, or to the inbox when no session is active.",
+     "يحفظ نصاً أو رابطاً في جلسة، أو في الوارد إذا لم تكن هناك جلسة نشطة."),
+    ("intent.saveToSession.title", "Save to Session", "حفظ في جلسة"),
+    ("intent.saveToSession.description", "Saves text or a link to your latest open session of a kind, starting one if needed.",
+     "يحفظ نصاً أو رابطاً في آخر جلسة مفتوحة من نوع معيّن، ويبدأ جلسة إذا لزم."),
+    ("intent.sendToTaskLens.title", "Send to TaskLens", "إرسال إلى TaskLens"),
+    ("intent.sendToTaskLens.description", "Opens text or a link in Lens to see what you can do with it.",
+     "يفتح نصاً أو رابطاً في العدسة لترى ما يمكنك فعله به."),
+    ("intent.startLens.title", "Start Lens", "بدء العدسة"),
+    ("intent.startLens.description", "Opens Lens to analyze text or a link.", "يفتح العدسة لتحليل نص أو رابط."),
+    ("intent.openClipboard.title", "Open Clipboard", "فتح الحافظة"),
+    ("intent.openClipboard.description", "Opens the TaskLens clipboard history.", "يفتح سجل حافظة TaskLens."),
+    ("intent.createNote.title", "Create Note", "إنشاء ملاحظة"),
+    ("intent.createNote.description", "Creates a note. With several lines, the first line is the title.",
+     "ينشئ ملاحظة. إذا كانت عدة أسطر، يكون السطر الأول هو العنوان."),
+    ("intent.calculate.title", "Calculate", "حساب"),
+    ("intent.calculate.description", "Calculates an expression such as 12 × 3 + 4 on your device.",
+     "يحسب عملية مثل 12 × 3 + 4 على جهازك."),
+    ("intent.convertCurrency.title", "Convert Currency", "تحويل عملة"),
+    ("intent.convertCurrency.description", "Multiplies an amount by the exchange rate you give. TaskLens does not download exchange rates.",
+     "يضرب المبلغ في سعر الصرف الذي تحدده. لا يقوم TaskLens بتنزيل أسعار الصرف."),
+    ("intent.openDestination.title", "Open in TaskLens", "فتح في TaskLens"),
+
+    ("intent.param.workspaceKind", "Workspace Kind", "نوع مساحة العمل"),
+    ("intent.param.sessionKind", "Session Kind", "نوع الجلسة"),
+    ("intent.param.workspace", "Workspace", "مساحة العمل"),
+    ("intent.param.session", "Session", "الجلسة"),
+    ("intent.param.text", "Text", "النص"),
+    ("intent.param.expression", "Expression", "العملية"),
+    ("intent.param.amount", "Amount", "المبلغ"),
+    ("intent.param.rate", "Exchange Rate", "سعر الصرف"),
+    ("intent.param.currency", "Target Currency Code", "رمز العملة الهدف"),
+    ("intent.param.destination", "Destination", "الوجهة"),
+
+    ("intent.prompt.text", "What should TaskLens save?", "ما الذي تريد حفظه في TaskLens؟"),
+    ("intent.prompt.lensText", "What should TaskLens look at?", "ما الذي تريد أن يحلله TaskLens؟"),
+    ("intent.prompt.note", "What should the note say?", "ماذا تريد أن تكتب في الملاحظة؟"),
+    ("intent.prompt.expression", "What should TaskLens calculate?", "ما العملية التي تريد حسابها؟"),
+    ("intent.prompt.amount", "What amount?", "ما المبلغ؟"),
+    ("intent.prompt.rate", "What exchange rate?", "ما سعر الصرف؟"),
+    ("intent.prompt.workspace", "Which workspace?", "أي مساحة عمل؟"),
+    ("intent.prompt.session", "Which session?", "أي جلسة؟"),
+
+    ("intent.type.workspace", "Workspace", "مساحة عمل"),
+    ("intent.type.session", "Session", "جلسة"),
+    ("intent.type.workspaceKind", "Workspace Kind", "نوع مساحة العمل"),
+    ("intent.type.sessionKind", "Session Kind", "نوع الجلسة"),
+    ("intent.type.destination", "TaskLens Tool", "أداة TaskLens"),
+
+    ("intent.workspaceKind.study", "Study", "دراسة"),
+    ("intent.workspaceKind.research", "Research", "بحث"),
+    ("intent.workspaceKind.work", "Work", "عمل"),
+    ("intent.workspaceKind.shopping", "Shopping", "تسوق"),
+    ("intent.workspaceKind.developer", "Developer", "تطوير"),
+    ("intent.sessionKind.general", "General", "عامة"),
+    ("intent.sessionKind.research", "Research", "بحث"),
+    ("intent.sessionKind.shopping", "Shopping", "تسوق"),
+    ("intent.sessionKind.study", "Study", "دراسة"),
+    ("intent.sessionKind.developer", "Developer", "تطوير"),
+    ("intent.destination.lens", "Lens", "العدسة"),
+    ("intent.destination.clipboard", "Clipboard", "الحافظة"),
+    ("intent.destination.notes", "Notes", "الملاحظات"),
+    ("intent.destination.calculator", "Calculator", "الحاسبة"),
+]
+
+# App Shortcut phrases. The English phrase is written in TaskLensShortcuts.swift
+# and is the key; every phrase must name the app.
+APP_SHORTCUT_PHRASES = [
+    ("Send to ${applicationName}", "أرسل إلى ${applicationName}"),
+    ("Analyze with ${applicationName}", "حلّل باستخدام ${applicationName}"),
+    ("Start ${kind} workspace in ${applicationName}", "ابدأ مساحة ${kind} في ${applicationName}"),
+    ("Start a workspace in ${applicationName}", "ابدأ مساحة عمل في ${applicationName}"),
+    ("Save to ${sessionKind} session in ${applicationName}", "احفظ في جلسة ${sessionKind} في ${applicationName}"),
+    ("Save to ${applicationName}", "احفظ في ${applicationName}"),
+    ("Save to a session in ${applicationName}", "احفظ في جلسة في ${applicationName}"),
+    ("Start ${applicationName} Lens", "ابدأ عدسة ${applicationName}"),
+    ("Open Lens in ${applicationName}", "افتح العدسة في ${applicationName}"),
+    ("Create ${applicationName} note", "أنشئ ملاحظة في ${applicationName}"),
+    ("New note in ${applicationName}", "ملاحظة جديدة في ${applicationName}"),
+    ("Open ${applicationName} clipboard", "افتح حافظة ${applicationName}"),
+    ("Calculate with ${applicationName}", "احسب باستخدام ${applicationName}"),
+    ("Open a session in ${applicationName}", "افتح جلسة في ${applicationName}"),
+    ("Start a ${applicationName} session", "ابدأ جلسة في ${applicationName}"),
+]
+
+APP_RESOURCES = ROOT / "App/TaskLens/Resources"
+
+
+def write_catalog(path, entries):
+    catalog = {"sourceLanguage": "en", "strings": entries, "version": "1.0"}
+    path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def write_app_catalogs() -> None:
+    keys = [k for k, _, _ in APP_INTENT_STRINGS]
+    assert len(keys) == len(set(keys)), "duplicate app intent keys"
+    write_catalog(APP_RESOURCES / "Localizable.xcstrings", {
+        key: {
+            "extractionState": "manual",
+            "localizations": {
+                "ar": {"stringUnit": {"state": "translated", "value": ar}},
+                "en": {"stringUnit": {"state": "translated", "value": en}},
+            },
+        }
+        for key, en, ar in APP_INTENT_STRINGS
+    })
+    phrases = [en for en, _ in APP_SHORTCUT_PHRASES]
+    assert len(phrases) == len(set(phrases)), "duplicate phrases"
+    assert all("${applicationName}" in en and "${applicationName}" in ar for en, ar in APP_SHORTCUT_PHRASES)
+    write_catalog(APP_RESOURCES / "AppShortcuts.xcstrings", {
+        en: {
+            "extractionState": "manual",
+            "localizations": {
+                "ar": {"stringUnit": {"state": "translated", "value": ar}},
+                "en": {"stringUnit": {"state": "translated", "value": en}},
+            },
+        }
+        for en, ar in APP_SHORTCUT_PHRASES
+    })
 
 
 def case_name(key: str) -> str:
@@ -469,7 +620,8 @@ def main() -> None:
         lines.append(f'    case {case_name(key)} = "{key}"')
     lines.append("}")
     (LOC / "L10nKey.swift").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"Wrote {len(keys)} keys")
+    write_app_catalogs()
+    print(f"Wrote {len(keys)} keys, {len(APP_INTENT_STRINGS)} intent strings, {len(APP_SHORTCUT_PHRASES)} phrases")
 
 
 if __name__ == "__main__":

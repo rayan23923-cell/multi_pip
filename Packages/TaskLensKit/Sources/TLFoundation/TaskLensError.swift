@@ -19,6 +19,7 @@ public enum ValidationFailure: String, Sendable, Codable, CaseIterable {
     case emptyContent
     case contentTooLarge
     case invalidURL
+    case invalidExpression
 }
 
 public enum InvalidStateReason: String, Sendable, Codable, CaseIterable {

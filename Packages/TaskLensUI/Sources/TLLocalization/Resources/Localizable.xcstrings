@@ -2347,6 +2347,23 @@
         }
       }
     },
+    "error.validation.invalidExpression": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هذه ليست عملية حسابية يستطيع TaskLens تنفيذها."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That is not a calculation TaskLens can do."
+          }
+        }
+      }
+    },
     "error.validation.invalidURL": {
       "extractionState": "manual",
       "localizations": {
@@ -2428,6 +2445,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reset Zoom"
+          }
+        }
+      }
+    },
+    "intent.result.equals": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ = %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ = %@"
+          }
+        }
+      }
+    },
+    "intent.result.noteCreated": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم إنشاء الملاحظة: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note created: %@"
+          }
+        }
+      }
+    },
+    "intent.result.savedToInbox": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم الحفظ في الوارد."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved to the inbox."
+          }
+        }
+      }
+    },
+    "intent.result.savedToSession": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم الحفظ في %@."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved to %@."
           }
         }
       }
@@ -5220,6 +5305,108 @@
         }
       }
     },
+    "widget.description": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إجراءات سريعة وآخر الجلسات ومساحة عملك."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick actions, recent sessions and your workspace."
+          }
+        }
+      }
+    },
+    "widget.itemCount": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld عناصر"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld items"
+          }
+        }
+      }
+    },
+    "widget.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TaskLens"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TaskLens"
+          }
+        }
+      }
+    },
+    "widget.noSessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا توجد جلسات بعد. ابدأ واحدة في TaskLens."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sessions yet. Start one in TaskLens."
+          }
+        }
+      }
+    },
+    "widget.noWorkspaces": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "افتح TaskLens لإنشاء مساحة عمل."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open TaskLens to create a workspace."
+          }
+        }
+      }
+    },
+    "widget.recentSessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "آخر الجلسات"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent Sessions"
+          }
+        }
+      }
+    },
     "workspace.copyName": {
       "extractionState": "manual",
       "localizations": {
@@ -5301,6 +5488,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Developer"
+          }
+        }
+      }
+    },
+    "workspace.kind.research": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بحث"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Research"
           }
         }
       }

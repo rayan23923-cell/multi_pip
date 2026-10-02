@@ -63,6 +63,7 @@ extension L10nKey {
         case .work: .workspaceKindWork
         case .shopping: .workspaceKindShopping
         case .developer: .workspaceKindDeveloper
+        case .research: .workspaceKindResearch
         default: .workspaceKindCustom
         }
     }

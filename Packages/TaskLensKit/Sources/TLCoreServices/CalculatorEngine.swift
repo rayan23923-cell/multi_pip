@@ -288,6 +288,42 @@ public struct CalculatorEngine: Sendable, Equatable {
         return Decimal(string: text, locale: posix)
     }
 
+    /// Evaluates typed text such as "12*3+4" or "١٢ × ٣" with the same rules as
+    /// the keypad. Nil for anything that is not a plain calculation.
+    public static func evaluate(_ text: String) -> Completion? {
+        var engine = CalculatorEngine()
+        var keys: [Key] = []
+        for character in text where !character.isWhitespace {
+            if let digit = character.wholeNumberValue, (0...9).contains(digit) {
+                keys.append(.digit(digit))
+                continue
+            }
+            switch character {
+            case ".", ",", "٫": keys.append(.decimalPoint)
+            case "+": keys.append(.op(.add))
+            case "-", "−", "–": keys.append(.op(.subtract))
+            case "*", "×", "x", "X": keys.append(.op(.multiply))
+            case "/", "÷": keys.append(.op(.divide))
+            case "%", "٪": keys.append(.percent)
+            case "=": continue
+            default: return nil
+            }
+        }
+        guard keys.contains(where: { if case .digit = $0 { true } else { false } }) else { return nil }
+        if case .op(.subtract) = keys.first {
+            // A leading minus negates the first number.
+            keys.removeFirst()
+            if let index = keys.firstIndex(where: { if case .digit = $0 { false } else if case .decimalPoint = $0 { false } else { true } }) {
+                keys.insert(.toggleSign, at: index)
+            } else {
+                keys.append(.toggleSign)
+            }
+        }
+        _ = engine.press(keys)
+        guard let completion = engine.press(.equals), !engine.isError else { return nil }
+        return completion
+    }
+
     public static func text(for value: Decimal) -> String {
         var value = value
         if value.isZero { value = 0 } // normalizes -0
