@@ -12,6 +12,8 @@ public struct Repositories: Sendable {
     public let clipboardItems: any Repository<ClipboardItem>
     public let calculations: any Repository<CalculationRecord>
     public let actionRecords: any Repository<ActionRecord>
+    public let pipCards: any Repository<PiPCard>
+    public let pipPresentation: any Repository<PiPPresentation>
 
     public init(
         workspaces: any Repository<Workspace>,
@@ -21,7 +23,9 @@ public struct Repositories: Sendable {
         notes: any Repository<Note>,
         clipboardItems: any Repository<ClipboardItem>,
         calculations: any Repository<CalculationRecord> = InMemoryRepository<CalculationRecord>(),
-        actionRecords: any Repository<ActionRecord> = InMemoryRepository<ActionRecord>()
+        actionRecords: any Repository<ActionRecord> = InMemoryRepository<ActionRecord>(),
+        pipCards: any Repository<PiPCard> = InMemoryRepository<PiPCard>(),
+        pipPresentation: any Repository<PiPPresentation> = InMemoryRepository<PiPPresentation>()
     ) {
         self.workspaces = workspaces
         self.sessions = sessions
@@ -31,6 +35,8 @@ public struct Repositories: Sendable {
         self.clipboardItems = clipboardItems
         self.calculations = calculations
         self.actionRecords = actionRecords
+        self.pipCards = pipCards
+        self.pipPresentation = pipPresentation
     }
 
     public static func inMemory() -> Repositories {
@@ -42,7 +48,9 @@ public struct Repositories: Sendable {
             notes: InMemoryRepository<Note>(),
             clipboardItems: InMemoryRepository<ClipboardItem>(),
             calculations: InMemoryRepository<CalculationRecord>(),
-            actionRecords: InMemoryRepository<ActionRecord>()
+            actionRecords: InMemoryRepository<ActionRecord>(),
+            pipCards: InMemoryRepository<PiPCard>(),
+            pipPresentation: InMemoryRepository<PiPPresentation>()
         )
     }
 
@@ -60,7 +68,9 @@ public struct Repositories: Sendable {
             notes: JSONFileRepository<Note>(directory: directory, logger: logger),
             clipboardItems: JSONFileRepository<ClipboardItem>(directory: directory, logger: logger),
             calculations: JSONFileRepository<CalculationRecord>(directory: directory, logger: logger),
-            actionRecords: JSONFileRepository<ActionRecord>(directory: directory, logger: logger)
+            actionRecords: JSONFileRepository<ActionRecord>(directory: directory, logger: logger),
+            pipCards: JSONFileRepository<PiPCard>(directory: directory, logger: logger),
+            pipPresentation: JSONFileRepository<PiPPresentation>(directory: directory, logger: logger)
         )
     }
 }

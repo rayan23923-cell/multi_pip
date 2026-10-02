@@ -13,6 +13,8 @@ struct AppContainer: Sendable {
     let sessionContent: SessionContentService
     /// Remembers tool positions for Resume.
     let toolState: ToolStateRecorder
+    /// Cards kept for Picture in Picture.
+    let pip: PiPWorkspaceService
     let capture: CaptureService
     let notes: NoteService
     let clipboard: ClipboardService
@@ -67,6 +69,12 @@ struct AppContainer: Sendable {
             logger: logger.scoped("sessions")
         )
         self.toolState = ToolStateRecorder(service: sessionContent, clock: clock)
+        self.pip = PiPWorkspaceService(
+            cards: repositories.pipCards,
+            presentation: repositories.pipPresentation,
+            clock: clock,
+            logger: logger.scoped("pip")
+        )
         self.capture = capture
         self.notes = NoteService(notes: repositories.notes, clock: clock, logger: logger.scoped("notes"))
         self.clipboard = ClipboardService(

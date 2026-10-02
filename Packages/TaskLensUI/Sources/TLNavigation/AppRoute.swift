@@ -32,6 +32,8 @@ public enum AppRoute: Hashable, Sendable {
     case browser(WorkspaceID?)
     /// The browser opening this page in a new tab (Resume).
     case browserPage(URL)
+    /// Picture in Picture: the cards kept in view and the start/stop controls.
+    case pip
     case documents(WorkspaceID?)
     /// Viewers, chosen by document kind.
     case pdf(DocumentID)
@@ -49,6 +51,16 @@ extension AppRoute {
         case .notes: state.noteID.map(AppRoute.note) ?? .notes(workspaceID)
         default: tool(state.tool, workspaceID: workspaceID)
         }
+    }
+
+    /// Where Picture in Picture returns to when the user taps its window (Restore).
+    public static func restoring(_ card: PiPCard) -> AppRoute {
+        let origin = card.origin
+        if let noteID = origin.noteID { return .note(noteID) }
+        if let documentID = origin.documentID { return .pdf(documentID) }
+        if let sessionID = origin.sessionID { return .session(sessionID) }
+        if card.kind == .calculation { return .calculator(card.workspaceID) }
+        return .pip
     }
 
     /// The viewer route for a document.
@@ -84,6 +96,9 @@ public final class AppRouter {
     public var settingsPath: [AppRoute] = []
     /// A search the Command Center should run when it appears (Search action).
     public var pendingSearch: String?
+    /// Content a screen asked to keep in Picture in Picture; the app adds it
+    /// to the Picture in Picture cards and shows them.
+    public var pendingPiP: PiPRequest?
 
     public init(selectedTab: AppTab = .commandCenter) {
         self.selectedTab = selectedTab
@@ -113,6 +128,11 @@ public final class AppRouter {
         setPath([], for: .commandCenter)
     }
 
+    /// Keeps content in Picture in Picture (Keep in Picture in Picture).
+    public func keepInPiP(_ request: PiPRequest) {
+        pendingPiP = request
+    }
+
     public func popToRoot(_ tab: AppTab? = nil) {
         setPath([], for: tab ?? selectedTab)
     }
@@ -136,4 +156,12 @@ public final class AppRouter {
         case .settings: settingsPath = path
         }
     }
+}
+
+/// Content to keep in Picture in Picture.
+public enum PiPRequest: Equatable, Sendable {
+    /// What a tool shows now (a note, a page, a result).
+    case output(ToolOutput, workspaceID: WorkspaceID?)
+    /// An item saved in a session.
+    case item(ContextItem)
 }

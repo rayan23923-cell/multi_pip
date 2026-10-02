@@ -39,6 +39,10 @@ struct TestEnvironment {
         )
     }
 
+    var pip: PiPWorkspaceService {
+        PiPWorkspaceService(cards: repositories.pipCards, presentation: repositories.pipPresentation, clock: clock, logger: .disabled())
+    }
+
     var sessions: SessionService {
         SessionService(
             workspaces: repositories.workspaces,

@@ -1,7 +1,9 @@
 import SwiftUI
+import TLCoreServices
 import TLDesignSystem
 import TLDomain
 import TLLocalization
+import TLNavigation
 
 public struct NotesView: View {
     @State private var model: NotesModel
@@ -10,6 +12,7 @@ public struct NotesView: View {
     @State private var pendingDeletion: Note?
     @State private var draft: String?
     @State private var openingNoteID: NoteID?
+    @Environment(AppRouter.self) private var router
 
     /// `draft` opens the editor on a new note holding that text;
     /// `openingNote` opens an existing note (Resume).
@@ -125,6 +128,12 @@ public struct NotesView: View {
             .accessibilityIdentifier("note.pin")
             Button { attaching = note } label: { TLLabel(.notesAttach, systemImage: "paperclip") }
                 .accessibilityIdentifier("note.attach")
+            Button {
+                router.keepInPiP(.output(NoteService.output(for: note), workspaceID: note.workspaceID))
+            } label: {
+                TLLabel(.pipKeep, systemImage: "pip.enter")
+            }
+            .accessibilityIdentifier("note.keepInPiP")
             Divider()
             Button(role: .destructive) { pendingDeletion = note } label: {
                 TLLabel(.commonDelete, systemImage: "trash")

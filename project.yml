@@ -56,6 +56,11 @@ targets:
         # rest of the app keeps App Transport Security fully on.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoadsInWebContent: true
+        # "Audio, AirPlay, and Picture in Picture": required for the Picture in
+        # Picture window to keep showing while TaskLens is in the background.
+        # TaskLens plays no audio and does no other background work.
+        UIBackgroundModes:
+          - audio
     entitlements:
       path: App/TaskLens/TaskLens.entitlements
       properties:
@@ -112,6 +117,8 @@ targets:
         product: TLActionsUI
       - package: TaskLensUI
         product: ShareFeature
+      - package: TaskLensUI
+        product: PiPFeature
 
   # Share extension: accepts text, links, images, PDFs and other files.
   TaskLensShare:

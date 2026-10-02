@@ -436,6 +436,15 @@ private struct SessionItemDetail: View {
                     Button { dismiss() } label: { Text(L10nKey.commonDone) }
                         .accessibilityIdentifier("sessionItem.done")
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        dismiss()
+                        router.keepInPiP(.item(current))
+                    } label: {
+                        TLLabel(.pipKeep, systemImage: "pip.enter")
+                    }
+                    .accessibilityIdentifier("sessionItem.keepInPiP")
+                }
             }
             .actionFeedback(feedback)
         }

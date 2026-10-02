@@ -3,6 +3,7 @@ import SwiftUI
 import TLDesignSystem
 import TLDomain
 import TLLocalization
+import TLNavigation
 
 public struct PDFViewerView: View {
     @State private var model: PDFViewerModel
@@ -10,6 +11,7 @@ public struct PDFViewerView: View {
     @State private var showsText = false
     @State private var isGoingToPage = false
     @State private var pageInput = ""
+    @Environment(AppRouter.self) private var router
 
     public init(model: PDFViewerModel) {
         _model = State(initialValue: model)
@@ -84,6 +86,14 @@ public struct PDFViewerView: View {
                         TLLabel(.commonSaveToSession, systemImage: "tray.and.arrow.down")
                     }
                     .accessibilityIdentifier("pdf.save")
+                    Button {
+                        if let output = model.pageOutput {
+                            router.keepInPiP(.output(output, workspaceID: model.document?.workspaceID))
+                        }
+                    } label: {
+                        TLLabel(.pipKeep, systemImage: "pip.enter")
+                    }
+                    .accessibilityIdentifier("pdf.keepInPiP")
                     if let url = model.fileURL {
                         ShareLink(item: url) { TLLabel(.actionShare, systemImage: "square.and.arrow.up") }
                     }

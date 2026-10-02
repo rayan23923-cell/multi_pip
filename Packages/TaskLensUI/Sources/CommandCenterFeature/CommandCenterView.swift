@@ -95,6 +95,10 @@ public struct CommandCenterView: View {
                     QuickActionTile(.workspaceToolDocuments, systemImage: WorkspaceTool.documents.symbolName, tint: .teal)
                 }
                 .accessibilityIdentifier("commandCenter.documents")
+                Button { router.push(.pip) } label: {
+                    QuickActionTile(.pipTitle, systemImage: "pip", tint: .indigo)
+                }
+                .accessibilityIdentifier("commandCenter.pip")
             }
             .buttonStyle(.borderless)
             .listRowInsets(EdgeInsets(top: TLSpacing.s, leading: TLSpacing.s, bottom: TLSpacing.s, trailing: TLSpacing.s))

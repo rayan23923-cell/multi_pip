@@ -136,6 +136,19 @@ public final class PDFViewerModel: ContextProducing {
         return text
     }
 
+    /// The current page's text, for Picture in Picture. A page without a
+    /// text layer (a scan) gives a card with the document name and page only.
+    public var pageOutput: ToolOutput? {
+        guard let document else { return nil }
+        let text = pdf?.page(at: currentPage)?.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !text.isEmpty else {
+            var output = DocumentService.output(for: document)
+            output.metadata["page"] = .number(Double(currentPage + 1))
+            return output
+        }
+        return DocumentService.textOutput(text, from: document, page: currentPage)
+    }
+
     // MARK: Saving
 
     /// The whole document.

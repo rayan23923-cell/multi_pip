@@ -48,6 +48,14 @@ public struct CalculatorView: View {
                         TLLabel(.calculatorSendToActions, systemImage: "bolt")
                     }
                     .accessibilityIdentifier("calculator.sendToActions")
+                    Button {
+                        if let output = model.toolOutput {
+                            router.keepInPiP(.output(output, workspaceID: model.workspaceID))
+                        }
+                    } label: {
+                        TLLabel(.pipKeep, systemImage: "pip.enter")
+                    }
+                    .accessibilityIdentifier("calculator.keepInPiP")
                 } label: {
                     TLLabel(.commonMore, systemImage: "ellipsis.circle")
                 }

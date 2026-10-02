@@ -6,6 +6,7 @@ import DocumentsFeature
 import ImageViewerFeature
 import LensFeature
 import NotesFeature
+import PiPFeature
 import SessionsFeature
 import SettingsFeature
 import SwiftUI
@@ -19,9 +20,12 @@ struct RootView: View {
     @Environment(AppRouter.self) private var router
     /// Shared so browser tabs survive leaving the browser screen.
     @State private var browser: BrowserModel
+    /// Owned by the app so the Picture in Picture window outlives any one screen.
+    let pip: PiPWorkspaceModel
 
-    init(container: AppContainer) {
+    init(container: AppContainer, pip: PiPWorkspaceModel) {
         self.container = container
+        self.pip = pip
         let browser = BrowserModel(toolCapture: container.toolCapture)
         browser.stateRecorder = container.toolState
         _browser = State(initialValue: browser)
@@ -37,24 +41,43 @@ struct RootView: View {
                     captureService: container.capture,
                     searchService: container.search
                 ))
-                .withAppDestinations(container, browser: browser)
+                .withAppDestinations(container, browser: browser, pip: pip)
             }
             .tabItem { tabLabel(.tabCommandCenter, systemImage: "sparkle.magnifyingglass") }
             .tag(AppTab.commandCenter)
 
             NavigationStack(path: $router.workspacesPath) {
                 WorkspaceListView(model: WorkspaceListModel(service: container.workspaces))
-                    .withAppDestinations(container, browser: browser)
+                    .withAppDestinations(container, browser: browser, pip: pip)
             }
             .tabItem { tabLabel(.tabWorkspaces, systemImage: "square.grid.2x2") }
             .tag(AppTab.workspaces)
 
             NavigationStack(path: $router.settingsPath) {
                 SettingsView(version: AppContainer.appVersion, storage: container.storage)
-                    .withAppDestinations(container, browser: browser)
+                    .withAppDestinations(container, browser: browser, pip: pip)
             }
             .tabItem { tabLabel(.tabSettings, systemImage: "gearshape") }
             .tag(AppTab.settings)
+        }
+        .task {
+            pip.onRestore = { card in
+                // The user tapped the window: show what the card came from.
+                let route = AppRoute.restoring(card)
+                if router.path(for: router.selectedTab).last != route { router.push(route) }
+            }
+            await pip.load(afterLaunch: true)
+        }
+        .onChange(of: router.pendingPiP) { _, request in
+            guard let request else { return }
+            router.pendingPiP = nil
+            Task {
+                switch request {
+                case .output(let output, let workspaceID): await pip.keep(output, workspaceID: workspaceID)
+                case .item(let item): await pip.keep(item)
+                }
+                if router.path(for: router.selectedTab).last != .pip { router.push(.pip) }
+            }
         }
     }
 
@@ -67,9 +90,20 @@ struct RootView: View {
     }
 }
 
+extension RootView {
+    /// Created once per app run: AVKit allows one Picture in Picture window.
+    @MainActor
+    static func makePiP(container: AppContainer, arguments: [String] = ProcessInfo.processInfo.arguments) -> PiPWorkspaceModel {
+        let engine: any PictureInPictureEngine = arguments.contains("-TaskLensPiPUnsupported")
+            ? UnavailablePictureInPictureEngine()
+            : AVKitPictureInPictureEngine()
+        return PiPWorkspaceModel(service: container.pip, engine: engine)
+    }
+}
+
 private extension View {
     /// Maps routes to feature screens. Kept in the app so features stay independent.
-    func withAppDestinations(_ container: AppContainer, browser: BrowserModel) -> some View {
+    func withAppDestinations(_ container: AppContainer, browser: BrowserModel, pip: PiPWorkspaceModel) -> some View {
         navigationDestination(for: AppRoute.self) { route in
             switch route {
             case .workspace(let id):
@@ -142,6 +176,8 @@ private extension View {
                     .onAppear { browser.workspaceID = workspaceID }
             case .browserPage(let url):
                 BrowserView(model: browser, opening: url)
+            case .pip:
+                PiPWorkspaceView(model: pip)
             case .documents(let workspaceID):
                 DocumentLibraryView(model: DocumentLibraryModel(
                     workspaceID: workspaceID,
@@ -173,12 +209,12 @@ private extension View {
 }
 
 #Preview("Light") {
-    RootView(container: .preview())
+    RootView(container: .preview(), pip: RootView.makePiP(container: .preview()))
         .environment(AppRouter())
 }
 
 #Preview("Dark, Arabic, RTL") {
-    RootView(container: .preview())
+    RootView(container: .preview(), pip: RootView.makePiP(container: .preview()))
         .environment(AppRouter())
         .environment(\.locale, Locale(identifier: "ar"))
         .environment(\.layoutDirection, .rightToLeft)
@@ -186,7 +222,7 @@ private extension View {
 }
 
 #Preview("Accessibility text size") {
-    RootView(container: .preview())
+    RootView(container: .preview(), pip: RootView.makePiP(container: .preview()))
         .environment(AppRouter())
         .dynamicTypeSize(.accessibility3)
 }

@@ -28,6 +28,7 @@ let package = Package(
         .library(name: "ImageViewerFeature", targets: ["ImageViewerFeature"]),
         .library(name: "TextViewerFeature", targets: ["TextViewerFeature"]),
         .library(name: "ShareFeature", targets: ["ShareFeature"]),
+        .library(name: "PiPFeature", targets: ["PiPFeature"]),
     ],
     dependencies: [
         .package(path: "../TaskLensKit"),
@@ -155,6 +156,16 @@ let package = Package(
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
             ]
         ),
+        // Picture in Picture workspace: cards drawn into video frames for AVKit.
+        .target(
+            name: "PiPFeature",
+            dependencies: [
+                "TLLocalization", "TLDesignSystem",
+                .product(name: "TLFoundation", package: "TaskLensKit"),
+                .product(name: "TLDomain", package: "TaskLensKit"),
+                .product(name: "TLCoreServices", package: "TaskLensKit"),
+            ]
+        ),
         // UI of the share extension. Must stay app-extension safe (no UIApplication.shared).
         .target(
             name: "ShareFeature",
@@ -170,7 +181,7 @@ let package = Package(
                 "TLLocalization", "TLNavigation", "CommandCenterFeature", "WorkspacesFeature", "SessionsFeature",
                 "LensFeature", "ClipboardFeature",
                 "NotesFeature", "CalculatorFeature", "BrowserFeature", "DocumentsFeature",
-                "ImageViewerFeature", "TextViewerFeature", "TLActionsUI", "ShareFeature",
+                "ImageViewerFeature", "TextViewerFeature", "TLActionsUI", "ShareFeature", "PiPFeature",
                 .product(name: "TLFoundation", package: "TaskLensKit"),
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLData", package: "TaskLensKit"),
