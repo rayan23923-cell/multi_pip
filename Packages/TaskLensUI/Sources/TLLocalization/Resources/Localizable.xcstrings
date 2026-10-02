@@ -2942,6 +2942,23 @@
         }
       }
     },
+    "common.continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متابعة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        }
+      }
+    },
     "common.copied": {
       "extractionState": "manual",
       "localizations": {
@@ -3856,6 +3873,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Camera access is off"
+          }
+        }
+      }
+    },
+    "lens.camera.explainMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سيطلب iOS الآن الوصول إلى الكاميرا. يستخدم TaskLens الكاميرا فقط عندما تلتقط صورة لتقرأها العدسة. تُقرأ الصورة على هذا الجهاز ولا تُرفع ولا تُحفظ إلا إذا حفظت نتيجة."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS will now ask for camera access. TaskLens uses the camera only when you take a photo for Lens to read. The photo is read on this device and isn't uploaded or kept unless you save a result."
+          }
+        }
+      }
+    },
+    "lens.camera.explainTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استخدام الكاميرا للعدسة؟"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the camera for Lens?"
+          }
+        }
+      }
+    },
+    "lens.camera.notNow": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ليس الآن"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Now"
           }
         }
       }

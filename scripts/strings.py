@@ -29,6 +29,7 @@ STRINGS = [
     ("common.save", "Save", "حفظ"),
     ("common.more", "More", "المزيد"),
     ("common.errorTitle", "Something went wrong", "حدث خطأ"),
+    ("common.continue", "Continue", "متابعة"),
 
     ("capture.placeholder", "Type or paste something…", "اكتب أو الصق شيئاً…"),
     ("capture.inbox", "Inbox", "الوارد"),
@@ -357,6 +358,9 @@ STRINGS = [
 
     ("lens.title", "Lens", "العدسة"),
     ("lens.subtitle", "Understand text and links", "افهم النصوص والروابط"),
+    ("lens.camera.explainTitle", "Use the camera for Lens?", "استخدام الكاميرا للعدسة؟"),
+    ("lens.camera.explainMessage", "iOS will now ask for camera access. TaskLens uses the camera only when you take a photo for Lens to read. The photo is read on this device and isn't uploaded or kept unless you save a result.", "سيطلب iOS الآن الوصول إلى الكاميرا. يستخدم TaskLens الكاميرا فقط عندما تلتقط صورة لتقرأها العدسة. تُقرأ الصورة على هذا الجهاز ولا تُرفع ولا تُحفظ إلا إذا حفظت نتيجة."),
+    ("lens.camera.notNow", "Not Now", "ليس الآن"),
     ("lens.camera.deniedTitle", "Camera access is off", "الوصول إلى الكاميرا متوقف"),
     ("lens.camera.deniedMessage", "To take a photo for Lens, allow Camera for TaskLens in iOS Settings. You can still choose a photo or a file.", "لالتقاط صورة للعدسة، اسمح بالكاميرا لتطبيق TaskLens من إعدادات iOS. ما زال بإمكانك اختيار صورة أو ملف."),
     ("lens.placeholder", "Paste or type text, a number or a link", "الصق أو اكتب نصاً أو رقماً أو رابطاً"),

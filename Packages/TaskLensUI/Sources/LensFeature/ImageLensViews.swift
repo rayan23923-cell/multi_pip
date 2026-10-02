@@ -15,6 +15,7 @@ struct ImageLensInputSection: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var isImportingFile = false
     @State private var isCameraDenied = false
+    @State private var isExplainingCamera = false
     @Environment(\.openURL) private var openURL
     @State private var isShowingCamera = false
 
@@ -30,6 +31,8 @@ struct ImageLensInputSection: View {
                         // A denied camera would open a blank screen: explain instead.
                         switch AVCaptureDevice.authorizationStatus(for: .video) {
                         case .denied, .restricted: isCameraDenied = true
+                        // Say why before iOS asks for the first time.
+                        case .notDetermined: isExplainingCamera = true
                         default: isShowingCamera = true
                         }
                     } label: {
@@ -68,6 +71,17 @@ struct ImageLensInputSection: View {
             case .failure:
                 model.failedToLoad(source: .fileImport)
             }
+        }
+        .alert(Text(L10nKey.lensCameraExplainTitle), isPresented: $isExplainingCamera) {
+            Button {
+                isShowingCamera = true
+            } label: {
+                Text(L10nKey.commonContinue)
+            }
+            .accessibilityIdentifier("lens.camera.continue")
+            Button(role: .cancel) {} label: { Text(L10nKey.lensCameraNotNow) }
+        } message: {
+            Text(L10nKey.lensCameraExplainMessage)
         }
         .alert(Text(L10nKey.lensCameraDeniedTitle), isPresented: $isCameraDenied) {
             Button {
