@@ -116,7 +116,8 @@ struct ActionGeneratorTests {
         #expect(actions.allSatisfy { $0.targetItemID == item.id })
 
         // The same number coming from the calculator is not sent back to it first.
-        let fromCalculator = try await env.capture.capture(.text("42"), source: .calculator)
+        // (Different text: capturing "42" again would return the first item as a duplicate.)
+        let fromCalculator = try await env.capture.capture(.text("43"), source: .calculator)
         #expect(await ActionEngine(context: english).suggestActions(for: fromCalculator).first?.type == .saveToSession)
     }
 }

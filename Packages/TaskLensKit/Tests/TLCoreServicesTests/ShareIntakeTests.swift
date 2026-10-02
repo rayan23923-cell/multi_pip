@@ -133,7 +133,8 @@ struct ShareIntakeTests {
     @Test func previewsRunTheContextAndActionEngines() {
         let phone = ShareService.preview(for: SharedAttachment(payload: .text("+964 770 123 4567")))
         #expect(phone.analysis.category == .phone)
-        #expect(phone.analysis.actions.first?.type == .call)
+        // In the share sheet, saving comes first; Call is the best action after it.
+        #expect(phone.analysis.actions.prefix(2).map(\.type) == [.saveToSession, .call])
 
         let link = ShareService.preview(for: SharedAttachment(payload: .text("https://example.com")))
         #expect(link.content == .url(URL(string: "https://example.com")!))
