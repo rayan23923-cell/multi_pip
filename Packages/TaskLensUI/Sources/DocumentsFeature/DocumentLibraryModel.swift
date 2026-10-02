@@ -38,22 +38,39 @@ public final class DocumentLibraryModel {
     /// Imports files picked in the Files app. Returns the imported documents.
     @discardableResult
     public func importFiles(_ urls: [URL]) async -> [Document] {
-        await importEach(urls) { url in
+        isImporting = true
+        defer { isImporting = false }
+        let sessionID = await targetSessionID()
+        var imported: [Document] = []
+        for url in urls {
             let isScoped = url.startAccessingSecurityScopedResource()
             defer { if isScoped { url.stopAccessingSecurityScopedResource() } }
-            return try await self.documentService.importFile(at: url, workspaceID: self.workspaceID, sessionID: try await self.targetSessionID())
+            do {
+                imported.append(try await documentService.importFile(at: url, workspaceID: workspaceID, sessionID: sessionID))
+            } catch {
+                errorMessage = L10n.message(for: error)
+            }
         }
+        if !imported.isEmpty { await load() }
+        return imported
     }
 
     /// Imports raw data, e.g. a photo from the photo picker.
     @discardableResult
     public func importData(_ data: Data, filename: String, contentType: UTType?) async -> Document? {
-        await importEach([data]) { data in
-            try await self.documentService.importData(
+        isImporting = true
+        defer { isImporting = false }
+        do {
+            let document = try await documentService.importData(
                 data, filename: filename, contentType: contentType,
-                workspaceID: self.workspaceID, sessionID: try await self.targetSessionID()
+                workspaceID: workspaceID, sessionID: await targetSessionID()
             )
-        }.first
+            await load()
+            return document
+        } catch {
+            errorMessage = L10n.message(for: error)
+            return nil
+        }
     }
 
     public func delete(_ id: DocumentID) async {
@@ -65,25 +82,9 @@ public final class DocumentLibraryModel {
         }
     }
 
-    private func targetSessionID() async throws -> SessionID? {
+    /// The workspace's active session, so imports show up in what the user is working on.
+    private func targetSessionID() async -> SessionID? {
         guard let workspaceID else { return nil }
-        return try await sessionService.activeSession(in: workspaceID)?.id
-    }
-
-    private func importEach<Input>(_ inputs: [Input], _ work: (Input) async throws -> Document) async -> [Document] {
-        isImporting = true
-        defer { isImporting = false }
-        var imported: [Document] = []
-        for input in inputs {
-            do {
-                imported.append(try await work(input))
-            } catch {
-                errorMessage = L10n.message(for: error)
-            }
-        }
-        if !imported.isEmpty {
-            await load()
-        }
-        return imported
+        return try? await sessionService.activeSession(in: workspaceID)?.id
     }
 }
