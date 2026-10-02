@@ -146,6 +146,11 @@ public struct AIAnswer: Sendable, Equatable {
 
     public static let maximumSuggestions = 3
 
+    public init(text: String, suggestions: [ActionType]) {
+        self.text = text
+        self.suggestions = suggestions
+    }
+
     /// Actions that reach outside TaskLens (calls, messages, links, calendar):
     /// a tap on an AI suggestion asks for confirmation first.
     public static let sensitiveActions: Set<ActionType> = [
