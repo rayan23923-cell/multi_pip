@@ -52,6 +52,10 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         TLAppGroupIdentifier: $(APP_GROUP_IDENTIFIER)
+        # The in-app browser may open plain http pages the user types; the
+        # rest of the app keeps App Transport Security fully on.
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoadsInWebContent: true
     entitlements:
       path: App/TaskLens/TaskLens.entitlements
       properties:
@@ -89,6 +93,18 @@ targets:
         product: LensFeature
       - package: TaskLensUI
         product: ClipboardFeature
+      - package: TaskLensUI
+        product: NotesFeature
+      - package: TaskLensUI
+        product: CalculatorFeature
+      - package: TaskLensUI
+        product: BrowserFeature
+      - package: TaskLensUI
+        product: DocumentsFeature
+      - package: TaskLensUI
+        product: ImageViewerFeature
+      - package: TaskLensUI
+        product: TextViewerFeature
 
   TaskLensTests:
     type: bundle.unit-test

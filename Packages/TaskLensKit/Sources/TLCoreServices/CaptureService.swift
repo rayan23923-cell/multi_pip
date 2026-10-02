@@ -84,6 +84,12 @@ public struct CaptureService: Sendable {
         return item
     }
 
+    /// Stores what a tool produced. Every tool saves through here.
+    @discardableResult
+    public func capture(_ output: ToolOutput, into sessionID: SessionID? = nil) async throws -> ContextItem {
+        try await capture(output.content, source: output.source, into: sessionID, metadata: output.itemMetadata)
+    }
+
     public func item(id: ContextItemID) async throws -> ContextItem {
         try await contextItems.require(id: id)
     }

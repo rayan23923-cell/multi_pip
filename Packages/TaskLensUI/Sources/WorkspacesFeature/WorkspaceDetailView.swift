@@ -141,7 +141,7 @@ public struct WorkspaceDetailView: View {
             Text(L10nKey.workspaceToolUpcoming).foregroundStyle(.secondary)
         } else {
             ForEach(workspace.tools, id: \.self) { tool in
-                if let route = Self.route(for: tool) {
+                if let route = AppRoute.tool(tool, workspaceID: workspace.id) {
                     NavigationLink(value: route) {
                         TLLabel(L10nKey.workspaceTool(tool), systemImage: tool.symbolName)
                     }
@@ -161,12 +161,4 @@ public struct WorkspaceDetailView: View {
         }
     }
 
-    /// Tools that already have a screen. The rest arrive in later phases.
-    private static func route(for tool: WorkspaceTool) -> AppRoute? {
-        switch tool {
-        case .lens: .lens
-        case .clipboard: .clipboard
-        default: nil
-        }
-    }
 }

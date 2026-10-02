@@ -10,6 +10,7 @@ struct TaskLensApp: App {
         WindowGroup {
             RootView(container: container)
                 .environment(router)
+                .task { await SampleDocuments.seedIfRequested(container.documents) }
         }
     }
 }

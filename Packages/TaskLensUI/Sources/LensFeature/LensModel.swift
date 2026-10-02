@@ -6,6 +6,8 @@ import TLLocalization
 
 /// Lens entry point: the user gives TaskLens some content and gets actions for it.
 ///
+/// Content sent from other tools (e.g. a calculator result) arrives as
+/// `initialInput` and is analyzed right away.
 /// This phase classifies text versus links only. Entity detection (phones,
 /// prices, dates) plugs in through `EntityDetecting` in the Context Engine phase.
 @MainActor
@@ -24,22 +26,20 @@ public final class LensModel {
         self.captureService = captureService
         self.sessionService = sessionService
         self.input = initialInput
+        if !initialInput.isEmpty {
+            analyze()
+        }
     }
 
     public var canAnalyze: Bool { !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
-    /// Actions available for the analyzed content, best first.
+    /// Action types this screen can perform today.
+    public static let supportedActions: Set<ActionType> = [.openURL, .copy, .share, .saveToSession]
+
+    /// Actions from the rule-based Action Engine that this screen can perform, best first.
     public var actions: [Action] {
         guard let content else { return [] }
-        var actions = [
-            Action(type: .copy, priority: .normal),
-            Action(type: .share, priority: .normal),
-            Action(type: .saveToSession, priority: .high),
-        ]
-        if case .url = content {
-            actions.append(Action(type: .openURL, priority: .primary, requiresConfirmation: false))
-        }
-        return Action.ranked(actions)
+        return BasicActionSuggester.actions(for: content).filter { Self.supportedActions.contains($0.type) }
     }
 
     public func loadTarget() async {

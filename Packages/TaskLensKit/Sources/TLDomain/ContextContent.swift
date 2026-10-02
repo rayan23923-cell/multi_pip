@@ -53,13 +53,15 @@ public struct FileReference: Codable, Sendable, Hashable {
 public enum FileKind: String, Codable, Sendable, CaseIterable {
     case image
     case pdf
+    /// Plain text files (.txt, .md, .csv, source code...).
+    case text
     case document
 
     var itemType: ContextItemType {
         switch self {
         case .image: .image
         case .pdf: .pdf
-        case .document: .document
+        case .text, .document: .document
         }
     }
 }

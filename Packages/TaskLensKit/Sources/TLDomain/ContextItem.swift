@@ -68,4 +68,9 @@ public struct ContextSource: ExtensibleKind {
     public static let camera: ContextSource = "camera"
     public static let browser: ContextSource = "browser"
     public static let appIntent: ContextSource = "appIntent"
+    public static let notes: ContextSource = "notes"
+    public static let calculator: ContextSource = "calculator"
+    public static let documentViewer: ContextSource = "documentViewer"
+    public static let imageViewer: ContextSource = "imageViewer"
+    public static let textViewer: ContextSource = "textViewer"
 }

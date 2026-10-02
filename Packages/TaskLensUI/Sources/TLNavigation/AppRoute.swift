@@ -16,6 +16,41 @@ public enum AppRoute: Hashable, Sendable {
     case session(SessionID)
     case lens
     case clipboard
+    /// Lens pre-filled with content another tool sent to the Action Engine.
+    case lensInput(String)
+    /// Tools. The workspace, when given, scopes lists and picks the session to save to.
+    case notes(WorkspaceID?)
+    case calculator(WorkspaceID?)
+    case browser(WorkspaceID?)
+    case documents(WorkspaceID?)
+    /// Viewers, chosen by document kind.
+    case pdf(DocumentID)
+    case image(DocumentID)
+    case textDocument(DocumentID)
+}
+
+extension AppRoute {
+    /// The viewer route for a document.
+    public static func viewer(for document: Document) -> AppRoute {
+        switch document.kind {
+        case .pdf, .document: .pdf(document.id)
+        case .image: .image(document.id)
+        case .text: .textDocument(document.id)
+        }
+    }
+
+    /// The screen for a workspace tool.
+    public static func tool(_ tool: WorkspaceTool, workspaceID: WorkspaceID?) -> AppRoute? {
+        switch tool {
+        case .lens: .lens
+        case .clipboard: .clipboard
+        case .notes: .notes(workspaceID)
+        case .calculator: .calculator(workspaceID)
+        case .browser: .browser(workspaceID)
+        case .documents: .documents(workspaceID)
+        default: nil
+        }
+    }
 }
 
 /// Owns tab selection and one navigation stack per tab.

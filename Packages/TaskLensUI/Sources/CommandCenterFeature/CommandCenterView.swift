@@ -8,6 +8,7 @@ public struct CommandCenterView: View {
     @State private var model: CommandCenterModel
     @State private var isCreatingWorkspace = false
     @Environment(AppRouter.self) private var router
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(model: CommandCenterModel) {
         _model = State(initialValue: model)
@@ -41,6 +42,10 @@ public struct CommandCenterView: View {
         .errorAlert(message: $model.errorMessage)
     }
 
+    private var quickActionColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: dynamicTypeSize.isAccessibilitySize ? 220 : 96), spacing: TLSpacing.s)]
+    }
+
     // MARK: Dashboard
 
     @ViewBuilder
@@ -56,7 +61,7 @@ public struct CommandCenterView: View {
         }
 
         Section {
-            AdaptiveStack {
+            LazyVGrid(columns: quickActionColumns, spacing: TLSpacing.s) {
                 Button { isCreatingWorkspace = true } label: {
                     QuickActionTile(.workspacesCreate, systemImage: "plus.square.on.square")
                 }
@@ -69,6 +74,22 @@ public struct CommandCenterView: View {
                     QuickActionTile(.clipboardTitle, systemImage: "doc.on.clipboard", tint: .orange)
                 }
                 .accessibilityIdentifier("commandCenter.clipboard")
+                Button { router.push(.notes(nil)) } label: {
+                    QuickActionTile(.workspaceToolNotes, systemImage: WorkspaceTool.notes.symbolName, tint: .yellow)
+                }
+                .accessibilityIdentifier("commandCenter.notes")
+                Button { router.push(.calculator(nil)) } label: {
+                    QuickActionTile(.workspaceToolCalculator, systemImage: WorkspaceTool.calculator.symbolName, tint: .gray)
+                }
+                .accessibilityIdentifier("commandCenter.calculator")
+                Button { router.push(.browser(nil)) } label: {
+                    QuickActionTile(.workspaceToolBrowser, systemImage: WorkspaceTool.browser.symbolName, tint: .blue)
+                }
+                .accessibilityIdentifier("commandCenter.browser")
+                Button { router.push(.documents(nil)) } label: {
+                    QuickActionTile(.workspaceToolDocuments, systemImage: WorkspaceTool.documents.symbolName, tint: .teal)
+                }
+                .accessibilityIdentifier("commandCenter.documents")
             }
             .buttonStyle(.borderless)
             .listRowInsets(EdgeInsets(top: TLSpacing.s, leading: TLSpacing.s, bottom: TLSpacing.s, trailing: TLSpacing.s))

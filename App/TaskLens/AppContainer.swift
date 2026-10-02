@@ -14,11 +14,15 @@ struct AppContainer: Sendable {
     let notes: NoteService
     let clipboard: ClipboardService
     let search: SearchService
+    let calculator: CalculatorService
+    let documents: DocumentService
+    let toolCapture: ToolCaptureService
     let storage: SettingsView.StorageDescription
     let logger: TLLogger
 
     init(
         repositories: Repositories,
+        filesDirectory: URL,
         storage: SettingsView.StorageDescription,
         clock: any DateProviding = SystemDateProvider(),
         logger: TLLogger = TLLogger(category: "app")
@@ -57,6 +61,18 @@ struct AppContainer: Sendable {
             sessions: repositories.sessions,
             contextItems: repositories.contextItems
         )
+        self.calculator = CalculatorService(
+            records: repositories.calculations,
+            clock: clock,
+            logger: logger.scoped("calculator")
+        )
+        self.documents = DocumentService(
+            documents: repositories.documents,
+            filesDirectory: filesDirectory,
+            clock: clock,
+            logger: logger.scoped("documents")
+        )
+        self.toolCapture = ToolCaptureService(capture: capture, sessions: self.sessions)
         self.storage = storage
         self.logger = logger
     }
@@ -77,12 +93,18 @@ struct AppContainer: Sendable {
             logger.info("Store opened (\(location.kind.rawValue))")
             return AppContainer(
                 repositories: repositories,
+                filesDirectory: location.filesDirectory,
                 storage: location.kind == .appGroup ? .appGroup : .local,
                 logger: logger
             )
         } catch {
             logger.fault("Falling back to in-memory store: \(error)")
-            return AppContainer(repositories: .inMemory(), storage: .memory, logger: logger)
+            return AppContainer(
+                repositories: .inMemory(),
+                filesDirectory: temporaryFilesDirectory(),
+                storage: .memory,
+                logger: logger
+            )
         }
     }
 
@@ -98,7 +120,17 @@ struct AppContainer: Sendable {
     }
 
     static func preview() -> AppContainer {
-        AppContainer(repositories: .inMemory(), storage: .memory, logger: .disabled())
+        AppContainer(
+            repositories: .inMemory(),
+            filesDirectory: temporaryFilesDirectory(),
+            storage: .memory,
+            logger: .disabled()
+        )
+    }
+
+    /// Files for in-memory stores go to a throwaway folder.
+    private static func temporaryFilesDirectory() -> URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("TaskLensFiles-\(UUID().uuidString)", isDirectory: true)
     }
 
     static var appVersion: String {

@@ -49,6 +49,14 @@ struct TestEnvironment {
         NoteService(notes: repositories.notes, clock: clock, logger: .disabled())
     }
 
+    func calculator(historyLimit: Int = CalculatorService.defaultHistoryLimit) -> CalculatorService {
+        CalculatorService(records: repositories.calculations, clock: clock, historyLimit: historyLimit, logger: .disabled())
+    }
+
+    func documents(in directory: URL) -> DocumentService {
+        DocumentService(documents: repositories.documents, filesDirectory: directory, clock: clock, logger: .disabled())
+    }
+
     func clipboard(historyLimit: Int = ClipboardService.defaultHistoryLimit) -> ClipboardService {
         ClipboardService(
             clipboardItems: repositories.clipboardItems,
@@ -68,5 +76,13 @@ struct StubDetector: EntityDetecting {
 struct FailingDetector: EntityDetecting {
     func detectEntities(in content: ContextContent) async throws -> [DetectedEntity] {
         throw TaskLensError.unavailable(feature: "detector")
+    }
+}
+
+enum TemporaryDirectory {
+    static func make() -> URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("TaskLensServiceTests", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
     }
 }

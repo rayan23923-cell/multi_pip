@@ -54,6 +54,15 @@ public struct SessionService: Sendable {
             .first
     }
 
+    /// Where a tool should save: the active session of `workspaceID` when given,
+    /// otherwise the most recently active session anywhere. `nil` means the inbox.
+    public func captureTarget(preferring workspaceID: WorkspaceID?) async throws -> Session? {
+        if let workspaceID, let session = try await activeSession(in: workspaceID) {
+            return session
+        }
+        return try await activeSessions().first
+    }
+
     @discardableResult
     public func start(
         in workspaceID: WorkspaceID,
