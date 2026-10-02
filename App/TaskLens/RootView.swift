@@ -30,6 +30,8 @@ struct RootView: View {
     @State private var aiSettings: AISettingsModel
     @State private var dataControl: DataControlModel
     @Environment(WorkflowsModel.self) private var workflows: WorkflowsModel?
+    /// Used only when no model was injected (previews, the share harness).
+    @State private var fallbackWorkflows: WorkflowsModel
 
     init(container: AppContainer, pip: PiPWorkspaceModel, navigator: IntentNavigator = .shared) {
         self.container = container
@@ -39,6 +41,7 @@ struct RootView: View {
         browser.stateRecorder = container.toolState
         _browser = State(initialValue: browser)
         _aiSettings = State(initialValue: AISettingsModel(service: container.ai, secrets: container.aiSecrets))
+        _fallbackWorkflows = State(initialValue: WorkflowsModel(service: container.workflows, runner: container.workflowRunner))
         _dataControl = State(initialValue: DataControlModel(
             export: { try await container.exportData() },
             deleteEverything: { try await container.deleteEverything() }
@@ -55,14 +58,14 @@ struct RootView: View {
                     captureService: container.capture,
                     searchService: container.search
                 ))
-                .withAppDestinations(container, browser: browser, pip: pip)
+                .withAppDestinations(container, browser: browser, pip: pip, workflows: workflows ?? fallbackWorkflows)
             }
             .tabItem { tabLabel(.tabCommandCenter, systemImage: "sparkle.magnifyingglass") }
             .tag(AppTab.commandCenter)
 
             NavigationStack(path: $router.workspacesPath) {
                 WorkspaceListView(model: WorkspaceListModel(service: container.workspaces))
-                    .withAppDestinations(container, browser: browser, pip: pip)
+                    .withAppDestinations(container, browser: browser, pip: pip, workflows: workflows ?? fallbackWorkflows)
             }
             .tabItem { tabLabel(.tabWorkspaces, systemImage: "square.grid.2x2") }
             .tag(AppTab.workspaces)
@@ -77,7 +80,7 @@ struct RootView: View {
                             Task { await aiSettings.load() }
                         }
                     }
-                    .withAppDestinations(container, browser: browser, pip: pip)
+                    .withAppDestinations(container, browser: browser, pip: pip, workflows: workflows ?? fallbackWorkflows)
             }
             .tabItem { tabLabel(.tabSettings, systemImage: "gearshape") }
             .tag(AppTab.settings)
@@ -137,7 +140,7 @@ extension RootView {
 
 private extension View {
     /// Maps routes to feature screens. Kept in the app so features stay independent.
-    func withAppDestinations(_ container: AppContainer, browser: BrowserModel, pip: PiPWorkspaceModel) -> some View {
+    func withAppDestinations(_ container: AppContainer, browser: BrowserModel, pip: PiPWorkspaceModel, workflows: WorkflowsModel) -> some View {
         navigationDestination(for: AppRoute.self) { route in
             switch route {
             case .workspace(let id):
@@ -211,7 +214,7 @@ private extension View {
             case .pip:
                 PiPWorkspaceView(model: pip)
             case .workflows:
-                WorkflowsView(model: workflows ?? WorkflowsModel(service: container.workflows, runner: container.workflowRunner))
+                WorkflowsView(model: workflows)
             case .documents(let workspaceID):
                 DocumentLibraryView(model: DocumentLibraryModel(
                     workspaceID: workspaceID,
