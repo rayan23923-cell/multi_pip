@@ -60,7 +60,7 @@ final class ScreenLensUITests: XCTestCase {
         XCTAssertTrue(highlight.waitForExistence(timeout: 20), "No Lens results")
         XCTAssertFalse(element(app, "screenLens.status").exists, "Capture stopped after the frame")
         let labels = app.descendants(matching: .any).matching(identifier: "screenLens.highlight")
-            .allElementsBoundByIndex.map(\.label).joined(separator: " | ")
+            .allElementsBoundByIndex.map { $0.label }.joined(separator: " | ")
         XCTAssertTrue(labels.contains("199"), "Highlights: \(labels)")
         // Recommended actions for the chosen finding, nothing run on its own.
         XCTAssertTrue(element(app, "action.convertCurrency").waitForExistence(timeout: 5)
