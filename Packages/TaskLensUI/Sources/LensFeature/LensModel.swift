@@ -19,13 +19,21 @@ public final class LensModel {
     public private(set) var savedItem: ContextItem?
     public private(set) var captureTarget: Session?
     public var errorMessage: String?
+    /// Lens for images, screenshots, photos and documents.
+    public let imageLens: ImageLensModel
 
     private let captureService: CaptureService
     private let sessionService: SessionService
 
-    public init(captureService: CaptureService, sessionService: SessionService, initialInput: String = "") {
+    public init(
+        captureService: CaptureService,
+        sessionService: SessionService,
+        initialInput: String = "",
+        recognizer: any ImageRecognizing = VisionImageRecognizer()
+    ) {
         self.captureService = captureService
         self.sessionService = sessionService
+        self.imageLens = ImageLensModel(recognizer: recognizer, captureService: captureService, sessionService: sessionService)
         self.input = initialInput
         if !initialInput.isEmpty {
             analyze()

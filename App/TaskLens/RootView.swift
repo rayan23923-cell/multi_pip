@@ -152,6 +152,11 @@ private extension View {
                     sessionService: container.sessions,
                     initialInput: input
                 ))
+            case .lensFile(let url):
+                LensView(
+                    model: LensModel(captureService: container.capture, sessionService: container.sessions),
+                    openingFile: url
+                )
             case .notes(let workspaceID):
                 NotesView(model: NotesModel(
                     workspaceID: workspaceID,

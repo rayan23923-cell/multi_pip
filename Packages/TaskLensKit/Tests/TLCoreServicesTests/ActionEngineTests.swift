@@ -44,7 +44,7 @@ struct ActionGeneratorTests {
     }
 
     @Test func linkEmailAddressNumber() {
-        #expect(analyze("https://example.com").suggestions.primary.types == [.openURL, .saveToSession, .share])
+        #expect(analyze("https://example.com").suggestions.primary.types == [.openURL, .saveToSession, .search])
         #expect(analyze("hello@example.com").actions.first?.type == .sendEmail)
         #expect(analyze("1 Apple Park Way, Cupertino, CA 95014").actions.first?.type == .openInMaps)
         #expect(analyze("1,250").actions.first?.type == .calculate)
@@ -195,7 +195,7 @@ struct ActionRankingTests {
 
     @Test func historyCanPromoteAnAction() {
         let context = ActionContext(source: .manualEntry, preferredLanguage: "en", history: FixedHistory(preferred: .share))
-        #expect(analyze("https://example.com").suggestions.primary.types == [.openURL, .saveToSession, .share])
+        #expect(analyze("https://example.com").suggestions.primary.types == [.openURL, .saveToSession, .search])
         #expect(analyze("https://example.com", context: context).suggestions.primary.types == [.openURL, .share, .saveToSession])
         #expect(NoActionHistory().preference(for: .copy, category: .plainText) == 0)
     }

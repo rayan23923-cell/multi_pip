@@ -10,9 +10,12 @@ public struct LensView: View {
     @State private var feedback = ActionFeedback()
     @Environment(AppRouter.self) private var router
     @FocusState private var isInputFocused: Bool
+    /// An image or PDF to read as soon as the screen opens.
+    private let openingFile: URL?
 
-    public init(model: LensModel) {
+    public init(model: LensModel, openingFile: URL? = nil) {
         _model = State(initialValue: model)
+        self.openingFile = openingFile
     }
 
     public var body: some View {
@@ -46,7 +49,18 @@ public struct LensView: View {
                 Text(L10nKey.lensSubtitle)
             }
 
-            if let content = model.content, let analysis = model.analysis {
+            ImageLensInputSection(model: model.imageLens)
+
+            if model.imageLens.phase != .idle {
+                ImageLensResultSections(model: model.imageLens, feedback: feedback) { finding in
+                    ActionHandlers(
+                        onSave: { await model.imageLens.save(finding) },
+                        onCalculate: { router.push(.calculatorInput($0)) },
+                        onCreateNote: { router.push(.noteDraft($0)) },
+                        onSearch: { router.search($0) }
+                    )
+                }
+            } else if let content = model.content, let analysis = model.analysis {
                 Section {
                     DetectedTypeRow(analysis.category)
                         .accessibilityIdentifier("lens.detectedType")
@@ -74,7 +88,12 @@ public struct LensView: View {
         .navigationTitle(Text(L10nKey.lensTitle))
         .navigationBarTitleDisplayMode(.inline)
         .actionFeedback(feedback)
-        .task { await model.loadTarget() }
+        .task {
+            await model.loadTarget()
+            if let openingFile, model.imageLens.phase == .idle {
+                await model.imageLens.read(fileAt: openingFile, source: .fileImport)
+            }
+        }
         .errorAlert(message: $model.errorMessage)
     }
 }

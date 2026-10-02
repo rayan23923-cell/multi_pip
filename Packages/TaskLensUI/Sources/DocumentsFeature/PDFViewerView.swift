@@ -95,6 +95,12 @@ public struct PDFViewerView: View {
                     }
                     .accessibilityIdentifier("pdf.keepInPiP")
                     if let url = model.fileURL {
+                        Button { router.push(.lensFile(url)) } label: {
+                            TLLabel(.pdfLens, systemImage: "text.viewfinder")
+                        }
+                        .accessibilityIdentifier("pdf.lens")
+                    }
+                    if let url = model.fileURL {
                         ShareLink(item: url) { TLLabel(.actionShare, systemImage: "square.and.arrow.up") }
                     }
                     Button { isGoingToPage = true } label: {

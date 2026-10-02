@@ -185,9 +185,13 @@ final class ToolsUITests: XCTestCase {
 
         tap(app, "documentRow.Sample Image")
         XCTAssertTrue(element(app, "image.view").waitForExistence(timeout: 10))
+        // Lens reads the price printed on the sample image, on the device.
         tap(app, "image.recognizeText")
-        XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 5), "OCR entry point explains it comes later")
-        app.alerts.firstMatch.buttons.firstMatch.tap()
+        let finding = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier == 'lens.finding' AND label CONTAINS '125'")).firstMatch
+        XCTAssertTrue(finding.waitForExistence(timeout: 30), "Lens should find the price in the image")
+        XCTAssertTrue(element(app, "action.convertCurrency").waitForExistence(timeout: 5)
+                      || element(app, "lens.image.confirm").exists, "A price offers money actions, or asks to confirm a possible match")
     }
 
     // MARK: Localization

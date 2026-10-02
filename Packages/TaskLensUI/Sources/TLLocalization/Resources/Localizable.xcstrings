@@ -2636,23 +2636,6 @@
         }
       }
     },
-    "image.ocrLater": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "سيُضاف التعرف على النص (OCR) في تحديث لاحق."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Text recognition (OCR) will be added in a later update."
-          }
-        }
-      }
-    },
     "image.recognizeText": {
       "extractionState": "manual",
       "localizations": {
@@ -2887,6 +2870,329 @@
           "stringUnit": {
             "state": "translated",
             "value": "Detected type"
+          }
+        }
+      }
+    },
+    "lens.image.allText": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كل النص"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All Text"
+          }
+        }
+      }
+    },
+    "lens.image.barcode": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "باركود"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barcode"
+          }
+        }
+      }
+    },
+    "lens.image.camera": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الكاميرا"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera"
+          }
+        }
+      }
+    },
+    "lens.image.clear": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مسح الصورة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear Image"
+          }
+        }
+      }
+    },
+    "lens.image.confirm": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استخدم هذا النص"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use This Text"
+          }
+        }
+      }
+    },
+    "lens.image.documentTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "العنوان: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title: %@"
+          }
+        }
+      }
+    },
+    "lens.image.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر على TaskLens قراءة هذه الصورة."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TaskLens couldn't read this image."
+          }
+        }
+      }
+    },
+    "lens.image.files": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الملفات"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files"
+          }
+        }
+      }
+    },
+    "lens.image.found": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ما وجدته"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What I Found"
+          }
+        }
+      }
+    },
+    "lens.image.nothing": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يُعثر على نص أو رموز في هذه الصورة."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No text or codes found in this image."
+          }
+        }
+      }
+    },
+    "lens.image.paragraphs": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الفقرات: %lld"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paragraphs: %lld"
+          }
+        }
+      }
+    },
+    "lens.image.photos": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصور"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos"
+          }
+        }
+      }
+    },
+    "lens.image.possible": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تطابق محتمل"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Possible match"
+          }
+        }
+      }
+    },
+    "lens.image.possibleHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كان هذا الجزء صعب القراءة. تحقّق منه أو صحّحه قبل استخدامه."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This part was hard to read. Check or correct it before using it."
+          }
+        }
+      }
+    },
+    "lens.image.privacy": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تُقرأ الصور على هذا الجهاز، ولا يُحتفظ بها إلا إذا حفظت نتيجة."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Images are read on this device. They aren't kept unless you save a result."
+          }
+        }
+      }
+    },
+    "lens.image.qr": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "رمز QR"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR Code"
+          }
+        }
+      }
+    },
+    "lens.image.reading": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جارٍ قراءة الصورة…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading the image…"
+          }
+        }
+      }
+    },
+    "lens.image.section": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القراءة من صورة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read from an Image"
+          }
+        }
+      }
+    },
+    "lens.image.select": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عرض الإجراءات"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show actions"
           }
         }
       }
@@ -3299,6 +3605,23 @@
         }
       }
     },
+    "pdf.lens": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القراءة بالعدسة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read with Lens"
+          }
+        }
+      }
+    },
     "pdf.matchPosition": {
       "extractionState": "manual",
       "localizations": {
@@ -3373,13 +3696,13 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "لا تحتوي هذه الصفحة على نص قابل للتحديد. سيُضاف التعرف على النص (OCR) في تحديث لاحق."
+            "value": "لا تحتوي هذه الصفحة على نص قابل للتحديد. افتح المستند في العدسة لقراءته على جهازك."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This page has no selectable text. Text recognition (OCR) will be added in a later update."
+            "value": "This page has no selectable text. Open the document in Lens to read it on your device."
           }
         }
       }

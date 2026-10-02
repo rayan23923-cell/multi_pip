@@ -246,7 +246,7 @@ struct LensAndClipboardModelTests {
         model.analyze()
         #expect(model.content?.itemType == .url)
         #expect(model.actions.first?.type == .openURL)
-        #expect(Set(model.actions.map(\.type)) == [.openURL, .copy, .share, .saveToSession, .createNote])
+        #expect(Set(model.actions.map(\.type)) == [.openURL, .copy, .share, .saveToSession, .createNote, .search])
 
         await model.save()
         #expect(model.savedItem?.type == .url)

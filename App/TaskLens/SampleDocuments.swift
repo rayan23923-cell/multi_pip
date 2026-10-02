@@ -38,11 +38,16 @@ enum SampleDocuments {
     static func image() -> Data {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
-        return UIGraphicsImageRenderer(size: CGSize(width: 240, height: 160), format: format).pngData { context in
+        // A receipt-like picture with a price on it, for Lens to read.
+        return UIGraphicsImageRenderer(size: CGSize(width: 480, height: 240), format: format).pngData { context in
             UIColor.systemTeal.setFill()
-            context.fill(CGRect(x: 0, y: 0, width: 240, height: 160))
+            context.fill(CGRect(x: 0, y: 0, width: 480, height: 240))
             UIColor.white.setFill()
-            context.fill(CGRect(x: 60, y: 40, width: 120, height: 80))
+            context.fill(CGRect(x: 40, y: 40, width: 400, height: 160))
+            ("Total $125" as NSString).draw(
+                at: CGPoint(x: 70, y: 90),
+                withAttributes: [.font: UIFont.boldSystemFont(ofSize: 44), .foregroundColor: UIColor.black]
+            )
         }
     }
 }

@@ -28,7 +28,12 @@ public struct SystemActions: Sendable {
         let existing = try await workspaces.list()
             .filter { $0.kind == kind }
             .max { ($0.lastOpenedAt ?? $0.createdAt) < ($1.lastOpenedAt ?? $1.createdAt) }
-        let workspace = try await existing ?? workspaces.create(WorkspaceDraft(name: name, kind: kind))
+        let workspace: Workspace
+        if let existing {
+            workspace = existing
+        } else {
+            workspace = try await workspaces.create(WorkspaceDraft(name: name, kind: kind))
+        }
         return try await workspaces.markOpened(workspace.id)
     }
 

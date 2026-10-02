@@ -20,6 +20,8 @@ public enum AppRoute: Hashable, Sendable {
     case clipboard
     /// Lens pre-filled with content another tool sent to the Action Engine.
     case lensInput(String)
+    /// Lens reading an image or PDF on the device (from a viewer or shared content).
+    case lensFile(URL)
     /// Tools. The workspace, when given, scopes lists and picks the session to save to.
     case notes(WorkspaceID?)
     /// Notes with the editor open on a new note holding this text.

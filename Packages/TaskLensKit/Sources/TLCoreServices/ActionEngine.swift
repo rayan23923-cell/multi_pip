@@ -136,7 +136,7 @@ public struct ActionEngine: ActionSuggesting {
     private static let rules: [ContentCategory: [Rule]] = [
         .phone: [Rule(.call, 0.95, .specific, confirm: true), Rule(.sendMessage, 0.85, .specific), Rule(.saveToSession, 0.7),
                  Rule(.copy, 0.5), Rule(.createNote, 0.3), Rule(.share, 0.3)],
-        .url: [Rule(.openURL, 0.95, .specific), Rule(.saveToSession, 0.8), Rule(.share, 0.7), Rule(.copy, 0.5),
+        .url: [Rule(.openURL, 0.95, .specific), Rule(.saveToSession, 0.8), Rule(.search, 0.75), Rule(.share, 0.7), Rule(.copy, 0.5),
                Rule(.createNote, 0.25)],
         .email: [Rule(.sendEmail, 0.95, .specific), Rule(.saveToSession, 0.7), Rule(.copy, 0.6), Rule(.share, 0.3)],
         .currency: [Rule(.convertCurrency, 0.97, .specific, placeholder: true), Rule(.calculate, 0.9, .specific),

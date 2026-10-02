@@ -54,6 +54,8 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         TLAppGroupIdentifier: $(APP_GROUP_IDENTIFIER)
+        # Lens: a photo the user takes is read on the device (localized in InfoPlist.xcstrings).
+        NSCameraUsageDescription: TaskLens uses the camera only when you take a photo for Lens to read. The photo is analyzed on your device and is not uploaded.
         # tasklens:// links from widgets, App Shortcuts and Live Activities.
         CFBundleURLTypes:
           - CFBundleURLName: com.example.tasklens

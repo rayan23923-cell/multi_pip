@@ -2,6 +2,7 @@ import SwiftUI
 import TLDesignSystem
 import TLDomain
 import TLLocalization
+import TLNavigation
 
 public struct ImageViewerView: View {
     @State private var model: ImageViewerModel
@@ -9,7 +10,7 @@ public struct ImageViewerView: View {
     @State private var committedZoom: CGFloat = 1
     @State private var offset: CGSize = .zero
     @State private var committedOffset: CGSize = .zero
-    @State private var showsOCRNotice = false
+    @Environment(AppRouter.self) private var router
 
     public init(model: ImageViewerModel) {
         _model = State(initialValue: model)
@@ -57,11 +58,6 @@ public struct ImageViewerView: View {
                 }
             }
         }
-        .alert(Text(L10nKey.imageRecognizeText), isPresented: $showsOCRNotice) {
-            Button(role: .cancel) {} label: { Text(L10nKey.commonOk) }
-        } message: {
-            Text(L10nKey.imageOcrLater)
-        }
         .sensoryFeedback(.success, trigger: model.savedItemCount)
         .task { await model.load() }
         .errorAlert(message: $model.errorMessage)
@@ -75,10 +71,13 @@ public struct ImageViewerView: View {
                 ShareLink(item: url) { TLLabel(.actionShare, systemImage: "square.and.arrow.up") }
             }
             Spacer()
-            // Entry point only: on-device text recognition arrives in a later phase.
-            Button { showsOCRNotice = true } label: {
+            // Lens reads the image on the device and suggests actions.
+            Button {
+                if let url = model.fileURL { router.push(.lensFile(url)) }
+            } label: {
                 TLLabel(.imageRecognizeText, systemImage: "text.viewfinder")
             }
+            .disabled(model.fileURL == nil)
             .accessibilityIdentifier("image.recognizeText")
             Spacer()
             Button { Task { await model.save() } } label: {

@@ -17,6 +17,23 @@
           }
         }
       }
+    },
+    "NSCameraUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يستخدم TaskLens الكاميرا فقط عندما تلتقط صورة لتقرأها العدسة. تُحلَّل الصورة على جهازك ولا تُرفع."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TaskLens uses the camera only when you take a photo for Lens to read. The photo is analyzed on your device and is not uploaded."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
