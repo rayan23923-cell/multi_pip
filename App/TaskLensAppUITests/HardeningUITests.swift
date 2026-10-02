@@ -28,19 +28,21 @@ final class HardeningUITests: XCTestCase {
     /// Missing labels and text that doesn't scale fail the test; other audit
     /// findings (contrast, hit regions, clipping) are logged for review.
     private func audit(_ app: XCUIApplication, _ screen: String) {
-        // Text cut off by the tab bar or the screen edge can't be measured at
-        // every size; such Dynamic Type findings are logged with the frame.
-        let tabBarTop = app.tabBars.firstMatch.exists ? app.tabBars.firstMatch.frame.minY : app.frame.maxY
+        // iOS 26 blurs and fades content as it nears the tab bar (the scroll
+        // edge effect), so text there can't be measured at every size. Such
+        // Dynamic Type findings are logged with the frame; the Lens screen is
+        // audited again scrolled, so that text is also checked in the clear.
+        let edgeTop = (app.tabBars.firstMatch.exists ? app.tabBars.firstMatch.frame.minY : app.frame.maxY) - 60
         do {
             try app.performAccessibilityAudit(for: [.sufficientElementDescription, .dynamicType, .contrast, .hitRegion, .textClipped, .trait]) { issue in
                 let line = "[\(screen)] \(issue.auditType.rawValue) \(issue.compactDescription) — \(issue.element?.identifier ?? "") \(issue.element?.label ?? "")"
-                if issue.auditType == .dynamicType, let frame = issue.element?.frame, frame.maxY > tabBarTop {
-                    print("AUDIT NOTE (partly off screen, maxY \(Int(frame.maxY)) > \(Int(tabBarTop))) " + line)
+                if issue.auditType == .dynamicType, let frame = issue.element?.frame, frame.maxY > edgeTop {
+                    print("AUDIT NOTE (under the tab bar edge, maxY \(Int(frame.maxY)) > \(Int(edgeTop))) " + line)
                     return true
                 }
                 if issue.auditType == .sufficientElementDescription || issue.auditType == .dynamicType {
                     // Reported as failures.
-                    print("AUDIT FAIL " + line + " frame \(issue.element?.frame ?? .zero) tab bar top \(Int(tabBarTop))")
+                    print("AUDIT FAIL " + line + " frame \(issue.element?.frame ?? .zero) edge \(Int(edgeTop))")
                     return false
                 }
                 print("AUDIT NOTE " + line)
@@ -58,6 +60,8 @@ final class HardeningUITests: XCTestCase {
         tap(app, "commandCenter.lens")
         XCTAssertTrue(element(app, "lens.input").waitForExistence(timeout: 5))
         audit(app, "\(label) Lens")
+        app.swipeUp()
+        audit(app, "\(label) Lens scrolled")
         app.navigationBars.buttons.element(boundBy: 0).tap()
 
         tap(app, "commandCenter.workflows")

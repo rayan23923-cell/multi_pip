@@ -3,13 +3,15 @@ import TLCoreServices
 import TLDomain
 
 /// AI stand-ins for UI tests only. `-TaskLensAIFake` answers on "device";
-/// `-TaskLensAIOffline` behaves like a server with no network. Release builds
-/// always use the real providers.
+/// `-TaskLensAIOffline` behaves like a server with no network;
+/// `-TaskLensAINotEligible` is a device without Apple Intelligence (iPhone 11).
+/// Release builds always use the real providers.
 enum AITestProviders {
     static func make(arguments: [String]) -> [any AIProvider]? {
         #if DEBUG
         if arguments.contains("-TaskLensAIFake") { return [EchoProvider()] }
         if arguments.contains("-TaskLensAIOffline") { return [OfflineProvider()] }
+        if arguments.contains("-TaskLensAINotEligible") { return [NotEligibleProvider()] }
         #endif
         return nil
     }
@@ -29,6 +31,13 @@ enum AITestProviders {
         var kind: AIProviderKind { .server }
         var destination: String { "ai.example.com" }
         func availability() async -> AIAvailability { .unavailable(.offline) }
+        func respond(to request: AIRequest) async throws -> String { throw AIProviderError.offline }
+    }
+
+    struct NotEligibleProvider: AIProvider {
+        var kind: AIProviderKind { .onDevice }
+        var destination: String { "device" }
+        func availability() async -> AIAvailability { .unavailable(.deviceNotEligible) }
         func respond(to request: AIRequest) async throws -> String { throw AIProviderError.offline }
     }
     #endif

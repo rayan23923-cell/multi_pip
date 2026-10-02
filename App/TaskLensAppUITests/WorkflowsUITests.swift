@@ -42,9 +42,10 @@ final class WorkflowsUITests: XCTestCase {
         // Return closes the keyboard, which would cover Add Step.
         name.typeText("Keep text\n")
         // The first tap can land while the keyboard is closing; try again
-        // until the step menu is open.
+        // until the step menu is open. Menu items can come without their
+        // identifiers or as menu items rather than buttons, so match labels too.
         let saveStep = element(app, "workflowEditor.add.save")
-        let ocrStep = app.buttons["Read text (OCR)"].firstMatch
+        let ocrStep = app.descendants(matching: .any).matching(NSPredicate(format: "label == 'Read text (OCR)'")).firstMatch
         for _ in 0..<3 {
             tap(app, "workflowEditor.addStep")
             if saveStep.waitForExistence(timeout: 3) || ocrStep.exists { break }
@@ -52,12 +53,12 @@ final class WorkflowsUITests: XCTestCase {
         if saveStep.exists {
             saveStep.tap()
         } else {
-            // Menu items lose identifiers on some iOS versions; the step list
-            // ends with Save, so take the last "Save" after the OCR item.
             app.printScreen(missing: "workflowEditor.add.save")
-            let saves = app.buttons.matching(NSPredicate(format: "label == 'Save'"))
             XCTAssertTrue(ocrStep.exists, "The step menu did not open")
-            saves.element(boundBy: saves.count - 1).tap()
+            // The menu's Save step, not the editor's Save button.
+            app.descendants(matching: .any)
+                .matching(NSPredicate(format: "label == 'Save' AND identifier != 'workflowEditor.save'"))
+                .firstMatch.tap()
         }
         tap(app, "workflowEditor.save")
 

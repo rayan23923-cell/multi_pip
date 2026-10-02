@@ -37,11 +37,13 @@ final class AIUITests: XCTestCase {
     }
 
     func testWithoutAILensStillWorks() {
-        let app = launch()
+        // Like iPhone 11. (The CI simulator runs on a Mac that has Apple
+        // Intelligence, so it can't be relied on to lack it.)
+        let app = launch(["-TaskLensAINotEligible"])
         openLens(app, text: "+964 770 123 4567")
         // Deterministic actions come first and don't depend on AI.
         app.reveal("action.call")
-        // This simulator has no Apple Intelligence and no server is set up.
+        // No Apple Intelligence and no server is set up.
         XCTAssertTrue(reveal(app, "ai.unavailable").exists)
         XCTAssertFalse(element(app, "ai.send").exists)
     }

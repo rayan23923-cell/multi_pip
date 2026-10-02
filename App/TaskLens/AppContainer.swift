@@ -216,7 +216,9 @@ struct AppContainer: Sendable {
     /// `-TaskLensUITestStore` selects it; `-TaskLensResetStore` wipes it first.
     static func uiTestStoreLocation(arguments: [String]) throws -> StoreLocation? {
         guard arguments.contains("-TaskLensUITestStore") else { return nil }
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent("TaskLensUITestStore", isDirectory: true)
+        // Not in tmp, which the system may clear between launches.
+        let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let root = support.appendingPathComponent("TaskLensUITestStore", isDirectory: true)
         if arguments.contains("-TaskLensResetStore") {
             try? FileManager.default.removeItem(at: root)
         }
