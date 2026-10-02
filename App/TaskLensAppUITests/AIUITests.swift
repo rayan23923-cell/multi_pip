@@ -83,8 +83,8 @@ final class AIUITests: XCTestCase {
         let confirm = element(app, "ai.history.deleteConfirm")
         XCTAssertTrue(confirm.waitForExistence(timeout: 5))
         confirm.tap()
-        let predicate = NSPredicate(format: "isEnabled == false")
-        expectation(for: predicate, evaluatedWith: element(app, "ai.history.delete"))
-        waitForExpectations(timeout: 5)
+        let disabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == false"),
+                                                 object: element(app, "ai.history.delete"))
+        XCTAssertEqual(XCTWaiter().wait(for: [disabled], timeout: 5), .completed, "History should be empty")
     }
 }

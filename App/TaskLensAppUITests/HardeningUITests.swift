@@ -29,7 +29,6 @@ final class HardeningUITests: XCTestCase {
     /// Missing labels and text that doesn't scale fail the test; other audit
     /// findings (contrast, hit regions, clipping) are logged for review.
     private func audit(_ app: XCUIApplication, _ screen: String) {
-        var logged: [String] = []
         do {
             try app.performAccessibilityAudit(for: [.sufficientElementDescription, .dynamicType, .contrast, .hitRegion, .textClipped, .trait]) { issue in
                 let line = "[\(screen)] \(issue.auditType.rawValue) \(issue.compactDescription) — \(issue.element?.identifier ?? "") \(issue.element?.label ?? "")"
@@ -38,13 +37,12 @@ final class HardeningUITests: XCTestCase {
                     print("AUDIT FAIL " + line)
                     return false
                 }
-                logged.append(line)
+                print("AUDIT NOTE " + line)
                 return true
             }
         } catch {
             XCTFail("Accessibility audit failed on \(screen): \(error)")
         }
-        for line in logged { print("AUDIT NOTE " + line) }
     }
 
     private func visitMainScreens(_ app: XCUIApplication, label: String) {
