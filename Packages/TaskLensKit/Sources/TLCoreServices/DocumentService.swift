@@ -179,6 +179,29 @@ public struct DocumentService: Sendable {
         }
     }
 
+    /// Deletes stored files no document refers to any more, e.g. after a
+    /// workspace and its documents were deleted. Returns how many were removed.
+    /// Files newer than `minimumAge` are kept, so an import in progress
+    /// (file written, record not yet saved) is never touched.
+    @discardableResult
+    public func removeOrphanedFiles(minimumAge: TimeInterval = 60) async throws -> Int {
+        let folder = filesDirectory.appendingPathComponent(Self.folderName, isDirectory: true)
+        guard let stored = try? FileManager.default.contentsOfDirectory(atPath: folder.path) else { return 0 }
+        let referenced = Set(try await documentStore.fetchAll().map { ($0.file.relativePath as NSString).lastPathComponent })
+        var removed = 0
+        let cutoff = clock.now().addingTimeInterval(-minimumAge)
+        for name in stored where !referenced.contains(name) {
+            let url = folder.appendingPathComponent(name)
+            let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+            guard modified <= cutoff else { continue }
+            if (try? FileManager.default.removeItem(at: url)) != nil {
+                removed += 1
+            }
+        }
+        if removed > 0 { logger.info("Removed \(removed) orphaned files") }
+        return removed
+    }
+
     // MARK: Reading
 
     public struct TextContent: Sendable, Equatable {

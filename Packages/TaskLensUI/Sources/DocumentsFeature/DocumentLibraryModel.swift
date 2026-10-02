@@ -28,6 +28,8 @@ public final class DocumentLibraryModel {
         do {
             documents = try await documentService.documents(in: workspaceID)
             hasLoaded = true
+            // Clean up files left behind by deleted workspaces.
+            try? await documentService.removeOrphanedFiles()
         } catch {
             errorMessage = L10n.message(for: error)
         }

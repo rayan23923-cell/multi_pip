@@ -128,6 +128,26 @@ struct DocumentServiceTests {
         #expect(text.metadata["page"] == .number(3))
     }
 
+    @Test func orphanedFilesAreRemovedAfterWorkspaceDelete() async throws {
+        let env = TestEnvironment()
+        let directory = TemporaryDirectory.make()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let service = env.documents(in: directory)
+        let workspace = try await env.workspaces.create(name: "Temp", kind: .work)
+        let kept = try await service.importData(Data([1]), filename: "keep.pdf", contentType: .pdf)
+        let dropped = try await service.importData(Data([1]), filename: "drop.pdf", contentType: .pdf, workspaceID: workspace.id)
+
+        try await env.workspaces.delete(workspace.id)
+        // The test clock is in 2001 while files carry real dates, so a large
+        // negative age makes every file count as old enough.
+        let anyAge: TimeInterval = -1e10
+        #expect(try await service.removeOrphanedFiles() == 0) // too new to touch
+        #expect(try await service.removeOrphanedFiles(minimumAge: anyAge) == 1)
+        #expect(FileManager.default.fileExists(atPath: service.fileURL(for: kept).path))
+        #expect(!FileManager.default.fileExists(atPath: service.fileURL(for: dropped).path))
+        #expect(try await service.removeOrphanedFiles(minimumAge: anyAge) == 0)
+    }
+
     @Test func decodesUTF16WithByteOrderMark() async throws {
         let env = TestEnvironment()
         let directory = TemporaryDirectory.make()
