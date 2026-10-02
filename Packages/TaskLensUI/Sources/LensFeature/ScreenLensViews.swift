@@ -13,7 +13,9 @@ struct ScreenLensSection: View {
         Section {
             content
         } header: {
+            // A text style, so the header follows the user's text size in full.
             Text(L10nKey.screenLensSection)
+                .font(.footnote)
         } footer: {
             Text(model.state == .unavailable ? L10nKey.screenLensUnavailableFooter : L10nKey.screenLensPrivacy)
         }

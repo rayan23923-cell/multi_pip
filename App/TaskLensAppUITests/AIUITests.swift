@@ -40,7 +40,7 @@ final class AIUITests: XCTestCase {
         let app = launch()
         openLens(app, text: "Call 0771 234 5678")
         // Deterministic actions come first and don't depend on AI.
-        XCTAssertTrue(element(app, "action.call").waitForExistence(timeout: 10))
+        app.reveal("action.call")
         // This simulator has no Apple Intelligence and no server is set up.
         XCTAssertTrue(reveal(app, "ai.unavailable").exists)
         XCTAssertFalse(element(app, "ai.send").exists)
@@ -63,7 +63,7 @@ final class AIUITests: XCTestCase {
     func testOfflineOffersRetryAndKeepsActions() {
         let app = launch(["-TaskLensAIOffline"])
         openLens(app, text: "https://example.com/flutter")
-        XCTAssertTrue(element(app, "action.openURL").waitForExistence(timeout: 10))
+        app.reveal("action.openURL")
         XCTAssertTrue(reveal(app, "ai.unavailable").label.contains("internet"))
         reveal(app, "ai.retry").tap()
         XCTAssertTrue(reveal(app, "ai.unavailable").exists)

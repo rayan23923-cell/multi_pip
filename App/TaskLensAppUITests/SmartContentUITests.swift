@@ -23,26 +23,15 @@ final class SmartContentUITests: XCTestCase {
         app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
-    private func tap(_ app: XCUIApplication, _ identifier: String, timeout: TimeInterval = 10) {
-        let target = element(app, identifier)
-        XCTAssertTrue(target.waitForExistence(timeout: timeout), "\(identifier) not found")
-        if !target.isHittable { scrollTo(app, target) }
-        target.tap()
-    }
-
-    private func scrollTo(_ app: XCUIApplication, _ target: XCUIElement) {
-        for _ in 0..<8 where !target.isHittable {
-            app.swipeUp()
-        }
+    private func tap(_ app: XCUIApplication, _ identifier: String, timeout: TimeInterval = 10,
+                     file: StaticString = #filePath, line: UInt = #line) {
+        app.revealAndTap(identifier, timeout: timeout, file: file, line: line)
     }
 
     /// Lists are lazy: rows below the fold do not exist until scrolled to.
-    private func scrollUntilExists(_ app: XCUIApplication, _ identifier: String) {
-        let target = element(app, identifier)
-        for _ in 0..<10 where !target.exists {
-            app.swipeUp()
-        }
-        XCTAssertTrue(target.waitForExistence(timeout: 3), "\(identifier) not found after scrolling")
+    private func scrollUntilExists(_ app: XCUIApplication, _ identifier: String,
+                                   file: StaticString = #filePath, line: UInt = #line) {
+        app.reveal(identifier, file: file, line: line)
     }
 
     private func waitForLabel(_ app: XCUIApplication, _ identifier: String, containing expected: String, timeout: TimeInterval = 10) {
@@ -76,7 +65,7 @@ final class SmartContentUITests: XCTestCase {
         let app = launch()
         analyzeInLens(app, "+964 770 123 4567")
         waitForLabel(app, "lens.detectedType", containing: "Phone Number")
-        XCTAssertTrue(element(app, "action.call").waitForExistence(timeout: 5))
+        app.reveal("action.call")
         XCTAssertTrue(element(app, "action.sendMessage").exists)
         tap(app, "action.saveToSession")
         XCTAssertTrue(app.staticTexts["Saved"].waitForExistence(timeout: 5))
@@ -103,7 +92,7 @@ final class SmartContentUITests: XCTestCase {
         let app = launch()
         analyzeInLens(app, "Meet the design team about the new layout")
         waitForLabel(app, "lens.detectedType", containing: "Text")
-        XCTAssertTrue(element(app, "action.translate").waitForExistence(timeout: 5))
+        scrollUntilExists(app, "action.translate")
         // Summarize is not built yet, so it waits behind More.
         XCTAssertFalse(element(app, "action.summarize").exists)
         tap(app, "actions.more")
@@ -118,13 +107,13 @@ final class SmartContentUITests: XCTestCase {
         analyzeInLens(app, "$125")
         waitForLabel(app, "lens.detectedType", containing: "Amount of Money")
         waitForLabel(app, "analysis.value", containing: "125")
-        XCTAssertTrue(element(app, "action.convertCurrency").waitForExistence(timeout: 5))
+        scrollUntilExists(app, "action.convertCurrency")
         XCTAssertTrue(element(app, "action.calculate").exists)
         XCTAssertTrue(element(app, "action.saveToSession").exists)
         XCTAssertFalse(element(app, "action.copy").exists)
         tap(app, "actions.more")
-        XCTAssertTrue(element(app, "action.copy").waitForExistence(timeout: 5))
-        XCTAssertTrue(element(app, "action.share").exists)
+        scrollUntilExists(app, "action.copy")
+        scrollUntilExists(app, "action.share")
     }
 
     func testCreateNoteFromLensOpensTheEditorWithTheText() {
@@ -165,7 +154,7 @@ final class SmartContentUITests: XCTestCase {
         let app = launch(language: "ar", locale: "ar_IQ")
         analyzeInLens(app, "0770 123 4567")
         waitForLabel(app, "lens.detectedType", containing: "رقم هاتف")
-        XCTAssertTrue(element(app, "action.call").waitForExistence(timeout: 5))
+        app.reveal("action.call")
     }
 
     // MARK: Smart Clipboard

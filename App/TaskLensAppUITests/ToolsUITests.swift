@@ -189,9 +189,23 @@ final class ToolsUITests: XCTestCase {
         tap(app, "image.recognizeText")
         let finding = app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier == 'lens.finding' AND label CONTAINS '125'")).firstMatch
-        XCTAssertTrue(finding.waitForExistence(timeout: 30), "Lens should find the price in the image")
-        XCTAssertTrue(element(app, "action.convertCurrency").waitForExistence(timeout: 5)
-                      || element(app, "lens.image.confirm").exists, "A price offers money actions, or asks to confirm a possible match")
+        // Reading takes a moment; the findings follow the image section.
+        app.reveal("lens.image.clear")
+        XCTAssertTrue(element(app, "lens.image.reading").waitForNonExistence(timeout: 30), "Lens is still reading the image")
+        XCTAssertFalse(element(app, "lens.image.failed").exists, "Lens could not read the sample image")
+        XCTAssertFalse(element(app, "lens.image.nothing").exists, "Lens found no text in the sample image")
+        for _ in 0..<6 where !finding.exists {
+            app.swipeUp()
+            _ = finding.waitForExistence(timeout: 1)
+        }
+        if !finding.exists { app.printScreen(missing: "lens.finding 125") }
+        XCTAssertTrue(finding.exists, "Lens should find the price in the image")
+        var offered = element(app, "action.convertCurrency").waitForExistence(timeout: 3) || element(app, "lens.image.confirm").exists
+        for _ in 0..<6 where !offered {
+            app.swipeUp()
+            offered = element(app, "action.convertCurrency").waitForExistence(timeout: 1) || element(app, "lens.image.confirm").exists
+        }
+        XCTAssertTrue(offered, "A price offers money actions, or asks to confirm a possible match")
     }
 
     // MARK: Localization

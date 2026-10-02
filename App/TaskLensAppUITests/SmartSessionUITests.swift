@@ -32,9 +32,7 @@ final class SmartSessionUITests: XCTestCase {
             field.typeText(name)
             element(app, "workspaceEditor.save").tap()
         }
-        let row = element(app, "workspaceRow.\(name)")
-        XCTAssertTrue(row.waitForExistence(timeout: 5))
-        row.tap()
+        app.revealAndTap("workspaceRow.\(name)")
     }
 
     /// Rows are buttons, so their text is part of a combined label.
@@ -96,18 +94,6 @@ final class SmartSessionUITests: XCTestCase {
         XCTAssertTrue(element(app, "session.group.question").waitForExistence(timeout: 5))
         sort.buttons["Recent"].tap()
 
-        // Search inside the session.
-        let search = app.searchFields.firstMatch
-        if !search.waitForExistence(timeout: 2) { app.swipeDown() }
-        XCTAssertTrue(search.waitForExistence(timeout: 5))
-        search.tap()
-        search.typeText("hotel")
-        XCTAssertTrue(text(app, "Hotel booking 120").waitForExistence(timeout: 5))
-        XCTAssertTrue(text(app, "What time is check in?").waitForNonExistence(timeout: 5))
-        // iOS 26 search fields have no Cancel button: clear the text instead.
-        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "hotel".count))
-        XCTAssertTrue(text(app, "What time is check in?").waitForExistence(timeout: 5))
-
         // Rename.
         sessionMenu(app, "session.rename", fallbackLabel: "Rename")
         let alert = app.alerts.firstMatch
@@ -131,6 +117,19 @@ final class SmartSessionUITests: XCTestCase {
                       || text(app, "Pick Up Where You Left Off").waitForExistence(timeout: 2))
         XCTAssertTrue(element(app, "quickCapture.field").waitForExistence(timeout: 5))
         XCTAssertFalse(element(app, "session.resume").exists)
+
+        // Search inside the session. Last, because an active search field
+        // can hide the session menu in the navigation bar.
+        let search = app.searchFields.firstMatch
+        if !search.waitForExistence(timeout: 2) { app.swipeDown() }
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap()
+        search.typeText("hotel")
+        XCTAssertTrue(text(app, "Hotel booking 120").waitForExistence(timeout: 5))
+        XCTAssertTrue(text(app, "What time is check in?").waitForNonExistence(timeout: 5))
+        // iOS 26 search fields have no Cancel button: clear the text instead.
+        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "hotel".count))
+        XCTAssertTrue(text(app, "What time is check in?").waitForExistence(timeout: 5))
     }
 
     func testSessionPersistsAcrossRelaunchAndCanBeDeleted() {

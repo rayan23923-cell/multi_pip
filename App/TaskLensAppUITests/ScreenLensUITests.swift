@@ -33,6 +33,18 @@ final class ScreenLensUITests: XCTestCase {
         return target
     }
 
+    /// Scrolls the lazy list until one of two elements exists.
+    private func revealEither(_ app: XCUIApplication, _ first: String, _ second: String) -> Bool {
+        let a = element(app, first), b = element(app, second)
+        if a.waitForExistence(timeout: 3) || b.exists { return true }
+        for _ in 0..<10 {
+            app.swipeUp()
+            if a.waitForExistence(timeout: 1) || b.exists { return true }
+        }
+        app.printScreen(missing: "\(first) or \(second)")
+        return false
+    }
+
     private func tap(_ app: XCUIApplication, _ identifier: String, timeout: TimeInterval = 10) {
         reveal(app, identifier, timeout: timeout).tap()
     }
@@ -63,8 +75,8 @@ final class ScreenLensUITests: XCTestCase {
             .allElementsBoundByIndex.map { $0.label }.joined(separator: " | ")
         XCTAssertTrue(labels.contains("199"), "Highlights: \(labels)")
         // Recommended actions for the chosen finding, nothing run on its own.
-        XCTAssertTrue(element(app, "action.convertCurrency").waitForExistence(timeout: 5)
-            || element(app, "lens.image.confirm").exists)
+        XCTAssertTrue(revealEither(app, "action.convertCurrency", "lens.image.confirm"),
+                      "A price offers money actions, or asks to confirm a possible match")
 
         tap(app, "screenLens.clear")
         XCTAssertFalse(element(app, "screenLens.highlight").waitForExistence(timeout: 2))

@@ -28,6 +28,8 @@ summarize_app_tests() {
   grep -E "Skipped|XCTSkip|QA NOTE" "$log" | sort -u | head -20 || true
   grep -E "measured \[" "$log" | sed -E "s/.*(test[A-Za-z0-9_]+)\]' (measured \[[^]]*\]).*(average: [0-9.]+).*/\1 \2 \3/" | sort -u | head -20 || true
   grep -E "^[[:space:]]*AUDIT (FAIL|NOTE)" "$log" | sed -E 's/^.*(AUDIT )/\1/' | sort -u | head -60 || true
+  # What was on screen when a UI test could not find an element.
+  grep -E "^[[:space:]]*MISSING " "$log" | sed -E 's/^.*(MISSING )/\1/' | head -40 || true
 }
 
 require_success() {

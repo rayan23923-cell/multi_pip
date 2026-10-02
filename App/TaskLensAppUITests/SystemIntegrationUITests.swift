@@ -46,6 +46,8 @@ final class SystemIntegrationUITests: XCTestCase {
         XCTAssertTrue(element(app, "calculator.display").waitForExistence(timeout: 10))
 
         app.open(try XCTUnwrap(URL(string: "tasklens://session/not-a-session")))
-        XCTAssertTrue(element(app, "calculator.display").waitForExistence(timeout: 3), "An invalid link changed the screen")
+        let kept = element(app, "calculator.display").waitForExistence(timeout: 5)
+        if !kept { app.printScreen(missing: "calculator.display after an invalid link (state \(app.state.rawValue))") }
+        XCTAssertTrue(kept, "An invalid link changed the screen")
     }
 }

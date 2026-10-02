@@ -20,10 +20,9 @@ final class HardeningUITests: XCTestCase {
         app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
-    private func tap(_ app: XCUIApplication, _ identifier: String, timeout: TimeInterval = 10) {
-        let target = element(app, identifier)
-        XCTAssertTrue(target.waitForExistence(timeout: timeout), "\(identifier) not found")
-        target.tap()
+    private func tap(_ app: XCUIApplication, _ identifier: String, timeout: TimeInterval = 10,
+                     file: StaticString = #filePath, line: UInt = #line) {
+        app.revealAndTap(identifier, timeout: timeout, file: file, line: line)
     }
 
     /// Missing labels and text that doesn't scale fail the test; other audit
@@ -60,7 +59,7 @@ final class HardeningUITests: XCTestCase {
         app.navigationBars.buttons.element(boundBy: 0).tap()
 
         app.tabBars.buttons.element(boundBy: 2).tap()
-        XCTAssertTrue(element(app, "settings.deleteAll").waitForExistence(timeout: 5))
+        app.reveal("settings.deleteAll")
         audit(app, "\(label) Settings")
     }
 

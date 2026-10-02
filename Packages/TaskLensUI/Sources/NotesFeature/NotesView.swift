@@ -50,6 +50,10 @@ public struct NotesView: View {
         .searchable(text: $model.query, prompt: Text(L10nKey.notesSearchPrompt))
         .task(id: model.query) { await model.load() }
         .task {
+            guard draft != nil || openingNoteID != nil else { return }
+            // A sheet presented while the push to this screen is still
+            // animating can be dropped by UIKit; let the push finish first.
+            try? await Task.sleep(for: .milliseconds(450))
             if let text = draft {
                 draft = nil
                 editor = NoteEditorModel(draft: text)

@@ -24,10 +24,15 @@ final class FinalQAUITests: XCTestCase {
         app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", value)).firstMatch
     }
 
-    private func tap(_ app: XCUIApplication, _ identifier: String, timeout: TimeInterval = 10) {
-        let target = element(app, identifier)
-        XCTAssertTrue(target.waitForExistence(timeout: timeout), "\(identifier) not found")
-        target.tap()
+    private func tap(_ app: XCUIApplication, _ identifier: String, timeout: TimeInterval = 10,
+                     file: StaticString = #filePath, line: UInt = #line) {
+        app.revealAndTap(identifier, timeout: timeout, file: file, line: line)
+    }
+
+    /// The alert's Convert button (iOS can list an alert's buttons twice).
+    private func tapConvert(_ alert: XCUIElement) {
+        let button = alert.buttons.matching(identifier: "actions.convert.confirm").firstMatch
+        if button.exists { button.tap() } else { alert.buttons["Convert"].firstMatch.tap() }
     }
 
     private func waitForLabel(_ app: XCUIApplication, _ identifier: String, containing expected: String, timeout: TimeInterval = 10) {
@@ -100,7 +105,7 @@ final class FinalQAUITests: XCTestCase {
         let rate = alert.textFields.firstMatch
         rate.tap()
         rate.typeText("1310")
-        alert.buttons["Convert"].tap()
+        tapConvert(alert)
         waitForLabel(app, "calculator.display", containing: "32750")
 
         for key in ["multiply", "2", "equals"] { tap(app, "calculator.key.\(key)", timeout: 3) }
@@ -128,7 +133,7 @@ final class FinalQAUITests: XCTestCase {
         XCTAssertTrue(alert.waitForExistence(timeout: 5))
         alert.textFields.firstMatch.tap()
         alert.textFields.firstMatch.typeText("0")
-        alert.buttons["Convert"].tap()
+        tapConvert(alert)
         XCTAssertTrue(text(app, "rate above zero").waitForExistence(timeout: 5), "A zero rate must be refused, not guessed")
     }
 
@@ -174,12 +179,12 @@ final class FinalQAUITests: XCTestCase {
         auditContrast(app, "dark Command Center")
 
         analyzeInLens(app, "+964 770 123 4567")
-        XCTAssertTrue(element(app, "action.call").waitForExistence(timeout: 5))
+        app.reveal("action.call")
         auditContrast(app, "dark Lens")
         app.navigationBars.buttons.element(boundBy: 0).tap()
 
         app.tabBars.buttons.element(boundBy: 2).tap()
-        XCTAssertTrue(element(app, "settings.deleteAll").waitForExistence(timeout: 5))
+        app.reveal("settings.deleteAll")
         auditContrast(app, "dark Settings")
     }
 

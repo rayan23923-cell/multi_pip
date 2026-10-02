@@ -39,9 +39,17 @@ final class WorkflowsUITests: XCTestCase {
         let name = element(app, "workflowEditor.name")
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.tap()
-        name.typeText("Keep text")
+        // Return closes the keyboard, which would cover Add Step.
+        name.typeText("Keep text\n")
         tap(app, "workflowEditor.addStep")
-        tap(app, "workflowEditor.add.save")
+        // Menu items lose identifiers on some iOS versions; fall back to the label.
+        let saveStep = element(app, "workflowEditor.add.save")
+        if saveStep.waitForExistence(timeout: 3) {
+            saveStep.tap()
+        } else {
+            app.printScreen(missing: "workflowEditor.add.save")
+            app.buttons["Save"].firstMatch.tap()
+        }
         tap(app, "workflowEditor.save")
 
         let row = element(app, "workflows.row.Keep text")

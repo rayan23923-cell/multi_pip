@@ -68,32 +68,11 @@ public struct LensView: View {
                 Text(L10nKey.lensSubtitle)
             }
 
-            ImageLensInputSection(model: model.imageLens)
-
-            if let screenLens {
-                ScreenLensSection(model: screenLens)
-            }
-
-            if model.imageLens.phase != .idle {
-                ImageLensResultSections(model: model.imageLens, feedback: feedback) { finding in
-                    ActionHandlers(
-                        onSave: { await model.imageLens.save(finding) },
-                        onCalculate: { router.push(.calculatorInput($0)) },
-                        onCreateNote: { router.push(.noteDraft($0)) },
-                        onSearch: { router.search($0) }
-                    )
-                }
-            } else if let screenLens, screenLens.state == .done {
-                ScreenLensFoundSection(model: screenLens)
-                SelectedFindingSection(model: screenLens.results, feedback: feedback) { finding in
-                    ActionHandlers(
-                        onSave: { await screenLens.results.save(finding) },
-                        onCalculate: { router.push(.calculatorInput($0)) },
-                        onCreateNote: { router.push(.noteDraft($0)) },
-                        onSearch: { router.search($0) }
-                    )
-                }
-            } else if let content = model.content, let analysis = model.analysis {
+            // Text results sit right under the text input, so they are on
+            // screen after Analyze without scrolling past the image and
+            // screen sections.
+            if model.imageLens.phase == .idle, screenLens?.state != .done,
+               let content = model.content, let analysis = model.analysis {
                 Section {
                     DetectedTypeRow(analysis.category)
                         .accessibilityIdentifier("lens.detectedType")
@@ -116,6 +95,36 @@ public struct LensView: View {
                 )
 
                 EntitiesSection(analysis.entities)
+            }
+
+            ImageLensInputSection(model: model.imageLens)
+
+            // Each source's results follow its own section.
+            if model.imageLens.phase != .idle {
+                ImageLensResultSections(model: model.imageLens, feedback: feedback) { finding in
+                    ActionHandlers(
+                        onSave: { await model.imageLens.save(finding) },
+                        onCalculate: { router.push(.calculatorInput($0)) },
+                        onCreateNote: { router.push(.noteDraft($0)) },
+                        onSearch: { router.search($0) }
+                    )
+                }
+            }
+
+            if let screenLens {
+                ScreenLensSection(model: screenLens)
+            }
+
+            if model.imageLens.phase == .idle, let screenLens, screenLens.state == .done {
+                ScreenLensFoundSection(model: screenLens)
+                SelectedFindingSection(model: screenLens.results, feedback: feedback) { finding in
+                    ActionHandlers(
+                        onSave: { await screenLens.results.save(finding) },
+                        onCalculate: { router.push(.calculatorInput($0)) },
+                        onCreateNote: { router.push(.noteDraft($0)) },
+                        onSearch: { router.search($0) }
+                    )
+                }
             }
 
             if let ai = model.ai, let source = aiSource {
