@@ -638,6 +638,11 @@ STRINGS = [
     ("action.search", "Search", "بحث"),
     ("action.askAI", "Ask AI", "اسأل الذكاء الاصطناعي"),
 
+    ("actions.convert.title", "Convert Currency", "تحويل العملة"),
+    ("actions.convert.message", "Converting %@. Enter what 1 unit of this currency is worth in yours. TaskLens has no live exchange rates, so it uses the rate you enter.", "تحويل %@. أدخل قيمة وحدة واحدة من هذه العملة بعملتك. لا يملك TaskLens أسعار صرف مباشرة، لذلك يستخدم السعر الذي تدخله."),
+    ("actions.convert.rate", "Exchange rate", "سعر الصرف"),
+    ("actions.convert.action", "Convert", "تحويل"),
+    ("actions.convert.invalidRate", "Enter a rate above zero, for example 1310 or 0.92.", "أدخل سعراً أكبر من صفر، مثل 1310 أو 0.92."),
     ("actions.later", "Later", "لاحقاً"),
     ("actions.comingLater", "This action will be added in a later update.",
      "سيُضاف هذا الإجراء في تحديث لاحق."),

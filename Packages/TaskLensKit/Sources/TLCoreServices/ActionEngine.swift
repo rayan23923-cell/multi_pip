@@ -139,7 +139,7 @@ public struct ActionEngine: ActionSuggesting {
         .url: [Rule(.openURL, 0.95, .specific), Rule(.saveToSession, 0.8), Rule(.search, 0.75), Rule(.share, 0.7), Rule(.copy, 0.5),
                Rule(.createNote, 0.25)],
         .email: [Rule(.sendEmail, 0.95, .specific), Rule(.saveToSession, 0.7), Rule(.copy, 0.6), Rule(.share, 0.3)],
-        .currency: [Rule(.convertCurrency, 0.97, .specific, placeholder: true), Rule(.calculate, 0.9, .specific),
+        .currency: [Rule(.convertCurrency, 0.97, .specific), Rule(.calculate, 0.9, .specific),
                     Rule(.saveToSession, 0.7), Rule(.copy, 0.5), Rule(.share, 0.4)],
         .number: [Rule(.calculate, 0.95, .specific), Rule(.saveToSession, 0.7), Rule(.copy, 0.6), Rule(.share, 0.3)],
         .date: [Rule(.addToCalendar, 0.9, .specific), Rule(.createReminder, 0.88, .specific, placeholder: true),

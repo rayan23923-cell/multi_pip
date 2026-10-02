@@ -29,7 +29,7 @@ struct ActionGeneratorTests {
         #expect(suggestions.secondary.isEmpty)
         #expect(suggestions.more.types == [.copy, .share])
         let convert = suggestions.primary[0]
-        #expect(convert.isPlaceholder)
+        #expect(!convert.isPlaceholder)
         #expect(convert.parameters[Action.ParameterKey.currencyCode] == .string("USD"))
         #expect(suggestions.primary[1].valueText == "125")
     }

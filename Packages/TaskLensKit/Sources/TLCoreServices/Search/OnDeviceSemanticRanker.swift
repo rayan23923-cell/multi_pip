@@ -13,6 +13,15 @@ public final class OnDeviceSemanticRanker: SemanticRanking, @unchecked Sendable 
 
     public init() {}
 
+    /// Drops cached models and vectors (for example on a memory warning);
+    /// they are rebuilt the next time meaning search runs.
+    public func purge() {
+        lock.lock()
+        defer { lock.unlock() }
+        embeddings.removeAll()
+        vectors.removeAll()
+    }
+
     public func isAvailable(for text: String) -> Bool {
         guard let language = Self.language(of: text) else { return false }
         return embedding(for: language) != nil

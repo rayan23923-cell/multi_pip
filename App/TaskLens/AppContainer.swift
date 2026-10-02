@@ -30,6 +30,8 @@ struct AppContainer: Sendable {
     let notes: NoteService
     let clipboard: ClipboardService
     let search: SmartSearchService
+    /// Meaning search caches; emptied when iOS is low on memory.
+    let semanticRanker: OnDeviceSemanticRanker
     let calculator: CalculatorService
     let documents: DocumentService
     let toolCapture: ToolCaptureService
@@ -111,6 +113,8 @@ struct AppContainer: Sendable {
             clock: clock,
             logger: logger.scoped("clipboard")
         )
+        let semanticRanker = OnDeviceSemanticRanker()
+        self.semanticRanker = semanticRanker
         self.search = SmartSearchService(
             workspaces: repositories.workspaces,
             sessions: repositories.sessions,
@@ -118,7 +122,7 @@ struct AppContainer: Sendable {
             notes: repositories.notes,
             documents: repositories.documents,
             clipboardItems: repositories.clipboardItems,
-            semantic: OnDeviceSemanticRanker(),
+            semantic: semanticRanker,
             clock: clock
         )
         self.calculator = CalculatorService(
@@ -236,7 +240,6 @@ struct AppContainer: Sendable {
 
     /// Saves items left by the share extension into their sessions (or the inbox).
     @discardableResult
-    @discardableResult
     func deliverSharedItems() async -> [ContextItem] {
         let items = await shareOutbox.deliver(using: share, sessions: sessions)
         if !items.isEmpty {
@@ -257,6 +260,12 @@ struct AppContainer: Sendable {
     /// The export file, in a temporary folder the system cleans up.
     func exportData() async throws -> URL {
         try await dataControl.export(to: FileManager.default.temporaryDirectory.appendingPathComponent("Export", isDirectory: true))
+    }
+
+    /// Low memory: drop caches that can be rebuilt. Stored data is untouched.
+    func handleMemoryWarning() {
+        semanticRanker.purge()
+        logger.warning("Memory warning: cleared search caches")
     }
 
     /// Writes what widgets show and asks WidgetKit to redraw them.

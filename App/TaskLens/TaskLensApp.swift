@@ -48,6 +48,17 @@ struct TaskLensApp: App {
                         await ActivityKitScreenLensStatus.endLeftovers()
                     }
                     .task { await SampleDocuments.seedIfRequested(container.documents) }
+                    .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
+                        container.handleMemoryWarning()
+                    }
+                    #if DEBUG
+                    .task {
+                        // UI tests: the same notification iOS sends when memory is low.
+                        guard ProcessInfo.processInfo.arguments.contains("-TaskLensMemoryWarning") else { return }
+                        try? await Task.sleep(for: .seconds(1))
+                        NotificationCenter.default.post(name: UIApplication.didReceiveMemoryWarningNotification, object: UIApplication.shared)
+                    }
+                    #endif
                     .task {
                         // Live Activities and widgets follow every session change.
                         await liveActivities.follow(container.storeChanges) {

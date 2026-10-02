@@ -15,8 +15,18 @@ public final class ActionFeedback {
     public var translationText: String?
     public var eventDraft: EventDraft?
     public var copiedActionID: ActionID?
+    /// A price waiting for the user's exchange rate.
+    public var conversion: CurrencyConversion?
 
     public init() {}
+}
+
+/// "Convert" on a price: the user types the rate, the result opens in the calculator.
+public struct CurrencyConversion: Identifiable {
+    public let id = UUID()
+    public let amount: Decimal
+    public let currency: String?
+    let onConverted: (Decimal) -> Void
 }
 
 extension View {
@@ -41,6 +51,39 @@ private struct ActionFeedbackPresenter: ViewModifier {
                     .ignoresSafeArea()
             }
             .modifier(TranslationPresenter(text: $feedback.translationText))
+            .modifier(ConversionPresenter(feedback: feedback))
+    }
+}
+
+private struct ConversionPresenter: ViewModifier {
+    @Bindable var feedback: ActionFeedback
+    @State private var rateText = ""
+
+    func body(content: Content) -> some View {
+        content.alert(
+            Text(L10nKey.actionsConvertTitle),
+            isPresented: Binding(get: { feedback.conversion != nil }, set: { if !$0 { feedback.conversion = nil } }),
+            presenting: feedback.conversion
+        ) { conversion in
+            TextField(L10n.string(.actionsConvertRate), text: $rateText)
+                .keyboardType(.decimalPad)
+                .accessibilityIdentifier("actions.convert.rate")
+            Button {
+                if let rate = ActionPlan.rate(from: rateText) {
+                    conversion.onConverted(ActionPlan.converted(conversion.amount, rate: rate))
+                } else {
+                    feedback.message = .actionsConvertInvalidRate
+                }
+                rateText = ""
+            } label: {
+                Text(L10nKey.actionsConvertAction)
+            }
+            .accessibilityIdentifier("actions.convert.confirm")
+            Button(role: .cancel) { rateText = "" } label: { Text(L10nKey.commonCancel) }
+        } message: { conversion in
+            let amount = conversion.amount.formatted(.number.locale(Locale(identifier: "en_US_POSIX")))
+            Text(verbatim: L10n.format(.actionsConvertMessage, amount + " " + (conversion.currency ?? "")))
+        }
     }
 }
 
@@ -241,6 +284,12 @@ public struct ActionCard: View {
             }
         case .calculate(let value):
             if let onCalculate = handlers.onCalculate { onCalculate(value) } else { feedback.message = .actionsOpenApp }
+        case .convert(let amount, let currency):
+            if let onCalculate = handlers.onCalculate {
+                feedback.conversion = CurrencyConversion(amount: amount, currency: currency, onConverted: onCalculate)
+            } else {
+                feedback.message = .actionsOpenApp
+            }
         case .createNote(let text):
             if let onCreateNote = handlers.onCreateNote { onCreateNote(text) } else { feedback.message = .actionsOpenApp }
         case .search(let query):

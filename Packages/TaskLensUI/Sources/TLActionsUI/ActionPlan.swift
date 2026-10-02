@@ -29,6 +29,9 @@ public enum ActionPlan: Equatable, Sendable {
     case save
     /// Opens the calculator starting from this value.
     case calculate(Decimal)
+    /// Asks the user for a rate, then opens the calculator with the result.
+    /// TaskLens has no live exchange rates and never guesses one.
+    case convert(Decimal, currency: String?)
     case translate(String)
     /// Opens the note editor with this text.
     case createNote(String)
@@ -94,7 +97,14 @@ public enum ActionPlan: Equatable, Sendable {
             guard let values = action.parameters[Action.ParameterKey.values]?.arrayValue?.compactMap(\.stringValue),
                   !values.isEmpty else { return .unavailable }
             return .copy(values.joined(separator: "\n"))
-        case .summarize, .createReminder, .convertCurrency, .addContact, .askAI:
+        case .convertCurrency:
+            guard let amount = value.flatMap({ Decimal(string: $0, locale: Locale(identifier: "en_US_POSIX")) }) else {
+                return .unavailable
+            }
+            return capabilities.canNavigate
+                ? .convert(amount, currency: action.parameters[Action.ParameterKey.currencyCode]?.stringValue)
+                : .openApp
+        case .summarize, .createReminder, .addContact, .askAI:
             return .comingLater
         default:
             return .unavailable
@@ -107,6 +117,28 @@ public enum ActionPlan: Equatable, Sendable {
         case .url(let url): url.absoluteString
         case .file, nil: nil
         }
+    }
+
+    /// The user's rate: "1310", "1,310.5", "١٣١٠٫٥". Nil unless above zero.
+    public static func rate(from text: String) -> Decimal? {
+        let arabicDigits = Array("٠١٢٣٤٥٦٧٨٩")
+        var cleaned = String(text.trimmingCharacters(in: .whitespaces).map { character in
+            arabicDigits.firstIndex(of: character).map { Character(String($0)) } ?? character
+        })
+        cleaned = cleaned.replacingOccurrences(of: "٫", with: ".").replacingOccurrences(of: "٬", with: "")
+        // A lone comma is a decimal point ("0,92"); with a dot it groups thousands.
+        cleaned = cleaned.contains(".") ? cleaned.replacingOccurrences(of: ",", with: "")
+                                        : cleaned.replacingOccurrences(of: ",", with: ".")
+        guard let rate = Decimal(string: cleaned, locale: Locale(identifier: "en_US_POSIX")), rate > 0 else { return nil }
+        return rate
+    }
+
+    /// amount × rate, rounded to 4 places like the calculator.
+    public static func converted(_ amount: Decimal, rate: Decimal) -> Decimal {
+        var product = amount * rate
+        var rounded = Decimal()
+        NSDecimalRound(&rounded, &product, 4, .bankers)
+        return rounded
     }
 
     /// First line of the text, short enough for a search field.

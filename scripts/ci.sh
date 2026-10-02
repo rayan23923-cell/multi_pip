@@ -15,6 +15,21 @@ step() { echo; echo "==> $*"; }
 
 # Fails the script unless the xcodebuild log reports success, printing the
 # relevant errors first so they are visible in the CI log.
+# Counts, skipped tests, accessibility audit notes and performance numbers
+# from the app test log, for the QA report.
+summarize_app_tests() {
+  local log="$LOG_DIR/app-ios.log"
+  [[ -f "$log" ]] || return 0
+  echo "---- app test summary ----"
+  echo "passed:  $(grep -cE "Test Case .* passed" "$log" || true)"
+  echo "failed:  $(grep -cE "Test Case .* failed" "$log" || true)"
+  echo "skipped: $(grep -cE "Test Case .* skipped" "$log" || true)"
+  grep -E "Test Case .* (failed|skipped)" "$log" | sort -u | head -40 || true
+  grep -E "Skipped|XCTSkip|QA NOTE" "$log" | sort -u | head -20 || true
+  grep -E "measured \[" "$log" | sed -E "s/.*(test[A-Za-z0-9_]+)\]' (measured \[[^]]*\]).*(average: [0-9.]+).*/\1 \2 \3/" | sort -u | head -20 || true
+  grep -E "AUDIT (FAIL|NOTE)" "$log" | sed -E 's/^.*(AUDIT )/\1/' | sort -u | head -60 || true
+}
+
 require_success() {
   local log="$1"
   if ! grep -q "TEST SUCCEEDED" "$log"; then
@@ -112,7 +127,8 @@ xcodebuild test \
   -derivedDataPath "$ROOT/build/DerivedData" \
   ${APP_TEST_FILTER[@]+"${APP_TEST_FILTER[@]}"} \
   CODE_SIGNING_ALLOWED=NO \
-  2>&1 | tee "$LOG_DIR/app-ios.log" | grep -E "error:|✔|✘|passed|failed|measured|TEST (SUCCEEDED|FAILED)" || true
+  2>&1 | tee "$LOG_DIR/app-ios.log" | grep -E "error:|✔|✘|passed|failed|skipped|measured|TEST (SUCCEEDED|FAILED)" || true
+summarize_app_tests
 require_success "$LOG_DIR/app-ios.log"
 
 step "App Intents metadata and widget extension are in the app bundle"
@@ -158,4 +174,5 @@ done
 echo "Release archive size: $(du -sh "$ARCHIVED_APP" | cut -f1)"
 /usr/libexec/PlistBuddy -c "Print :MinimumOSVersion" "$ARCHIVED_APP/Info.plist" | sed 's/^/Minimum iOS: /'
 
+summarize_app_tests
 step "All builds and tests passed on $DEVICE_NAME ($RUNTIME)"

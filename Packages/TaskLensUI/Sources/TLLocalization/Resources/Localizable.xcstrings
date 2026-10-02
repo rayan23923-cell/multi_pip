@@ -426,6 +426,91 @@
         }
       }
     },
+    "actions.convert.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تحويل"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert"
+          }
+        }
+      }
+    },
+    "actions.convert.invalidRate": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أدخل سعراً أكبر من صفر، مثل 1310 أو 0.92."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a rate above zero, for example 1310 or 0.92."
+          }
+        }
+      }
+    },
+    "actions.convert.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تحويل %@. أدخل قيمة وحدة واحدة من هذه العملة بعملتك. لا يملك TaskLens أسعار صرف مباشرة، لذلك يستخدم السعر الذي تدخله."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Converting %@. Enter what 1 unit of this currency is worth in yours. TaskLens has no live exchange rates, so it uses the rate you enter."
+          }
+        }
+      }
+    },
+    "actions.convert.rate": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سعر الصرف"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exchange rate"
+          }
+        }
+      }
+    },
+    "actions.convert.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تحويل العملة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convert Currency"
+          }
+        }
+      }
+    },
     "actions.found": {
       "extractionState": "manual",
       "localizations": {

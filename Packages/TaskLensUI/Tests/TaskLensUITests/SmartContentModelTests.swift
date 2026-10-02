@@ -33,7 +33,17 @@ struct ActionPlanTests {
     @Test func numbersAndMoney() {
         #expect(plan("1,250.5", .calculate) == .calculate(Decimal(string: "1250.5")!))
         #expect(plan("$25.99", .calculate) == .calculate(Decimal(string: "25.99")!))
-        #expect(plan("$25.99", .convertCurrency) == .comingLater)
+        #expect(plan("$25.99", .convertCurrency) == .convert(Decimal(string: "25.99")!, currency: "USD"))
+    }
+
+    @Test func conversionUsesTheUsersRate() {
+        #expect(ActionPlan.rate(from: "1310") == 1310)
+        #expect(ActionPlan.rate(from: "1,310.5") == Decimal(string: "1310.5"))
+        #expect(ActionPlan.rate(from: "0,92") == Decimal(string: "0.92"))
+        #expect(ActionPlan.rate(from: "١٣١٠٫٥") == Decimal(string: "1310.5"))
+        #expect(ActionPlan.rate(from: "0") == nil)
+        #expect(ActionPlan.rate(from: "abc") == nil)
+        #expect(ActionPlan.converted(Decimal(string: "25.99")!, rate: 1310) == Decimal(string: "34046.9")!)
     }
 
     @Test func textAndDatePlaceholdersAreHonest() {
