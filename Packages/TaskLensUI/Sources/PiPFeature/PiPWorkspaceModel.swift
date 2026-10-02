@@ -214,9 +214,14 @@ public final class PiPWorkspaceModel {
         }
     }
 
+    /// Records run in order: "started" must never land after "stopped".
+    @ObservationIgnored private var lastRecord: Task<Void, Never>?
+
     private func record(_ change: @escaping @Sendable (PiPWorkspaceService) async throws -> PiPPresentation) {
         let service = service
-        Task {
+        let previous = lastRecord
+        lastRecord = Task {
+            await previous?.value
             do {
                 _ = try await change(service)
             } catch {
