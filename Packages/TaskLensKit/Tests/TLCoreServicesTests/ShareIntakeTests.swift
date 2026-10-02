@@ -95,8 +95,7 @@ struct ShareIntakeTests {
     /// Share extensions are killed above roughly 120 MB. Files must be streamed
     /// to disk, never read into memory.
     ///
-    /// Measured on iOS only: on the macOS host, in-process item providers
-    /// materialize the file themselves before TaskLens sees it.
+    /// Measured on iOS, the platform the extension runs on.
     @Test(.enabled(if: isIOS)) func largeFilesAreStreamedNotLoadedIntoMemory() async throws {
         let directory = TemporaryDirectory.make()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -109,9 +108,18 @@ struct ShareIntakeTests {
         for _ in 0..<80 { try handle.write(contentsOf: chunk) }
         try handle.close()
 
+        // A share sheet hands the extension a provider that delivers a file URL
+        // from the host app. An in-process `NSItemProvider(contentsOf:)` reads the
+        // whole file into memory itself, so it would measure the system, not TaskLens.
+        let provider = NSItemProvider()
+        provider.suggestedName = "Scan.pdf"
+        provider.registerFileRepresentation(forTypeIdentifier: UTType.pdf.identifier, fileOptions: [], visibility: .all) { completion in
+            completion(big, false, nil)
+            return nil
+        }
+
         let before = MemoryFootprint.current()
-        let attachments = await ShareIntake.load([try #require(NSItemProvider(contentsOf: big))],
-                                                 into: directory.appendingPathComponent("intake"))
+        let attachments = await ShareIntake.load([provider], into: directory.appendingPathComponent("intake"))
         let growth = MemoryFootprint.current() - before
 
         guard case .file(let copy, _, _, let size) = attachments.first?.payload else {
