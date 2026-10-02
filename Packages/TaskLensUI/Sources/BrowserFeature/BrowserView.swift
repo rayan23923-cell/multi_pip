@@ -162,7 +162,8 @@ public struct BrowserView: View {
                     Image(systemName: "square.on.square")
                         .overlay {
                             Text(verbatim: "\(model.tabs.count)")
-                                .font(.system(size: 9, weight: .bold))
+                                .font(.caption2.bold())
+                                .minimumScaleFactor(0.5)
                         }
                 }
             }
@@ -196,7 +197,7 @@ struct BrowserTabsView: View {
                                 if tab.title.isEmpty {
                                     Text(L10nKey.browserNewTab).font(.headline)
                                 } else {
-                                    Text(tab.title).font(.headline).lineLimit(1)
+                                    Text(tab.title).font(.headline).lineLimit(2)
                                 }
                                 if let host = tab.url?.host() {
                                     Text(verbatim: host).font(.caption).foregroundStyle(.secondary)
@@ -209,6 +210,7 @@ struct BrowserTabsView: View {
                         }
                     }
                     .foregroundStyle(.primary)
+                    .accessibilityAddTraits(tab.id == model.selectedTabID ? .isSelected : [])
                     .accessibilityIdentifier("browser.tabRow")
                     .swipeActions {
                         Button(role: .destructive) { close(tab.id) } label: {

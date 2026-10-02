@@ -95,9 +95,12 @@ public struct DocumentLibraryView: View {
 
     private func importPhoto(_ item: PhotosPickerItem) async {
         do {
-            guard let data = try await item.loadTransferable(type: Data.self) else { return }
+            guard let data = try await item.loadTransferable(type: Data.self) else {
+                model.errorMessage = L10n.string(.documentsOpenFailed)
+                return
+            }
             let type = item.supportedContentTypes.first(where: { $0.conforms(to: .image) }) ?? .jpeg
-            let name = "Photo." + (type.preferredFilenameExtension ?? "jpg")
+            let name = L10n.string(.documentsPhotoName) + "." + (type.preferredFilenameExtension ?? "jpg")
             await model.importData(data, filename: name, contentType: type)
         } catch {
             model.errorMessage = L10n.string(.documentsOpenFailed)

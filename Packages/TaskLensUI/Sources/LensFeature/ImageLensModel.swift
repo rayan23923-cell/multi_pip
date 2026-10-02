@@ -86,6 +86,12 @@ public final class ImageLensModel {
         }
     }
 
+    /// The pick couldn't be loaded (for example an iCloud photo while offline).
+    public func failedToLoad(source: ContextSource) {
+        begin(source: source, preview: nil)
+        phase = .failed
+    }
+
     /// A file the user picked or shared: an image or a PDF.
     public func read(fileAt url: URL, source: ContextSource) async {
         let accessing = url.startAccessingSecurityScopedResource()

@@ -167,6 +167,7 @@ public struct ShareView: View {
                         .font(.title2)
                         .foregroundStyle(.secondary)
                         .frame(width: 56, height: 56)
+                        .accessibilityHidden(true)
                 }
                 VStack(alignment: .leading, spacing: TLSpacing.xxs) {
                     Text(verbatim: filename)

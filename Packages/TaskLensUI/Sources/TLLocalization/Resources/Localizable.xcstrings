@@ -3350,6 +3350,23 @@
         }
       }
     },
+    "documents.photoName": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صورة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo"
+          }
+        }
+      }
+    },
     "error.generic": {
       "extractionState": "manual",
       "localizations": {
@@ -3805,6 +3822,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Actions"
+          }
+        }
+      }
+    },
+    "lens.camera.deniedMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لالتقاط صورة للعدسة، اسمح بالكاميرا لتطبيق TaskLens من إعدادات iOS. ما زال بإمكانك اختيار صورة أو ملف."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To take a photo for Lens, allow Camera for TaskLens in iOS Settings. You can still choose a photo or a file."
+          }
+        }
+      }
+    },
+    "lens.camera.deniedTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الوصول إلى الكاميرا متوقف"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera access is off"
           }
         }
       }
@@ -4417,6 +4468,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Start a session in a workspace to attach notes to it."
+          }
+        }
+      }
+    },
+    "notes.notFound": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هذه الملاحظة لم تعد متاحة."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This note is no longer available."
           }
         }
       }
@@ -7277,6 +7345,23 @@
         }
       }
     },
+    "settings.liveActivitiesOff": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأنشطة المباشرة متوقفة لتطبيق TaskLens، لذلك لا تظهر الجلسات على شاشة القفل. يمكنك تشغيلها من إعدادات iOS."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live Activities are off for TaskLens, so sessions don't show on the Lock Screen. You can turn them on in iOS Settings."
+          }
+        }
+      }
+    },
     "settings.openSettings": {
       "extractionState": "manual",
       "localizations": {
@@ -7753,6 +7838,23 @@
         }
       }
     },
+    "text.larger": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نص أكبر"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Larger Text"
+          }
+        }
+      }
+    },
     "text.monospaced": {
       "extractionState": "manual",
       "localizations": {
@@ -7800,6 +7902,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Search in text"
+          }
+        }
+      }
+    },
+    "text.smaller": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نص أصغر"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smaller Text"
           }
         }
       }
@@ -8888,6 +9007,125 @@
           "stringUnit": {
             "state": "translated",
             "value": "Workflows"
+          }
+        }
+      }
+    },
+    "workspace.color.blue": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أزرق"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blue"
+          }
+        }
+      }
+    },
+    "workspace.color.gray": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "رمادي"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gray"
+          }
+        }
+      }
+    },
+    "workspace.color.green": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أخضر"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Green"
+          }
+        }
+      }
+    },
+    "workspace.color.orange": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "برتقالي"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orange"
+          }
+        }
+      }
+    },
+    "workspace.color.pink": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "وردي"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pink"
+          }
+        }
+      }
+    },
+    "workspace.color.purple": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بنفسجي"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purple"
+          }
+        }
+      }
+    },
+    "workspace.color.teal": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أزرق مخضر"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teal"
           }
         }
       }

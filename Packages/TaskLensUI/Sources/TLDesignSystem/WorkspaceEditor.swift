@@ -140,7 +140,7 @@ public struct WorkspaceEditor: View {
                         )
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text(verbatim: symbol))
+                // The symbol's own (system-localized) description is read.
                 .accessibilityAddTraits(symbol == draft.symbolName ? .isSelected : [])
             }
         }
@@ -165,7 +165,7 @@ public struct WorkspaceEditor: View {
                         }
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text(verbatim: option.rawValue))
+                .accessibilityLabel(Text(L10nKey(rawValue: "workspace.color.\(option.rawValue)") ?? .workspaceColorBlue))
                 .accessibilityAddTraits(option == draft.color ? .isSelected : [])
             }
         }

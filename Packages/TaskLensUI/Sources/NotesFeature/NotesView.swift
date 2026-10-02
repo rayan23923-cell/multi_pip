@@ -55,7 +55,11 @@ public struct NotesView: View {
                 editor = NoteEditorModel(draft: text)
             } else if let id = openingNoteID {
                 openingNoteID = nil
-                if let note = await model.note(id: id) { editor = NoteEditorModel(note: note) }
+                if let note = await model.note(id: id) {
+                    editor = NoteEditorModel(note: note)
+                } else {
+                    model.errorMessage = L10n.string(.notesNotFound)
+                }
             }
         }
         .refreshable { await model.load() }
@@ -251,6 +255,7 @@ struct AttachSessionSheet: View {
                         }
                     }
                     .foregroundStyle(.primary)
+                    .accessibilityAddTraits(note.sessionID == session.id ? .isSelected : [])
                 }
             }
             .navigationTitle(Text(L10nKey.notesAttach))

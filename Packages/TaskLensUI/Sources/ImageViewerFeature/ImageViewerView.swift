@@ -30,6 +30,14 @@ public struct ImageViewerView: View {
                         .onTapGesture(count: 2) { toggleZoom() }
                         .accessibilityLabel(Text(model.document?.title ?? ""))
                         .accessibilityAddTraits(.isImage)
+                        // VoiceOver: the same zoom as double-tap, and reset.
+                        .accessibilityZoomAction { action in
+                            switch action.direction {
+                            case .zoomIn: if zoom == 1 { toggleZoom() }
+                            case .zoomOut: resetZoom()
+                            @unknown default: break
+                            }
+                        }
                         .accessibilityIdentifier("image.view")
                 } else if model.failedToOpen {
                     TLEmptyState(title: .documentsOpenFailed, message: .documentsEmptyMessage, symbolName: "exclamationmark.triangle")

@@ -62,9 +62,11 @@ public struct TextViewerView: View {
                         Button { model.fontSize = max(model.fontSize - 2, TextViewerModel.fontSizes.lowerBound) } label: {
                             Image(systemName: "textformat.size.smaller")
                         }
+                        .accessibilityLabel(Text(L10nKey.textSmaller))
                         Button { model.fontSize = min(model.fontSize + 2, TextViewerModel.fontSizes.upperBound) } label: {
                             Image(systemName: "textformat.size.larger")
                         }
+                        .accessibilityLabel(Text(L10nKey.textLarger))
                     } label: {
                         Text(L10nKey.textFontSize)
                     }

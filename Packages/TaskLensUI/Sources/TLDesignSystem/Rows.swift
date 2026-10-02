@@ -41,6 +41,7 @@ public struct WorkspaceRow: View {
 public struct SessionRow: View {
     private let session: Session
     private let workspaceName: String?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(session: Session, workspaceName: String? = nil) {
         self.session = session
@@ -57,7 +58,7 @@ public struct SessionRow: View {
                 HStack(spacing: TLSpacing.xs) {
                     title
                         .font(.body)
-                        .lineLimit(1)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 1)
                     if session.isFavorite {
                         Image(systemName: "star.fill")
                             .font(.caption)

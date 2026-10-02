@@ -153,7 +153,13 @@ public enum SearchQueryParser {
 public enum SearchText {
     /// Lowercased, no diacritics or tatweel, أإآ→ا, ة→ه, ى→ي, Arabic-Indic digits → ASCII.
     public static func normalize(_ text: String) -> String {
-        var result = text.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: nil)
+        // Decompose and drop every combining mark: Latin accents and Arabic
+        // harakat, shadda and hamza marks alike (folding alone keeps some of them).
+        let decomposed = text.folding(options: [.caseInsensitive, .widthInsensitive], locale: nil)
+            .decomposedStringWithCanonicalMapping
+        var scalars = String.UnicodeScalarView()
+        scalars.append(contentsOf: decomposed.unicodeScalars.filter { $0.properties.generalCategory != .nonspacingMark })
+        var result = String(scalars)
         let replacements: [(String, String)] = [("أ", "ا"), ("إ", "ا"), ("آ", "ا"), ("ة", "ه"), ("ى", "ي"), ("ـ", "")]
         for (from, to) in replacements { result = result.replacingOccurrences(of: from, with: to) }
         let digits = Array("٠١٢٣٤٥٦٧٨٩")

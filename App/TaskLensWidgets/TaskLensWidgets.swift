@@ -132,6 +132,7 @@ struct SessionLiveActivity: Widget {
             } compactLeading: {
                 Image(systemName: context.attributes.kind.symbolName)
                     .foregroundStyle(.tint)
+                    .accessibilityLabel(Text(L10n.sessionKind(context.attributes.kind)))
             } compactTrailing: {
                 SessionActivityCompactTrailing(context.state)
             } minimal: {

@@ -197,6 +197,7 @@ STRINGS = [
     ("settings.language.body", "TaskLens follows the language chosen for it in iOS Settings.",
      "يتبع TaskLens اللغة المختارة له في إعدادات iOS."),
     ("settings.openSettings", "Open iOS Settings", "فتح إعدادات iOS"),
+    ("settings.liveActivitiesOff", "Live Activities are off for TaskLens, so sessions don't show on the Lock Screen. You can turn them on in iOS Settings.", "الأنشطة المباشرة متوقفة لتطبيق TaskLens، لذلك لا تظهر الجلسات على شاشة القفل. يمكنك تشغيلها من إعدادات iOS."),
     ("settings.storage", "Storage", "التخزين"),
     ("settings.storage.appGroup", "Shared app container", "حاوية التطبيق المشتركة"),
     ("settings.storage.local", "Local app storage", "تخزين التطبيق المحلي"),
@@ -319,6 +320,13 @@ STRINGS = [
 
     ("workspaces.favorites", "Favorites", "المفضلة"),
     ("workspaces.recent", "Recently Opened", "المفتوحة مؤخراً"),
+    ("workspace.color.blue", "Blue", "أزرق"),
+    ("workspace.color.green", "Green", "أخضر"),
+    ("workspace.color.orange", "Orange", "برتقالي"),
+    ("workspace.color.purple", "Purple", "بنفسجي"),
+    ("workspace.color.pink", "Pink", "وردي"),
+    ("workspace.color.teal", "Teal", "أزرق مخضر"),
+    ("workspace.color.gray", "Gray", "رمادي"),
     ("workspace.kind.study", "Study", "دراسة"),
     ("workspace.kind.work", "Work", "عمل"),
     ("workspace.kind.shopping", "Shopping", "تسوق"),
@@ -349,6 +357,8 @@ STRINGS = [
 
     ("lens.title", "Lens", "العدسة"),
     ("lens.subtitle", "Understand text and links", "افهم النصوص والروابط"),
+    ("lens.camera.deniedTitle", "Camera access is off", "الوصول إلى الكاميرا متوقف"),
+    ("lens.camera.deniedMessage", "To take a photo for Lens, allow Camera for TaskLens in iOS Settings. You can still choose a photo or a file.", "لالتقاط صورة للعدسة، اسمح بالكاميرا لتطبيق TaskLens من إعدادات iOS. ما زال بإمكانك اختيار صورة أو ملف."),
     ("lens.placeholder", "Paste or type text, a number or a link", "الصق أو اكتب نصاً أو رقماً أو رابطاً"),
     ("lens.input", "Content", "المحتوى"),
     ("lens.detectedType", "Detected type", "النوع المكتشف"),
@@ -500,6 +510,7 @@ STRINGS = [
     ("common.matchCount", "Matches: %lld", "النتائج: %lld"),
 
     ("notes.new", "New Note", "ملاحظة جديدة"),
+    ("notes.notFound", "This note is no longer available.", "هذه الملاحظة لم تعد متاحة."),
     ("notes.edit", "Edit Note", "تعديل الملاحظة"),
     ("notes.titlePlaceholder", "Title", "العنوان"),
     ("notes.bodyPlaceholder", "Write your note", "اكتب ملاحظتك"),
@@ -552,6 +563,7 @@ STRINGS = [
     ("documents.import", "Import", "استيراد"),
     ("documents.importFiles", "From Files", "من الملفات"),
     ("documents.importPhotos", "From Photos", "من الصور"),
+    ("documents.photoName", "Photo", "صورة"),
     ("documents.empty.title", "No documents", "لا توجد مستندات"),
     ("documents.empty.message", "Import a PDF, image or text file. It stays on this device.",
      "استورد ملف PDF أو صورة أو ملفاً نصياً. يبقى على هذا الجهاز."),
@@ -584,6 +596,8 @@ STRINGS = [
     ("text.copyAll", "Copy All", "نسخ الكل"),
     ("text.fontSize", "Text Size", "حجم النص"),
     ("text.monospaced", "Monospaced", "خط ثابت العرض"),
+    ("text.smaller", "Smaller Text", "نص أصغر"),
+    ("text.larger", "Larger Text", "نص أكبر"),
     ("text.saveText", "Save Text to Session", "حفظ النص في الجلسة"),
 
     # Phase 5: Context Engine, Action Engine, Smart Clipboard, Share Extension

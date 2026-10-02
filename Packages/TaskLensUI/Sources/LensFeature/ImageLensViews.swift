@@ -1,6 +1,8 @@
+import AVFoundation
 import PhotosUI
 import SwiftUI
 import TLActionsUI
+import UIKit
 import TLCoreServices
 import TLDesignSystem
 import TLDomain
@@ -12,6 +14,8 @@ struct ImageLensInputSection: View {
     let model: ImageLensModel
     @State private var photoItem: PhotosPickerItem?
     @State private var isImportingFile = false
+    @State private var isCameraDenied = false
+    @Environment(\.openURL) private var openURL
     @State private var isShowingCamera = false
 
     var body: some View {
@@ -22,7 +26,13 @@ struct ImageLensInputSection: View {
                 }
                 .accessibilityIdentifier("lens.image.photos")
                 if CameraPicker.isAvailable {
-                    Button { isShowingCamera = true } label: {
+                    Button {
+                        // A denied camera would open a blank screen: explain instead.
+                        switch AVCaptureDevice.authorizationStatus(for: .video) {
+                        case .denied, .restricted: isCameraDenied = true
+                        default: isShowingCamera = true
+                        }
+                    } label: {
                         TLLabel(.lensImageCamera, systemImage: "camera")
                     }
                     .accessibilityIdentifier("lens.image.camera")
@@ -46,12 +56,28 @@ struct ImageLensInputSection: View {
             Task {
                 if let data = try? await item.loadTransferable(type: Data.self) {
                     await model.read(data: data, source: .photoLibrary)
+                } else {
+                    model.failedToLoad(source: .photoLibrary)
                 }
             }
         }
         .fileImporter(isPresented: $isImportingFile, allowedContentTypes: [.image, .pdf]) { result in
-            guard case .success(let url) = result else { return }
-            Task { await model.read(fileAt: url, source: .fileImport) }
+            switch result {
+            case .success(let url):
+                Task { await model.read(fileAt: url, source: .fileImport) }
+            case .failure:
+                model.failedToLoad(source: .fileImport)
+            }
+        }
+        .alert(Text(L10nKey.lensCameraDeniedTitle), isPresented: $isCameraDenied) {
+            Button {
+                if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+            } label: {
+                Text(L10nKey.settingsOpenSettings)
+            }
+            Button(role: .cancel) {} label: { Text(L10nKey.commonCancel) }
+        } message: {
+            Text(L10nKey.lensCameraDeniedMessage)
         }
         .fullScreenCover(isPresented: $isShowingCamera) {
             CameraPicker { image in

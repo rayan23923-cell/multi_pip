@@ -234,6 +234,7 @@ public struct SessionActivityCompactTrailing: View {
                     .progressViewStyle(.circular)
             } else {
                 Image(systemName: "gearshape.2")
+                    .accessibilityLabel(Text(L10nKey.activityProcessing))
             }
         } else {
             SessionActivityClock(state)
@@ -259,13 +260,17 @@ public struct SessionActivityMinimal: View {
                     .progressViewStyle(.circular)
             } else {
                 Image(systemName: "gearshape.2")
+                    .accessibilityLabel(Text(L10nKey.activityProcessing))
             }
         case .timer:
             Image(systemName: "timer")
+                .accessibilityLabel(Text(L10nKey.activityFocus))
         case .task:
             Image(systemName: "star.fill")
+                .accessibilityLabel(Text(L10nKey.activityTask))
         case .session:
             Image(systemName: attributes.kind.symbolName)
+                .accessibilityLabel(Text(L10n.sessionKind(attributes.kind)))
         }
     }
 }

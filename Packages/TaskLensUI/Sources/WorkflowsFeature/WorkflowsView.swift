@@ -357,7 +357,9 @@ enum WorkflowText {
 
     /// "Share a link → Extract → Save". Arrows follow the layout direction.
     static func pipeline(_ trigger: WorkflowTrigger, _ steps: [WorkflowStep]) -> String {
-        let arrow = Locale.Language(identifier: Locale.preferredLanguages.first ?? "en").characterDirection == .rightToLeft ? " ← " : " → "
+        // The app's own language (it may differ from the device's).
+        let language = Bundle.main.preferredLocalizations.first ?? "en"
+        let arrow = Locale.Language(identifier: language).characterDirection == .rightToLeft ? " ← " : " → "
         return ([L10n.string(triggerKey(trigger))] + steps.map { L10n.string(stepKey($0.kind)) }).joined(separator: arrow)
     }
 

@@ -1,3 +1,6 @@
+#if canImport(ActivityKit)
+import ActivityKit
+#endif
 import AIFeature
 import SwiftUI
 import TLDesignSystem
@@ -62,6 +65,11 @@ public struct SettingsView: View {
                 }
             } header: {
                 Text(L10nKey.settingsLanguage)
+            } footer: {
+                if !liveActivitiesEnabled {
+                    Text(L10nKey.settingsLiveActivitiesOff)
+                        .accessibilityIdentifier("settings.liveActivitiesOff")
+                }
             }
 
             Section {
@@ -80,5 +88,14 @@ public struct SettingsView: View {
             }
         }
         .navigationTitle(Text(L10nKey.tabSettings))
+    }
+
+    /// Session status on the Lock Screen needs Live Activities on for TaskLens.
+    private var liveActivitiesEnabled: Bool {
+        #if canImport(ActivityKit)
+        ActivityAuthorizationInfo().areActivitiesEnabled
+        #else
+        true
+        #endif
     }
 }

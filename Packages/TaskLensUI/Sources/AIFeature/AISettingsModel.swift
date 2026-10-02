@@ -33,7 +33,11 @@ public final class AISettingsModel {
         settings = service.currentSettings
         hasAPIKey = secrets.secret(for: AIServerProvider.apiKeySecret) != nil
         availability = await service.availability()
-        history = (try? await service.history()) ?? []
+        do {
+            history = try await service.history()
+        } catch {
+            errorMessage = L10n.message(for: error)
+        }
     }
 
     public func setEnabled(_ isEnabled: Bool) async {
@@ -89,8 +93,12 @@ public final class AISettingsModel {
     }
 
     public func delete(_ record: AIRecord) async {
-        try? await service.delete(record.id)
-        history.removeAll { $0.id == record.id }
+        do {
+            try await service.delete(record.id)
+            history.removeAll { $0.id == record.id }
+        } catch {
+            errorMessage = L10n.message(for: error)
+        }
     }
 
     public func deleteHistory() async {
