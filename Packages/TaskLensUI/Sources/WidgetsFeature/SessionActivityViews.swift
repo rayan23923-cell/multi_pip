@@ -270,7 +270,7 @@ public struct SessionActivityMinimal: View {
                 .accessibilityLabel(Text(L10nKey.activityTask))
         case .session:
             Image(systemName: attributes.kind.symbolName)
-                .accessibilityLabel(Text(L10n.sessionKind(attributes.kind)))
+                .accessibilityLabel(Text(L10nKey.sessionKind(attributes.kind)))
         }
     }
 }

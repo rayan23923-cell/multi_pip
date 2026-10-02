@@ -73,7 +73,11 @@ DESTINATION="platform=iOS Simulator,id=$UDID"
 echo "Simulator: $UDID"
 
 step "TaskLensKit: swift test on the Mac host (fast feedback)"
-(cd Packages/TaskLensKit && swift test 2>&1 | tee "$LOG_DIR/kit-host.log")
+if ! (cd Packages/TaskLensKit && swift test 2>&1 | tee "$LOG_DIR/kit-host.log"); then
+  echo "---- failed Kit tests ----" >&2
+  grep -E "✘|Expectation failed|recorded an issue|error:" "$LOG_DIR/kit-host.log" | head -60 >&2 || true
+  exit 1
+fi
 
 step "TaskLensKit: tests on iPhone 11 simulator"
 (cd Packages/TaskLensKit && xcodebuild test \
