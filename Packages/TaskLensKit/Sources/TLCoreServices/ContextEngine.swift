@@ -133,7 +133,7 @@ public struct ContextEngine: EntityDetecting {
     // MARK: Rules
 
     // Regular expressions and data detectors are immutable and thread safe.
-    nonisolated(unsafe) private static let detector: NSDataDetector? = try? NSDataDetector(
+    private static let detector: NSDataDetector? = try? NSDataDetector(
         types: NSTextCheckingResult.CheckingType.link.rawValue
             | NSTextCheckingResult.CheckingType.phoneNumber.rawValue
             | NSTextCheckingResult.CheckingType.date.rawValue
@@ -166,7 +166,7 @@ public struct ContextEngine: EntityDetecting {
         "د.ع": "IQD", "د.ك": "KWD", "ج.م": "EGP", "دينار": nil, "دولار": "USD", "يورو": "EUR",
     ]
 
-    nonisolated(unsafe) private static let currencyRegex: NSRegularExpression = {
+    private static let currencyRegex: NSRegularExpression = {
         let codes = Locale.commonISOCurrencyCodes.joined(separator: "|")
         let symbols = currencySymbols.keys.sorted { $0.count > $1.count }
             .map(NSRegularExpression.escapedPattern(for:)).joined(separator: "|")

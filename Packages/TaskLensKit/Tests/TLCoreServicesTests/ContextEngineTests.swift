@@ -123,7 +123,7 @@ struct RuleActionEngineTests {
     @Test func dateOffersReminderAndCalendarPlaceholders() {
         let actions = RuleActionEngine.analyze(.text("2026-10-15")).actions
         #expect(Array(actions.map(\.type).prefix(3)) == [.createReminder, .addToCalendar, .saveToSession])
-        #expect(actions.prefix(2).allSatisfy(\.isPlaceholder))
+        #expect(actions.prefix(2).allSatisfy { $0.isPlaceholder })
     }
 
     @Test func everyCategoryCanBeSaved() {
