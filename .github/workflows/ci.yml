@@ -1,15 +1,15 @@
 name: CI
 
-# Runs only when started by hand (Actions tab or API), to save macOS minutes.
-# Every phase: build app + extension and run unit tests. UI tests (XCUITest)
-# run when `ui_tests` is true, every few phases and before release.
+# Runs when started by hand (Actions tab or API) at the end of each phase.
+# Builds app + extension and runs unit tests and, by default, UI tests
+# (XCUITest). Set `ui_tests` to false for a quicker build-only check.
 on:
   workflow_dispatch:
     inputs:
       ui_tests:
         description: Run XCUITests on the app
         type: boolean
-        default: false
+        default: true
 
 concurrency:
   group: ci-${{ github.ref }}
