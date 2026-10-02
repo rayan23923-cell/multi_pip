@@ -74,12 +74,19 @@ require_success "$LOG_DIR/ui-ios.log"
 step "Generate Xcode project"
 xcodegen generate
 
-step "App: build and test on iPhone 11 simulator"
+# UI tests are compiled every time but only run when UI_TESTS=true.
+APP_TEST_FILTER=()
+if [[ "${UI_TESTS:-false}" != "true" ]]; then
+  APP_TEST_FILTER=(-skip-testing:TaskLensAppUITests)
+fi
+
+step "App + share extension: build and test on iPhone 11 simulator (UI tests: ${UI_TESTS:-false})"
 xcodebuild test \
   -project TaskLens.xcodeproj \
   -scheme TaskLens \
   -destination "$DESTINATION" \
   -derivedDataPath "$ROOT/build/DerivedData" \
+  ${APP_TEST_FILTER[@]+"${APP_TEST_FILTER[@]}"} \
   CODE_SIGNING_ALLOWED=NO \
   2>&1 | tee "$LOG_DIR/app-ios.log" | grep -E "error:|✔|✘|passed|failed|TEST (SUCCEEDED|FAILED)" || true
 require_success "$LOG_DIR/app-ios.log"

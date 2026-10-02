@@ -1,9 +1,15 @@
 name: CI
 
+# Runs only when started by hand (Actions tab or API), to save macOS minutes.
+# Every phase: build app + extension and run unit tests. UI tests (XCUITest)
+# run when `ui_tests` is true, every few phases and before release.
 on:
-  push:
-  pull_request:
   workflow_dispatch:
+    inputs:
+      ui_tests:
+        description: Run XCUITests on the app
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -22,6 +28,8 @@ jobs:
 
       - name: Build and test
         run: scripts/ci.sh
+        env:
+          UI_TESTS: ${{ inputs.ui_tests }}
 
       - name: Upload logs
         if: always()
