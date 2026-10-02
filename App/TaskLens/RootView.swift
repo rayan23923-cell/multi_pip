@@ -98,6 +98,12 @@ private extension View {
                     noteService: container.notes,
                     toolCapture: container.toolCapture
                 ))
+            case .noteDraft(let text):
+                NotesView(model: NotesModel(
+                    workspaceID: nil,
+                    noteService: container.notes,
+                    toolCapture: container.toolCapture
+                ), draft: text)
             case .calculator(let workspaceID):
                 CalculatorView(model: CalculatorModel(
                     workspaceID: workspaceID,

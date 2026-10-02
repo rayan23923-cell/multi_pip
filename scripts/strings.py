@@ -141,6 +141,7 @@ STRINGS = [
     ("lens.placeholder", "Paste or type text, a number or a link", "الصق أو اكتب نصاً أو رقماً أو رابطاً"),
     ("lens.input", "Content", "المحتوى"),
     ("lens.detectedType", "Detected type", "النوع المكتشف"),
+    ("lens.detectedContent", "Detected Content", "المحتوى المكتشف"),
     ("lens.actions", "Actions", "الإجراءات"),
     ("lens.saved", "Saved", "تم الحفظ"),
 
@@ -279,11 +280,13 @@ STRINGS = [
     ("action.openInMaps", "Open in Maps", "فتح في الخرائط"),
     ("action.calculate", "Calculate", "حساب"),
     ("action.convertCurrency", "Convert Currency", "تحويل العملة"),
-    ("action.extractText", "Extract Text", "استخراج النص"),
+    ("action.extractText", "Extract", "استخراج"),
     ("action.translate", "Translate", "ترجمة"),
     ("action.summarize", "Summarize", "تلخيص"),
     ("action.createReminder", "Create Reminder", "إنشاء تذكير"),
     ("action.createNote", "Create Note", "إنشاء ملاحظة"),
+    ("action.search", "Search", "بحث"),
+    ("action.askAI", "Ask AI", "اسأل الذكاء الاصطناعي"),
 
     ("actions.later", "Later", "لاحقاً"),
     ("actions.comingLater", "This action will be added in a later update.",
@@ -296,6 +299,13 @@ STRINGS = [
      "تتطلب الترجمة iOS 17.4 أو أحدث."),
     ("actions.found", "Found in Content", "ما تم العثور عليه"),
     ("actions.inApp", "In App", "في التطبيق"),
+    ("actions.recommended", "Recommended", "مقترحة"),
+    ("actions.other", "More Actions", "إجراءات أخرى"),
+    ("actions.showLess", "Show Less", "عرض أقل"),
+    ("analysis.value", "Value", "القيمة"),
+    ("analysis.confidence.high", "High confidence", "ثقة عالية"),
+    ("analysis.confidence.medium", "Medium confidence", "ثقة متوسطة"),
+    ("analysis.confidence.low", "Low confidence", "ثقة منخفضة"),
 
     ("lens.preview", "Preview", "معاينة"),
 

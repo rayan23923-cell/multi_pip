@@ -136,17 +136,18 @@ public struct ShareView: View {
             Section {
                 DetectedTypeRow(preview.analysis.category)
                     .accessibilityIdentifier("share.item.\(index).type")
+                DetectedValueRow(preview.analysis)
                 previewRow(preview)
             }
-            EntitiesSection(preview.analysis.entities)
             // Saving is the sheet's main button; sharing from inside a share sheet is not offered.
-            ContextActionsSection(
-                actions: preview.analysis.actions,
+            ActionCard(
+                analysis: preview.analysis,
                 content: preview.content,
                 feedback: feedback,
                 capabilities: .shareExtension,
                 hiding: [.saveToSession, .share]
             )
+            EntitiesSection(preview.analysis.entities)
         }
     }
 

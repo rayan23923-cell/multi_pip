@@ -216,14 +216,14 @@ public struct ShareService: Sendable {
         switch attachment.payload {
         case .text(let text):
             let content = ContentClassifier.classify(text)
-            return Preview(attachment: attachment, content: content, analysis: RuleActionEngine.analyze(content))
+            return Preview(attachment: attachment, content: content, analysis: ActionEngine.analyze(content, context: ActionContext(source: .shareExtension)))
         case .url(let url):
-            return Preview(attachment: attachment, content: .url(url), analysis: RuleActionEngine.analyze(.url(url)))
+            return Preview(attachment: attachment, content: .url(url), analysis: ActionEngine.analyze(.url(url), context: ActionContext(source: .shareExtension)))
         case .file(_, let type, let filename, let size):
             let kind = DocumentService.kind(for: type) ?? .document
             let reference = FileReference(relativePath: filename, originalFilename: filename,
                                           contentType: type.identifier, kind: kind, byteCount: size)
-            return Preview(attachment: attachment, content: nil, analysis: RuleActionEngine.analyze(.file(reference)))
+            return Preview(attachment: attachment, content: nil, analysis: ActionEngine.analyze(.file(reference), context: ActionContext(source: .shareExtension)))
         case .unsupported:
             return Preview(attachment: attachment, content: nil, analysis: ContextAnalysis(category: .unknown, entities: [], actions: []))
         }

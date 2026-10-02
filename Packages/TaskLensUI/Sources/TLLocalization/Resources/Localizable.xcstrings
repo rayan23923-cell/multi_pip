@@ -35,6 +35,23 @@
         }
       }
     },
+    "action.askAI": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اسأل الذكاء الاصطناعي"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask AI"
+          }
+        }
+      }
+    },
     "action.calculate": {
       "extractionState": "manual",
       "localizations": {
@@ -143,13 +160,13 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "استخراج النص"
+            "value": "استخراج"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Extract Text"
+            "value": "Extract"
           }
         }
       }
@@ -201,6 +218,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save"
+          }
+        }
+      }
+    },
+    "action.search": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بحث"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search"
           }
         }
       }
@@ -375,6 +409,57 @@
         }
       }
     },
+    "actions.other": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إجراءات أخرى"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More Actions"
+          }
+        }
+      }
+    },
+    "actions.recommended": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مقترحة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommended"
+          }
+        }
+      }
+    },
+    "actions.showLess": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عرض أقل"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Less"
+          }
+        }
+      }
+    },
     "actions.translateUnavailable": {
       "extractionState": "manual",
       "localizations": {
@@ -405,6 +490,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "This action is not available for this content."
+          }
+        }
+      }
+    },
+    "analysis.confidence.high": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ثقة عالية"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High confidence"
+          }
+        }
+      }
+    },
+    "analysis.confidence.low": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ثقة منخفضة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low confidence"
+          }
+        }
+      }
+    },
+    "analysis.confidence.medium": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ثقة متوسطة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medium confidence"
+          }
+        }
+      }
+    },
+    "analysis.value": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القيمة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Value"
           }
         }
       }
@@ -2326,6 +2479,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Actions"
+          }
+        }
+      }
+    },
+    "lens.detectedContent": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المحتوى المكتشف"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detected Content"
           }
         }
       }

@@ -46,6 +46,12 @@ extension Action {
         /// The value the action works on (phone number, URL, amount...).
         public static let value = "value"
         public static let currencyCode = "currencyCode"
+        /// Event or note title suggested from the content.
+        public static let title = "title"
+        /// True when a date value carries a time of day.
+        public static let includesTime = "includesTime"
+        /// Several values at once (Extract).
+        public static let values = "values"
         /// True when the action is shown but not implemented yet.
         public static let placeholder = "placeholder"
     }
@@ -92,10 +98,15 @@ public struct ActionType: ExtensibleKind {
     public static let translate: ActionType = "translate"
     public static let summarize: ActionType = "summarize"
     public static let createReminder: ActionType = "createReminder"
+    /// Searches what the user saved in TaskLens.
+    public static let search: ActionType = "search"
+    /// Reserved for an optional, clearly separated AI feature. Always a placeholder.
+    public static let askAI: ActionType = "askAI"
 
     public static let allKnown: [ActionType] = [
         .copy, .share, .saveToSession, .createNote, .openURL, .call, .sendMessage, .sendEmail, .addContact,
         .addToCalendar, .openInMaps, .calculate, .convertCurrency, .extractText, .translate, .summarize, .createReminder,
+        .search, .askAI,
     ]
 }
 

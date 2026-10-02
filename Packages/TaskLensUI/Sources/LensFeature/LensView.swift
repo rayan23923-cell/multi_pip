@@ -50,18 +50,25 @@ public struct LensView: View {
                 Section {
                     DetectedTypeRow(analysis.category)
                         .accessibilityIdentifier("lens.detectedType")
+                    DetectedValueRow(analysis)
+                } header: {
+                    Text(L10nKey.lensDetectedContent)
                 }
 
-                EntitiesSection(analysis.entities)
-
-                ContextActionsSection(
-                    actions: analysis.actions,
+                ActionCard(
+                    analysis: analysis,
                     content: content,
                     feedback: feedback,
                     isSaved: model.savedItem != nil,
-                    onSave: { await model.save() },
-                    onCalculate: { router.push(.calculatorInput($0)) }
+                    handlers: ActionHandlers(
+                        onSave: { await model.save() },
+                        onCalculate: { router.push(.calculatorInput($0)) },
+                        onCreateNote: { router.push(.noteDraft($0)) },
+                        onSearch: { router.search($0) }
+                    )
                 )
+
+                EntitiesSection(analysis.entities)
             }
         }
         .navigationTitle(Text(L10nKey.lensTitle))

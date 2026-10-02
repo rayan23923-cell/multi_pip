@@ -74,7 +74,7 @@ public final class ClipboardModel {
     /// Category, entities and actions for an entry. Computed once per entry.
     public func analysis(for item: ClipboardItem) -> ContextAnalysis {
         if let cached = analyses[item.id] { return cached }
-        let analysis = RuleActionEngine.analyze(item.content)
+        let analysis = ActionEngine.analyze(item.content, context: ActionContext(source: .clipboard))
         analyses[item.id] = analysis
         return analysis
     }

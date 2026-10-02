@@ -116,6 +116,12 @@ public final class NoteEditorModel: ContextProducing, Identifiable {
         body = note?.body ?? ""
     }
 
+    /// A new note holding text from the Action Engine (Create Note).
+    public convenience init(draft: String) {
+        self.init()
+        body = draft
+    }
+
     public var isNew: Bool { noteID == nil }
 
     public var canSave: Bool {

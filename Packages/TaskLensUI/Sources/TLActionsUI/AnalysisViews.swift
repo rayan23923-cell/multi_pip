@@ -1,4 +1,5 @@
 import SwiftUI
+import TLCoreServices
 import TLDesignSystem
 import TLDomain
 import TLLocalization
@@ -27,13 +28,75 @@ public struct DetectedTypeRow: View {
     }
 }
 
+/// The detected value in clear form ("$125" → "US$125.00", a date in the
+/// user's format, a dialable phone number) and how sure the engine is.
+/// Hidden when the content is not one single value.
+public struct DetectedValueRow: View {
+    private let entity: DetectedEntity?
+
+    public init(_ analysis: ContextAnalysis) {
+        entity = analysis.primaryEntity.flatMap { entity in
+            [EntityType.json, .code].contains(entity.type) ? nil : entity
+        }
+    }
+
+    public var body: some View {
+        if let entity {
+            LabeledContent {
+                VStack(alignment: .trailing, spacing: TLSpacing.xxs) {
+                    value(entity)
+                        .textSelection(.enabled)
+                    Text(Self.confidenceKey(entity.confidence))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } label: {
+                Text(L10nKey.analysisValue)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("analysis.value")
+        }
+    }
+
+    @ViewBuilder
+    private func value(_ entity: DetectedEntity) -> some View {
+        switch entity.value {
+        case .currency(let amount, let code?):
+            Text(amount, format: .currency(code: code))
+        case .currency(let amount, nil), .number(let amount):
+            Text(amount, format: .number)
+        case .date(let date):
+            if entity.metadata[DetectionKey.includesTime]?.boolValue == true {
+                Text(date, format: .dateTime.weekday().day().month().year().hour().minute())
+            } else {
+                Text(date, format: .dateTime.weekday().day().month().year())
+            }
+        case .phoneNumber(let phone):
+            Text(verbatim: phone).environment(\.layoutDirection, .leftToRight)
+        case .url(let url):
+            Text(verbatim: url.host() ?? url.absoluteString).environment(\.layoutDirection, .leftToRight)
+        case .email(let email):
+            Text(verbatim: email).environment(\.layoutDirection, .leftToRight)
+        case .address, .text:
+            Text(verbatim: entity.normalizedText ?? "").lineLimit(3)
+        }
+    }
+
+    static func confidenceKey(_ confidence: Confidence) -> L10nKey {
+        if confidence >= .high { return .analysisConfidenceHigh }
+        if confidence >= .medium { return .analysisConfidenceMedium }
+        return .analysisConfidenceLow
+    }
+}
+
 /// Entities found inside the content (phones, links, dates in a paragraph).
 /// Hidden when the only entity is the content itself.
 public struct EntitiesSection: View {
     private let entities: [DetectedEntity]
 
     public init(_ entities: [DetectedEntity]) {
-        self.entities = entities.filter { $0.metadata[ContextAnalysis.primaryKey]?.boolValue != true }
+        // Numbers inside a sentence are only listed when they are something more (a price, a date).
+        self.entities = entities.filter { !$0.isPrimary && $0.confidence >= .medium }
     }
 
     public var body: some View {

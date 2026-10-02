@@ -51,7 +51,7 @@ public final class LensModel {
         }
         let content = ContentClassifier.classify(input)
         self.content = content
-        analysis = RuleActionEngine.analyze(content)
+        analysis = ActionEngine.analyze(content, context: ActionContext(source: .manualEntry))
         savedItem = nil
     }
 

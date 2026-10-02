@@ -13,7 +13,7 @@ import UniformTypeIdentifiers
 struct ActionPlanTests {
     private func plan(_ text: String, _ type: ActionType, capabilities: ActionCapabilities = .app) -> ActionPlan? {
         let content = ContextContent.text(text)
-        guard let action = RuleActionEngine.analyze(content).actions.first(where: { $0.type == type }) else { return nil }
+        guard let action = ActionEngine.analyze(content).actions.first(where: { $0.type == type }) else { return nil }
         return ActionPlan.make(for: action, content: content, capabilities: capabilities)
     }
 
@@ -41,7 +41,35 @@ struct ActionPlanTests {
         #expect(plan(text, .translate) == .translate(text))
         #expect(plan(text, .summarize) == .comingLater)
         #expect(plan("2026-10-15", .createReminder) == .comingLater)
-        #expect(plan("2026-10-15", .addToCalendar) == .comingLater)
+        #expect(plan(text, .askAI) == .comingLater)
+    }
+
+    @Test func calendarEventIsPreparedFromTheDate() throws {
+        let day = try #require(Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 15)))
+        #expect(plan("2026-10-15", .addToCalendar) == .createEvent(EventDraft(title: "", start: day, isAllDay: true)))
+        // A date inside a sentence keeps the rest of the sentence as the title.
+        guard case .createEvent(let draft)? = plan("Dentist appointment on October 20, 2026 at 3:00 PM", .addToCalendar) else {
+            Issue.record("Expected an event")
+            return
+        }
+        #expect(draft.title.hasPrefix("Dentist appointment"))
+        #expect(!draft.isAllDay)
+        #expect(draft.end == draft.start.addingTimeInterval(3600))
+        #expect(plan("2026-10-15", .addToCalendar, capabilities: .shareExtension) == .openApp)
+    }
+
+    @Test func noteSearchAndExtract() {
+        let text = "Meet the design team about the new layout"
+        #expect(plan(text, .createNote) == .createNote(text))
+        #expect(plan(text, .search) == .search(text))
+        #expect(plan(text, .search, capabilities: .shareExtension) == .openApp)
+        let message = "Call +1 415 555 0132 or write to team@example.com"
+        #expect(plan(message, .extractText) == .copy("+14155550132\nteam@example.com"))
+    }
+
+    @Test func searchUsesTheFirstLineOnly() {
+        #expect(ActionPlan.searchQuery("  first line \nsecond") == "first line")
+        #expect(ActionPlan.searchQuery(String(repeating: "a", count: 300)).count == 100)
     }
 
     @Test func shareExtensionPointsToTheApp() {

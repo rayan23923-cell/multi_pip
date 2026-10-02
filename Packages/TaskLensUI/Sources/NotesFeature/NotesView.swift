@@ -8,9 +8,12 @@ public struct NotesView: View {
     @State private var editor: NoteEditorModel?
     @State private var attaching: Note?
     @State private var pendingDeletion: Note?
+    @State private var draft: String?
 
-    public init(model: NotesModel) {
+    /// `draft` opens the editor on a new note holding that text.
+    public init(model: NotesModel, draft: String? = nil) {
         _model = State(initialValue: model)
+        _draft = State(initialValue: draft)
     }
 
     public var body: some View {
@@ -40,6 +43,11 @@ public struct NotesView: View {
         .navigationTitle(Text(L10nKey.workspaceToolNotes))
         .searchable(text: $model.query, prompt: Text(L10nKey.notesSearchPrompt))
         .task(id: model.query) { await model.load() }
+        .task {
+            guard let text = draft else { return }
+            draft = nil
+            editor = NoteEditorModel(draft: text)
+        }
         .refreshable { await model.load() }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

@@ -30,6 +30,12 @@ public enum ActionPlan: Equatable, Sendable {
     /// Opens the calculator starting from this value.
     case calculate(Decimal)
     case translate(String)
+    /// Opens the note editor with this text.
+    case createNote(String)
+    /// Searches what the user saved in TaskLens.
+    case search(String)
+    /// Opens the system event editor, filled in. The user confirms or cancels.
+    case createEvent(EventDraft)
     /// Shown honestly as not implemented yet.
     case comingLater
     /// Needs the full app (share extension).
@@ -74,7 +80,21 @@ public enum ActionPlan: Equatable, Sendable {
             return capabilities.canNavigate ? .calculate(number) : .openApp
         case .translate:
             return text.map(ActionPlan.translate) ?? .unavailable
-        case .summarize, .createReminder, .addToCalendar, .convertCurrency, .addContact:
+        case .createNote:
+            guard let text, !text.isEmpty else { return .unavailable }
+            return capabilities.canNavigate ? .createNote(text) : .openApp
+        case .search:
+            guard let query = text.map(searchQuery), !query.isEmpty else { return .unavailable }
+            return capabilities.canNavigate ? .search(query) : .openApp
+        case .addToCalendar:
+            guard let draft = EventDraft(action: action) else { return .unavailable }
+            return capabilities.canNavigate ? .createEvent(draft) : .openApp
+        case .extractText:
+            // Extract lists the useful parts of a text (numbers, links, dates) and copies them.
+            guard let values = action.parameters[Action.ParameterKey.values]?.arrayValue?.compactMap(\.stringValue),
+                  !values.isEmpty else { return .unavailable }
+            return .copy(values.joined(separator: "\n"))
+        case .summarize, .createReminder, .convertCurrency, .addContact, .askAI:
             return .comingLater
         default:
             return .unavailable
@@ -87,6 +107,12 @@ public enum ActionPlan: Equatable, Sendable {
         case .url(let url): url.absoluteString
         case .file, nil: nil
         }
+    }
+
+    /// First line of the text, short enough for a search field.
+    public static func searchQuery(_ text: String) -> String {
+        let firstLine = text.split(separator: "\n").first.map(String.init) ?? text
+        return String(firstLine.trimmingCharacters(in: .whitespaces).prefix(100))
     }
 
     /// Keeps the leading `+` and digits only, so `tel:` and `sms:` URLs are valid.
@@ -116,4 +142,46 @@ public enum ActionPlan: Equatable, Sendable {
 
 private extension Character {
     var isASCIIDigitCharacter: Bool { ("0"..."9").contains(self) }
+}
+
+/// A new calendar event, prepared from a date the Context Engine found.
+public struct EventDraft: Equatable, Sendable, Identifiable {
+    public var id = UUID()
+    public var title: String
+    public var start: Date
+    public var isAllDay: Bool
+
+    public init(title: String, start: Date, isAllDay: Bool) {
+        self.title = title
+        self.start = start
+        self.isAllDay = isAllDay
+    }
+
+    /// From an Add to Calendar action: its ISO date value, time flag and title.
+    public init?(action: Action) {
+        guard let value = action.valueText else { return nil }
+        let includesTime = action.parameters[Action.ParameterKey.includesTime]?.boolValue ?? false
+        let formatter = ISO8601DateFormatter()
+        if includesTime {
+            formatter.formatOptions = [.withInternetDateTime]
+        } else {
+            formatter.formatOptions = [.withFullDate]
+            formatter.timeZone = .current
+        }
+        guard let date = formatter.date(from: value) else { return nil }
+        self.init(
+            title: action.parameters[Action.ParameterKey.title]?.stringValue ?? "",
+            start: date,
+            isAllDay: !includesTime
+        )
+    }
+
+    /// One hour for a timed event; the same day for an all-day event.
+    public var end: Date {
+        isAllDay ? start : start.addingTimeInterval(60 * 60)
+    }
+
+    public static func == (lhs: EventDraft, rhs: EventDraft) -> Bool {
+        lhs.title == rhs.title && lhs.start == rhs.start && lhs.isAllDay == rhs.isAllDay
+    }
 }

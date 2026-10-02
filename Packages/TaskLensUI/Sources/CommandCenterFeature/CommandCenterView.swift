@@ -31,6 +31,11 @@ public struct CommandCenterView: View {
             await model.search()
         }
         .task { await model.load() }
+        .onChange(of: router.pendingSearch, initial: true) { _, query in
+            guard let query else { return }
+            router.pendingSearch = nil
+            model.query = query
+        }
         .refreshable { await model.load() }
         .sheet(isPresented: $isCreatingWorkspace) {
             WorkspaceEditor(mode: .create) { draft in

@@ -94,9 +94,9 @@ public struct ClipboardView: View {
             get: { model.selectedItem },
             set: { model.selectedItemID = $0?.id }
         )) { item in
-            ClipboardItemDetail(item: item, model: model) { value in
+            ClipboardItemDetail(item: item, model: model) { route in
                 model.selectedItemID = nil
-                router.push(.calculatorInput(value))
+                router.push(route)
             }
         }
         .task {
@@ -164,7 +164,9 @@ public struct ClipboardView: View {
 private struct ClipboardItemDetail: View {
     let item: ClipboardItem
     let model: ClipboardModel
-    let onCalculate: (Decimal) -> Void
+    /// Leaves the detail sheet for another screen.
+    let navigate: (AppRoute) -> Void
+    @Environment(AppRouter.self) private var router
     @State private var feedback = ActionFeedback()
     @Environment(\.dismiss) private var dismiss
 
@@ -174,6 +176,7 @@ private struct ClipboardItemDetail: View {
             List {
                 Section {
                     DetectedTypeRow(analysis.category)
+                    DetectedValueRow(analysis)
                 } header: {
                     Text(L10nKey.lensPreview)
                 } footer: {
@@ -184,16 +187,23 @@ private struct ClipboardItemDetail: View {
                         .padding(.top, TLSpacing.s)
                 }
 
-                EntitiesSection(analysis.entities)
-
-                ContextActionsSection(
-                    actions: analysis.actions,
+                ActionCard(
+                    analysis: analysis,
                     content: item.content,
                     feedback: feedback,
                     isSaved: model.history.first(where: { $0.id == item.id })?.promotedItemID != nil,
-                    onSave: { await model.save(item) },
-                    onCalculate: onCalculate
+                    handlers: ActionHandlers(
+                        onSave: { await model.save(item) },
+                        onCalculate: { navigate(.calculatorInput($0)) },
+                        onCreateNote: { navigate(.noteDraft($0)) },
+                        onSearch: { query in
+                            dismiss()
+                            router.search(query)
+                        }
+                    )
                 )
+
+                EntitiesSection(analysis.entities)
             }
             .navigationTitle(Text(L10nKey.commonDetails))
             .navigationBarTitleDisplayMode(.inline)

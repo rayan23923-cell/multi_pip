@@ -104,8 +104,61 @@ final class SmartContentUITests: XCTestCase {
         analyzeInLens(app, "Meet the design team about the new layout")
         waitForLabel(app, "lens.detectedType", containing: "Text")
         XCTAssertTrue(element(app, "action.translate").waitForExistence(timeout: 5))
+        // Summarize is not built yet, so it waits behind More.
+        XCTAssertFalse(element(app, "action.summarize").exists)
+        tap(app, "actions.more")
         tap(app, "action.summarize")
         dismissAlert(app, expecting: "later update")
+    }
+
+    // MARK: Action card
+
+    func testActionCardRecommendsThreeAndKeepsTheRestUnderMore() {
+        let app = launch()
+        analyzeInLens(app, "$125")
+        waitForLabel(app, "lens.detectedType", containing: "Amount of Money")
+        waitForLabel(app, "analysis.value", containing: "125")
+        XCTAssertTrue(element(app, "action.convertCurrency").waitForExistence(timeout: 5))
+        XCTAssertTrue(element(app, "action.calculate").exists)
+        XCTAssertTrue(element(app, "action.saveToSession").exists)
+        XCTAssertFalse(element(app, "action.copy").exists)
+        tap(app, "actions.more")
+        XCTAssertTrue(element(app, "action.copy").waitForExistence(timeout: 5))
+        XCTAssertTrue(element(app, "action.share").exists)
+    }
+
+    func testCreateNoteFromLensOpensTheEditorWithTheText() {
+        let app = launch()
+        analyzeInLens(app, "Buy milk and eggs on the way home")
+        tap(app, "action.createNote")
+        let body = element(app, "noteEditor.body")
+        XCTAssertTrue(body.waitForExistence(timeout: 10), "Note editor did not open")
+        XCTAssertTrue((body.value as? String ?? "").contains("Buy milk"), "Body is '\(body.value ?? "")'")
+        tap(app, "noteEditor.save")
+        let saved = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Buy milk")).firstMatch
+        XCTAssertTrue(saved.waitForExistence(timeout: 10), "Saved note not listed")
+    }
+
+    func testSearchFromLensSearchesSavedContent() {
+        let app = launch()
+        analyzeInLens(app, "Quarterly budget review")
+        tap(app, "action.search")
+        let shown = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@ OR value CONTAINS %@", "Quarterly budget review", "Quarterly budget review"))
+            .firstMatch
+        XCTAssertTrue(shown.waitForExistence(timeout: 10), "Command Center is not searching for the text")
+        XCTAssertFalse(element(app, "lens.input").exists)
+    }
+
+    func testCalendarActionOpensTheSystemEditor() {
+        let app = launch()
+        analyzeInLens(app, "2026-10-05")
+        tap(app, "action.addToCalendar")
+        // The editor runs outside the app; the app must stay up and get its screen back on Cancel.
+        let cancel = app.buttons["Cancel"].firstMatch
+        if cancel.waitForExistence(timeout: 10) { cancel.tap() }
+        XCTAssertEqual(app.state, .runningForeground)
+        XCTAssertTrue(element(app, "lens.detectedType").waitForExistence(timeout: 10))
     }
 
     func testLensInArabic() {

@@ -20,6 +20,8 @@ public enum AppRoute: Hashable, Sendable {
     case lensInput(String)
     /// Tools. The workspace, when given, scopes lists and picks the session to save to.
     case notes(WorkspaceID?)
+    /// Notes with the editor open on a new note holding this text.
+    case noteDraft(String)
     case calculator(WorkspaceID?)
     /// Calculator starting from a value the Action Engine found (a price, a number).
     case calculatorInput(Decimal)
@@ -63,6 +65,8 @@ public final class AppRouter {
     public var commandCenterPath: [AppRoute] = []
     public var workspacesPath: [AppRoute] = []
     public var settingsPath: [AppRoute] = []
+    /// A search the Command Center should run when it appears (Search action).
+    public var pendingSearch: String?
 
     public init(selectedTab: AppTab = .commandCenter) {
         self.selectedTab = selectedTab
@@ -77,6 +81,13 @@ public final class AppRouter {
     public func open(_ route: AppRoute, in tab: AppTab) {
         selectedTab = tab
         setPath([route], for: tab)
+    }
+
+    /// Shows the Command Center searching saved content for `query`.
+    public func search(_ query: String) {
+        pendingSearch = query
+        selectedTab = .commandCenter
+        setPath([], for: .commandCenter)
     }
 
     public func popToRoot(_ tab: AppTab? = nil) {
