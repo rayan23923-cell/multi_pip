@@ -8,6 +8,7 @@ public struct WorkspaceService: Sendable {
     private let contextItems: any Repository<ContextItem>
     private let documents: any Repository<Document>
     private let notes: any Repository<Note>
+    private let actionRecords: (any Repository<ActionRecord>)?
     private let clock: any DateProviding
     private let logger: TLLogger
 
@@ -17,6 +18,7 @@ public struct WorkspaceService: Sendable {
         contextItems: any Repository<ContextItem>,
         documents: any Repository<Document>,
         notes: any Repository<Note>,
+        actionRecords: (any Repository<ActionRecord>)? = nil,
         clock: any DateProviding = SystemDateProvider(),
         logger: TLLogger = TLLogger(category: "workspaces")
     ) {
@@ -25,6 +27,7 @@ public struct WorkspaceService: Sendable {
         self.contextItems = contextItems
         self.documents = documents
         self.notes = notes
+        self.actionRecords = actionRecords
         self.clock = clock
         self.logger = logger
     }
@@ -227,6 +230,9 @@ public struct WorkspaceService: Sendable {
         try await contextItems.delete(ids: itemIDs)
         try await notes.delete(ids: noteIDs)
         try await documents.delete(ids: documentIDs)
+        if let actionRecords {
+            try await actionRecords.delete(ids: try await actionRecords.fetchAll(where: { sessionIDs.contains($0.sessionID) }).map(\.id))
+        }
         try await sessions.delete(ids: Array(sessionIDs))
         try await workspaces.delete(id: id)
 

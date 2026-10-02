@@ -10,6 +10,9 @@ import TLFoundation
 struct AppContainer: Sendable {
     let workspaces: WorkspaceService
     let sessions: SessionService
+    let sessionContent: SessionContentService
+    /// Remembers tool positions for Resume.
+    let toolState: ToolStateRecorder
     let capture: CaptureService
     let notes: NoteService
     let clipboard: ClipboardService
@@ -44,6 +47,7 @@ struct AppContainer: Sendable {
             contextItems: repositories.contextItems,
             documents: repositories.documents,
             notes: repositories.notes,
+            actionRecords: repositories.actionRecords,
             clock: clock,
             logger: logger.scoped("workspaces")
         )
@@ -53,6 +57,16 @@ struct AppContainer: Sendable {
             clock: clock,
             logger: logger.scoped("sessions")
         )
+        self.sessionContent = SessionContentService(
+            workspaces: repositories.workspaces,
+            sessions: repositories.sessions,
+            contextItems: repositories.contextItems,
+            notes: repositories.notes,
+            actionRecords: repositories.actionRecords,
+            clock: clock,
+            logger: logger.scoped("sessions")
+        )
+        self.toolState = ToolStateRecorder(service: sessionContent, clock: clock)
         self.capture = capture
         self.notes = NoteService(notes: repositories.notes, clock: clock, logger: logger.scoped("notes"))
         self.clipboard = ClipboardService(

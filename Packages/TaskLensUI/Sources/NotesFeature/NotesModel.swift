@@ -17,11 +17,23 @@ public final class NotesModel {
 
     private let noteService: NoteService
     private let toolCapture: ToolCaptureService
+    private let stateRecorder: ToolStateRecorder?
 
-    public init(workspaceID: WorkspaceID?, noteService: NoteService, toolCapture: ToolCaptureService) {
+    public init(
+        workspaceID: WorkspaceID?,
+        noteService: NoteService,
+        toolCapture: ToolCaptureService,
+        stateRecorder: ToolStateRecorder? = nil
+    ) {
         self.workspaceID = workspaceID
         self.noteService = noteService
         self.toolCapture = toolCapture
+        self.stateRecorder = stateRecorder
+    }
+
+    /// A note by id, for opening it directly (Resume).
+    public func note(id: NoteID) async -> Note? {
+        try? await noteService.note(id: id)
     }
 
     public var pinnedNotes: [Note] { notes.filter(\.isPinned) }
@@ -46,6 +58,9 @@ public final class NotesModel {
             }
             editor.didSave(note)
             try await reload()
+            if let stateRecorder {
+                await stateRecorder.record(.notes, in: workspaceID ?? note.workspaceID, noteID: note.id)
+            }
         }
     }
 

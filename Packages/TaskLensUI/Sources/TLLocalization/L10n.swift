@@ -122,3 +122,19 @@ extension Text {
         self.init(LocalizedStringKey(key.rawValue), bundle: L10n.bundle)
     }
 }
+
+// MARK: - Sessions
+
+extension L10nKey {
+    public static func sessionItemKind(_ kind: SessionItemKind) -> L10nKey {
+        L10nKey(rawValue: "session.itemKind.\(kind.rawValue)") ?? .sessionItemKindText
+    }
+
+    public static func sessionSortOption(_ sort: SessionSort) -> L10nKey {
+        L10nKey(rawValue: "session.sort.\(sort.rawValue)") ?? .sessionSortRecent
+    }
+
+    public static func actionOutcome(_ outcome: ActionRecord.Outcome) -> L10nKey {
+        L10nKey(rawValue: "actionRecord.\(outcome.rawValue)") ?? .actionRecordCompleted
+    }
+}

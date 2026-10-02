@@ -25,6 +25,14 @@ public final class WorkspaceDetailModel {
         self.sessionService = sessionService
     }
 
+    /// Sessions in use: favorites first, then most recently active.
+    public var currentSessions: [Session] {
+        let current = sessions.filter { !$0.isArchived }
+        return current.filter(\.isFavorite) + current.filter { !$0.isFavorite }
+    }
+
+    public var archivedSessions: [Session] { sessions.filter(\.isArchived) }
+
     public func load() async {
         do {
             if !hasRecordedOpen {
@@ -50,6 +58,27 @@ public final class WorkspaceDetailModel {
         } catch {
             errorMessage = L10n.message(for: error)
             return nil
+        }
+    }
+
+    public func toggleFavorite(_ session: Session) async {
+        await change { try await $0.setFavorite(session.id, !session.isFavorite) }
+    }
+
+    public func archive(_ session: Session) async {
+        await change { try await $0.archive(session.id) }
+    }
+
+    public func unarchive(_ session: Session) async {
+        await change { try await $0.unarchive(session.id) }
+    }
+
+    private func change(_ body: (SessionService) async throws -> Session) async {
+        do {
+            _ = try await body(sessionService)
+            sessions = try await sessionService.sessions(in: workspaceID)
+        } catch {
+            errorMessage = L10n.message(for: error)
         }
     }
 

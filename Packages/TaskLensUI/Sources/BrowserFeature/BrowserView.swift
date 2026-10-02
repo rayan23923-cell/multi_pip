@@ -8,10 +8,13 @@ public struct BrowserView: View {
     @State private var store = WebViewStore()
     @State private var showsTabs = false
     @FocusState private var isAddressFocused: Bool
+    @State private var openingURL: URL?
 
     /// The model is owned by the caller so tabs survive leaving the screen.
-    public init(model: BrowserModel) {
+    /// `opening` loads a page in a new tab (Resume).
+    public init(model: BrowserModel, opening url: URL? = nil) {
         self.model = model
+        _openingURL = State(initialValue: url)
     }
 
     public var body: some View {
@@ -38,6 +41,12 @@ public struct BrowserView: View {
         .onAppear {
             store.onStateChange = { [model] id, state in model.apply(state, to: id) }
             store.retain(only: Set(model.tabs.map(\.id)))
+            if let url = openingURL {
+                openingURL = nil
+                if model.selectedTab.url != nil { model.newTab(url: url) }
+                model.addressText = url.absoluteString
+                if let url = model.submitAddress() { store.load(url, in: model.selectedTab) }
+            }
         }
         .errorAlert(message: $model.errorMessage)
     }

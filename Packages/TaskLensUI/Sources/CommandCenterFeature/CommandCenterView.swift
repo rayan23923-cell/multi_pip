@@ -157,6 +157,17 @@ public struct CommandCenterView: View {
                     NavigationLink(value: AppRoute.session(session.id)) {
                         SessionRow(session: session, workspaceName: model.workspaceName(for: session.workspaceID))
                     }
+                    .swipeActions(edge: .leading) {
+                        Button { router.resume(session) } label: {
+                            TLLabel(.sessionResume, systemImage: "play")
+                        }
+                        .tint(.green)
+                    }
+                    .contextMenu {
+                        Button { router.resume(session) } label: {
+                            TLLabel(.sessionResume, systemImage: "play")
+                        }
+                    }
                 }
             } header: {
                 Text(L10nKey.commandCenterRecentSessions)

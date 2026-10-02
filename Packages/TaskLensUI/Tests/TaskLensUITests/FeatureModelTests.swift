@@ -23,8 +23,31 @@ struct Services {
             contextItems: repositories.contextItems,
             documents: repositories.documents,
             notes: repositories.notes,
+            actionRecords: repositories.actionRecords,
             clock: clock,
             logger: .disabled()
+        )
+    }
+
+    var sessionContent: SessionContentService {
+        SessionContentService(
+            workspaces: repositories.workspaces,
+            sessions: repositories.sessions,
+            contextItems: repositories.contextItems,
+            notes: repositories.notes,
+            actionRecords: repositories.actionRecords,
+            clock: clock,
+            logger: .disabled()
+        )
+    }
+
+    func sessionDetail(_ id: SessionID, resume: Bool = false) -> SessionDetailModel {
+        SessionDetailModel(
+            sessionID: id,
+            sessionService: sessions,
+            contentService: sessionContent,
+            captureService: capture,
+            resume: resume
         )
     }
 
@@ -223,7 +246,7 @@ struct LensAndClipboardModelTests {
         model.analyze()
         #expect(model.content?.itemType == .url)
         #expect(model.actions.first?.type == .openURL)
-        #expect(Set(model.actions.map(\.type)) == [.openURL, .copy, .share, .saveToSession])
+        #expect(Set(model.actions.map(\.type)) == [.openURL, .copy, .share, .saveToSession, .createNote])
 
         await model.save()
         #expect(model.savedItem?.type == .url)
@@ -261,7 +284,7 @@ struct SessionDetailModelTests {
         let services = Services()
         let workspace = try await services.workspaces.create(name: "W")
         let session = try await services.sessions.start(in: workspace.id)
-        let model = SessionDetailModel(sessionID: session.id, sessionService: services.sessions, captureService: services.capture)
+        let model = services.sessionDetail(session.id)
 
         await model.load()
         model.draft = "0770 123 4567"
@@ -274,3 +297,118 @@ struct SessionDetailModelTests {
         #expect(model.canCapture == false)
     }
 }
+
+@MainActor
+@Suite("Smart session detail model")
+struct SmartSessionDetailModelTests {
+    @Test func renameFavoriteArchiveAndResume() async throws {
+        let services = Services()
+        let workspace = try await services.workspaces.create(name: "W")
+        let session = try await services.sessions.start(in: workspace.id, kind: .shopping)
+        let model = services.sessionDetail(session.id)
+        await model.load()
+
+        await model.rename(to: "Laptop")
+        #expect(model.session?.title == "Laptop")
+        await model.toggleFavorite()
+        #expect(model.session?.isFavorite == true)
+        await model.archive()
+        #expect(model.session?.isArchived == true)
+        #expect(model.canCapture == false)
+
+        services.clock.advance(by: 30)
+        await model.resume()
+        #expect(model.session?.isActive == true)
+        #expect(model.session?.isArchived == false)
+        #expect(model.resumption != nil)
+        #expect(model.canCapture)
+    }
+
+    @Test func searchSortAndImportance() async throws {
+        let services = Services()
+        let workspace = try await services.workspaces.create(name: "W")
+        let session = try await services.sessions.start(in: workspace.id, kind: .research)
+        let model = services.sessionDetail(session.id)
+        await model.load()
+        for text in ["مَدرسة", "Room 42", "What is entropy?"] {
+            services.clock.advance(by: 1)
+            model.draft = text
+            await model.captureDraft()
+        }
+        #expect(model.items.count == 3)
+
+        model.query = "مدرسة"
+        #expect(model.visibleItems.map(\.content) == [.text("مَدرسة")])
+        model.query = "٤٢"
+        #expect(model.visibleItems.map(\.content) == [.text("Room 42")])
+        model.query = ""
+
+        model.sort = .type
+        #expect(model.groups.map(\.kind) == [.question, .text])
+
+        let oldest = try #require(model.items.last)
+        await model.toggleImportant(oldest)
+        model.sort = .importance
+        #expect(model.visibleItems.first?.id == oldest.id)
+
+        // Survives reloading.
+        let reloaded = services.sessionDetail(session.id)
+        await reloaded.load()
+        #expect(reloaded.isImportant(try #require(reloaded.items.first { $0.id == oldest.id })))
+    }
+
+    @Test func actionHistoryAndDelete() async throws {
+        let services = Services()
+        let workspace = try await services.workspaces.create(name: "W")
+        let session = try await services.sessions.start(in: workspace.id)
+        let model = services.sessionDetail(session.id)
+        await model.load()
+        model.draft = "0770 123 4567"
+        await model.captureDraft()
+        let item = try #require(model.items.first)
+
+        await model.record(.call, outcome: .handedOff, detail: "+9647701234567", itemID: item.id)
+        #expect(model.recentActions.map(\.actionType) == [.call])
+
+        let reloaded = services.sessionDetail(session.id)
+        await reloaded.load()
+        #expect(reloaded.actions.map(\.outcome) == [.handedOff])
+
+        await model.delete()
+        #expect(model.isDeleted)
+        #expect(try await services.sessions.sessions(in: workspace.id).isEmpty)
+    }
+
+    @Test func resumeOnLoadReopensTheSession() async throws {
+        let services = Services()
+        let workspace = try await services.workspaces.create(name: "W")
+        let session = try await services.sessions.start(in: workspace.id)
+        try await services.sessions.end(session.id)
+
+        let model = services.sessionDetail(session.id, resume: true)
+        await model.load()
+        #expect(model.session?.isActive == true)
+        #expect(model.resumption?.session.id == session.id)
+    }
+
+    @Test func workspaceListsFavoritesFirstAndArchivedApart() async throws {
+        let services = Services()
+        let workspace = try await services.workspaces.create(name: "W")
+        let model = WorkspaceDetailModel(workspaceID: workspace.id, workspaceService: services.workspaces, sessionService: services.sessions)
+        await model.load()
+        let first = try #require(await model.startSession())
+        services.clock.advance(by: 1)
+        let second = try #require(await model.startSession())
+        services.clock.advance(by: 1)
+        let third = try #require(await model.startSession())
+
+        await model.toggleFavorite(try #require(model.sessions.first { $0.id == first.id }))
+        await model.archive(try #require(model.sessions.first { $0.id == second.id }))
+        #expect(model.currentSessions.map(\.id) == [first.id, third.id])
+        #expect(model.archivedSessions.map(\.id) == [second.id])
+
+        await model.unarchive(try #require(model.archivedSessions.first))
+        #expect(model.archivedSessions.isEmpty)
+    }
+}
+

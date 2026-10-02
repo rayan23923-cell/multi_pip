@@ -11,6 +11,7 @@ public struct Repositories: Sendable {
     public let notes: any Repository<Note>
     public let clipboardItems: any Repository<ClipboardItem>
     public let calculations: any Repository<CalculationRecord>
+    public let actionRecords: any Repository<ActionRecord>
 
     public init(
         workspaces: any Repository<Workspace>,
@@ -19,7 +20,8 @@ public struct Repositories: Sendable {
         documents: any Repository<Document>,
         notes: any Repository<Note>,
         clipboardItems: any Repository<ClipboardItem>,
-        calculations: any Repository<CalculationRecord> = InMemoryRepository<CalculationRecord>()
+        calculations: any Repository<CalculationRecord> = InMemoryRepository<CalculationRecord>(),
+        actionRecords: any Repository<ActionRecord> = InMemoryRepository<ActionRecord>()
     ) {
         self.workspaces = workspaces
         self.sessions = sessions
@@ -28,6 +30,7 @@ public struct Repositories: Sendable {
         self.notes = notes
         self.clipboardItems = clipboardItems
         self.calculations = calculations
+        self.actionRecords = actionRecords
     }
 
     public static func inMemory() -> Repositories {
@@ -38,7 +41,8 @@ public struct Repositories: Sendable {
             documents: InMemoryRepository<Document>(),
             notes: InMemoryRepository<Note>(),
             clipboardItems: InMemoryRepository<ClipboardItem>(),
-            calculations: InMemoryRepository<CalculationRecord>()
+            calculations: InMemoryRepository<CalculationRecord>(),
+            actionRecords: InMemoryRepository<ActionRecord>()
         )
     }
 
@@ -55,7 +59,8 @@ public struct Repositories: Sendable {
             documents: JSONFileRepository<Document>(directory: directory, logger: logger),
             notes: JSONFileRepository<Note>(directory: directory, logger: logger),
             clipboardItems: JSONFileRepository<ClipboardItem>(directory: directory, logger: logger),
-            calculations: JSONFileRepository<CalculationRecord>(directory: directory, logger: logger)
+            calculations: JSONFileRepository<CalculationRecord>(directory: directory, logger: logger),
+            actionRecords: JSONFileRepository<ActionRecord>(directory: directory, logger: logger)
         )
     }
 }

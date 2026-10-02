@@ -55,6 +55,9 @@ public final class BrowserModel: ContextProducing {
     public var errorMessage: String?
 
     private let toolCapture: ToolCaptureService
+    /// Remembers the open page in the active session, for Resume.
+    public var stateRecorder: ToolStateRecorder?
+    @ObservationIgnored private var recordedURL: URL?
 
     public init(workspaceID: WorkspaceID? = nil, toolCapture: ToolCaptureService) {
         let tab = BrowserTab()
@@ -124,6 +127,11 @@ public final class BrowserModel: ContextProducing {
         }
         if id == selectedTabID, let url = state.url, url.absoluteString != addressText {
             addressText = url.absoluteString
+        }
+        if id == selectedTabID, !state.isLoading, let url = state.url, url != recordedURL, let stateRecorder {
+            recordedURL = url
+            let workspaceID = workspaceID
+            Task { await stateRecorder.record(.browser, in: workspaceID, url: url) }
         }
     }
 

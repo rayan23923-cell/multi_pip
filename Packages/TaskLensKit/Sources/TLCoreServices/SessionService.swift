@@ -41,9 +41,9 @@ public struct SessionService: Sendable {
         try await sessionStore.fetchAll(where: \.isActive).sorted(by: Self.mostRecentFirst)
     }
 
-    /// Sessions that are not active, most recently used first.
+    /// Sessions that are not active or archived, most recently used first.
     public func recentSessions(limit: Int) async throws -> [Session] {
-        Array(try await sessionStore.fetchAll(where: { !$0.isActive })
+        Array(try await sessionStore.fetchAll(where: { !$0.isActive && !$0.isArchived })
             .sorted(by: Self.mostRecentFirst)
             .prefix(max(limit, 0)))
     }
@@ -120,6 +120,46 @@ public struct SessionService: Sendable {
     public func rename(_ id: SessionID, to title: String?) async throws -> Session {
         var session = try await sessionStore.require(id: id)
         session.title = try Validation.optionalTitle(title, maximumLength: Self.maximumTitleLength)
+        try await sessionStore.upsert(session)
+        return session
+    }
+
+    @discardableResult
+    public func setFavorite(_ id: SessionID, _ isFavorite: Bool) async throws -> Session {
+        var session = try await sessionStore.require(id: id)
+        session.setFavorite(isFavorite, at: clock.now())
+        try await sessionStore.upsert(session)
+        return session
+    }
+
+    /// Ends the session if needed and moves it out of the main lists.
+    @discardableResult
+    public func archive(_ id: SessionID) async throws -> Session {
+        var session = try await sessionStore.require(id: id)
+        session.archive(at: clock.now())
+        try await sessionStore.upsert(session)
+        logger.info("Archived session \(id)")
+        return session
+    }
+
+    @discardableResult
+    public func unarchive(_ id: SessionID) async throws -> Session {
+        var session = try await sessionStore.require(id: id)
+        session.unarchive()
+        try await sessionStore.upsert(session)
+        return session
+    }
+
+    /// Makes any session active again: paused, ended or archived. The other
+    /// active session of the workspace is paused.
+    @discardableResult
+    public func reopen(_ id: SessionID) async throws -> Session {
+        var session = try await sessionStore.require(id: id)
+        let workspace = try await workspaces.require(id: session.workspaceID)
+        guard !workspace.isArchived else { throw TaskLensError.invalidState(.workspaceArchived) }
+        let now = clock.now()
+        session.reopen(at: now)
+        try await pauseOthers(in: session.workspaceID, except: id, at: now)
         try await sessionStore.upsert(session)
         return session
     }

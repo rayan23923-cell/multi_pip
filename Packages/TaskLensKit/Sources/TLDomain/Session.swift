@@ -17,6 +17,12 @@ public struct Session: Entity {
     public private(set) var endedAt: Date?
     public var lastActivityAt: Date
     public var metadata: Metadata
+    /// Set when the user marked the session as a favorite.
+    public private(set) var favoritedAt: Date?
+    /// Set when the session was archived: ended and kept out of the main lists.
+    public private(set) var archivedAt: Date?
+    /// Where the user was in TaskLens's own tools, for Resume.
+    public var resumeState: SessionResumeState?
 
     public init(
         id: SessionID = SessionID(),
@@ -42,6 +48,8 @@ public struct Session: Entity {
 
     public var isActive: Bool { state == .active }
     public var isEnded: Bool { state == .ended }
+    public var isFavorite: Bool { favoritedAt != nil }
+    public var isArchived: Bool { archivedAt != nil }
 
     // MARK: State transitions
 
@@ -61,6 +69,32 @@ public struct Session: Entity {
         guard state != .ended else { throw TaskLensError.invalidState(.sessionEnded) }
         state = .ended
         endedAt = date
+        lastActivityAt = date
+    }
+
+    public mutating func setFavorite(_ isFavorite: Bool, at date: Date) {
+        favoritedAt = isFavorite ? (favoritedAt ?? date) : nil
+    }
+
+    /// Archiving ends the session; it stays readable and searchable.
+    public mutating func archive(at date: Date) {
+        if state != .ended {
+            state = .ended
+            endedAt = date
+        }
+        archivedAt = date
+        lastActivityAt = max(lastActivityAt, date)
+    }
+
+    public mutating func unarchive() {
+        archivedAt = nil
+    }
+
+    /// Makes an ended or archived session active again, for Resume.
+    public mutating func reopen(at date: Date) {
+        archivedAt = nil
+        endedAt = nil
+        state = .active
         lastActivityAt = date
     }
 

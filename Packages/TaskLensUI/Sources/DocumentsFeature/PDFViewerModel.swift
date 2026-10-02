@@ -25,11 +25,25 @@ public final class PDFViewerModel: ContextProducing {
 
     private let documentService: DocumentService
     private let toolCapture: ToolCaptureService
+    private let stateRecorder: ToolStateRecorder?
 
-    public init(documentID: DocumentID, documentService: DocumentService, toolCapture: ToolCaptureService) {
+    public init(
+        documentID: DocumentID,
+        documentService: DocumentService,
+        toolCapture: ToolCaptureService,
+        stateRecorder: ToolStateRecorder? = nil
+    ) {
         self.documentID = documentID
         self.documentService = documentService
         self.toolCapture = toolCapture
+        self.stateRecorder = stateRecorder
+    }
+
+    /// Remembers this document and page in the active session, for Resume.
+    private func recordPosition() {
+        guard let stateRecorder else { return }
+        let documentID = documentID, page = currentPage
+        Task { await stateRecorder.record(.documents, in: document?.workspaceID, documentID: documentID, page: page) }
     }
 
     public var pageCount: Int { pdf?.pageCount ?? 0 }
@@ -50,6 +64,7 @@ public final class PDFViewerModel: ContextProducing {
             self.pdf = pdf
             self.document = try await documentService.markOpened(documentID, pageCount: pdf.pageCount)
             currentPage = min(document.lastReadPage ?? 0, max(pdf.pageCount - 1, 0))
+            recordPosition()
         } catch {
             errorMessage = L10n.message(for: error)
         }
@@ -64,6 +79,7 @@ public final class PDFViewerModel: ContextProducing {
         currentPage = page
         extractedText = nil
         Task { try? await documentService.setLastReadPage(documentID, page: page) }
+        recordPosition()
     }
 
     public func nextPage() { goTo(page: currentPage + 1) }
@@ -75,6 +91,7 @@ public final class PDFViewerModel: ContextProducing {
         currentPage = page
         extractedText = nil
         Task { try? await documentService.setLastReadPage(documentID, page: page) }
+        recordPosition()
     }
 
     // MARK: Search

@@ -14,6 +14,8 @@ public enum AppTab: String, Hashable, CaseIterable, Sendable {
 public enum AppRoute: Hashable, Sendable {
     case workspace(WorkspaceID)
     case session(SessionID)
+    /// A session opened with Resume: it becomes active again and shows where the user stopped.
+    case sessionResume(SessionID)
     case lens
     case clipboard
     /// Lens pre-filled with content another tool sent to the Action Engine.
@@ -22,10 +24,14 @@ public enum AppRoute: Hashable, Sendable {
     case notes(WorkspaceID?)
     /// Notes with the editor open on a new note holding this text.
     case noteDraft(String)
+    /// Notes with this note open (Resume).
+    case note(NoteID)
     case calculator(WorkspaceID?)
     /// Calculator starting from a value the Action Engine found (a price, a number).
     case calculatorInput(Decimal)
     case browser(WorkspaceID?)
+    /// The browser opening this page in a new tab (Resume).
+    case browserPage(URL)
     case documents(WorkspaceID?)
     /// Viewers, chosen by document kind.
     case pdf(DocumentID)
@@ -34,6 +40,17 @@ public enum AppRoute: Hashable, Sendable {
 }
 
 extension AppRoute {
+    /// Where to continue after Resume, from the last tool position.
+    /// Nil when nothing was recorded or the tool has no position to return to.
+    public static func resuming(_ state: SessionResumeState, workspaceID: WorkspaceID?) -> AppRoute? {
+        switch state.tool {
+        case .browser: state.url.map(AppRoute.browserPage)
+        case .documents: state.documentID.map(AppRoute.pdf)
+        case .notes: state.noteID.map(AppRoute.note) ?? .notes(workspaceID)
+        default: tool(state.tool, workspaceID: workspaceID)
+        }
+    }
+
     /// The viewer route for a document.
     public static func viewer(for document: Document) -> AppRoute {
         switch document.kind {
@@ -81,6 +98,12 @@ public final class AppRouter {
     public func open(_ route: AppRoute, in tab: AppTab) {
         selectedTab = tab
         setPath([route], for: tab)
+    }
+
+    /// Resume: the session inside its workspace, on the Workspaces tab.
+    public func resume(_ session: Session) {
+        selectedTab = .workspaces
+        setPath([.workspace(session.workspaceID), .sessionResume(session.id)], for: .workspaces)
     }
 
     /// Shows the Command Center searching saved content for `query`.

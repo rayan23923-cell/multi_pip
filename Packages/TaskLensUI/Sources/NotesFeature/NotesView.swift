@@ -9,11 +9,14 @@ public struct NotesView: View {
     @State private var attaching: Note?
     @State private var pendingDeletion: Note?
     @State private var draft: String?
+    @State private var openingNoteID: NoteID?
 
-    /// `draft` opens the editor on a new note holding that text.
-    public init(model: NotesModel, draft: String? = nil) {
+    /// `draft` opens the editor on a new note holding that text;
+    /// `openingNote` opens an existing note (Resume).
+    public init(model: NotesModel, draft: String? = nil, openingNote: NoteID? = nil) {
         _model = State(initialValue: model)
         _draft = State(initialValue: draft)
+        _openingNoteID = State(initialValue: openingNote)
     }
 
     public var body: some View {
@@ -44,9 +47,13 @@ public struct NotesView: View {
         .searchable(text: $model.query, prompt: Text(L10nKey.notesSearchPrompt))
         .task(id: model.query) { await model.load() }
         .task {
-            guard let text = draft else { return }
-            draft = nil
-            editor = NoteEditorModel(draft: text)
+            if let text = draft {
+                draft = nil
+                editor = NoteEditorModel(draft: text)
+            } else if let id = openingNoteID {
+                openingNoteID = nil
+                if let note = await model.note(id: id) { editor = NoteEditorModel(note: note) }
+            }
         }
         .refreshable { await model.load() }
         .toolbar {

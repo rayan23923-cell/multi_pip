@@ -54,9 +54,17 @@ public struct SessionRow: View {
                 .frame(width: 24)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: TLSpacing.xxs) {
-                title
-                    .font(.body)
-                    .lineLimit(1)
+                HStack(spacing: TLSpacing.xs) {
+                    title
+                        .font(.body)
+                        .lineLimit(1)
+                    if session.isFavorite {
+                        Image(systemName: "star.fill")
+                            .font(.caption)
+                            .foregroundStyle(.yellow)
+                            .accessibilityLabel(Text(L10nKey.sessionFavorites))
+                    }
+                }
                 HStack(spacing: TLSpacing.xs) {
                     Text(L10nKey.sessionKind(session.kind))
                     if let workspaceName {
@@ -68,7 +76,11 @@ public struct SessionRow: View {
                 .foregroundStyle(.secondary)
             }
             Spacer(minLength: TLSpacing.s)
-            StatusBadge(L10nKey.sessionState(session.state), tint: session.state.tint)
+            if session.isArchived {
+                StatusBadge(.sessionStateArchived, tint: .secondary)
+            } else {
+                StatusBadge(L10nKey.sessionState(session.state), tint: session.state.tint)
+            }
         }
         .accessibilityElement(children: .combine)
     }
@@ -150,6 +162,7 @@ public struct QuickCaptureBar: View {
                 .lineLimit(1...5)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit { if canSubmit { onSubmit() } }
+                .accessibilityIdentifier("quickCapture.field")
             Button {
                 onSubmit()
             } label: {
@@ -158,6 +171,7 @@ public struct QuickCaptureBar: View {
                     .accessibilityLabel(Text(L10nKey.commonSave))
             }
             .disabled(!canSubmit)
+            .accessibilityIdentifier("quickCapture.save")
         }
     }
 }

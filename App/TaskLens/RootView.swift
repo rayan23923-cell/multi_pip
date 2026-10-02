@@ -22,7 +22,9 @@ struct RootView: View {
 
     init(container: AppContainer) {
         self.container = container
-        _browser = State(initialValue: BrowserModel(toolCapture: container.toolCapture))
+        let browser = BrowserModel(toolCapture: container.toolCapture)
+        browser.stateRecorder = container.toolState
+        _browser = State(initialValue: browser)
     }
 
     var body: some View {
@@ -80,7 +82,16 @@ private extension View {
                 SessionDetailView(model: SessionDetailModel(
                     sessionID: id,
                     sessionService: container.sessions,
+                    contentService: container.sessionContent,
                     captureService: container.capture
+                ))
+            case .sessionResume(let id):
+                SessionDetailView(model: SessionDetailModel(
+                    sessionID: id,
+                    sessionService: container.sessions,
+                    contentService: container.sessionContent,
+                    captureService: container.capture,
+                    resume: true
                 ))
             case .lens:
                 LensView(model: LensModel(captureService: container.capture, sessionService: container.sessions))
@@ -96,13 +107,22 @@ private extension View {
                 NotesView(model: NotesModel(
                     workspaceID: workspaceID,
                     noteService: container.notes,
-                    toolCapture: container.toolCapture
+                    toolCapture: container.toolCapture,
+                    stateRecorder: container.toolState
                 ))
+            case .note(let id):
+                NotesView(model: NotesModel(
+                    workspaceID: nil,
+                    noteService: container.notes,
+                    toolCapture: container.toolCapture,
+                    stateRecorder: container.toolState
+                ), openingNote: id)
             case .noteDraft(let text):
                 NotesView(model: NotesModel(
                     workspaceID: nil,
                     noteService: container.notes,
-                    toolCapture: container.toolCapture
+                    toolCapture: container.toolCapture,
+                    stateRecorder: container.toolState
                 ), draft: text)
             case .calculator(let workspaceID):
                 CalculatorView(model: CalculatorModel(
@@ -120,6 +140,8 @@ private extension View {
             case .browser(let workspaceID):
                 BrowserView(model: browser)
                     .onAppear { browser.workspaceID = workspaceID }
+            case .browserPage(let url):
+                BrowserView(model: browser, opening: url)
             case .documents(let workspaceID):
                 DocumentLibraryView(model: DocumentLibraryModel(
                     workspaceID: workspaceID,
@@ -130,7 +152,8 @@ private extension View {
                 PDFViewerView(model: PDFViewerModel(
                     documentID: id,
                     documentService: container.documents,
-                    toolCapture: container.toolCapture
+                    toolCapture: container.toolCapture,
+                    stateRecorder: container.toolState
                 ))
             case .image(let id):
                 ImageViewerView(model: ImageViewerModel(

@@ -82,7 +82,7 @@ let package = Package(
         .target(
             name: "SessionsFeature",
             dependencies: [
-                "TLLocalization", "TLDesignSystem", "TLNavigation",
+                "TLLocalization", "TLDesignSystem", "TLNavigation", "TLActionsUI",
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
             ]

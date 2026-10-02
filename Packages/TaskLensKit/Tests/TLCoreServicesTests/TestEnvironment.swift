@@ -21,6 +21,19 @@ struct TestEnvironment {
             contextItems: repositories.contextItems,
             documents: repositories.documents,
             notes: repositories.notes,
+            actionRecords: repositories.actionRecords,
+            clock: clock,
+            logger: .disabled()
+        )
+    }
+
+    var sessionContent: SessionContentService {
+        SessionContentService(
+            workspaces: repositories.workspaces,
+            sessions: repositories.sessions,
+            contextItems: repositories.contextItems,
+            notes: repositories.notes,
+            actionRecords: repositories.actionRecords,
             clock: clock,
             logger: .disabled()
         )

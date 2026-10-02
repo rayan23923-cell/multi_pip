@@ -36,23 +36,45 @@ public struct WorkspaceDetailView: View {
                     }
                     .padding(.vertical, TLSpacing.xs)
                 }
-                ForEach(model.sessions) { session in
-                    NavigationLink(value: AppRoute.session(session.id)) {
-                        SessionRow(session: session)
-                    }
+                ForEach(model.currentSessions) { session in
+                    sessionLink(session)
                 }
-                Button {
+                Menu {
+                    ForEach(SessionKind.allKnown, id: \.self) { kind in
+                        Button {
+                            Task {
+                                if let session = await model.startSession(kind: kind) {
+                                    router.push(.session(session.id))
+                                }
+                            }
+                        } label: {
+                            TLLabel(L10nKey.sessionKind(kind), systemImage: kind.symbolName)
+                        }
+                        .accessibilityIdentifier("workspaceDetail.startSession.\(kind.rawValue)")
+                    }
+                } label: {
+                    TLLabel(.workspaceStartSession, systemImage: "plus.circle")
+                } primaryAction: {
                     Task {
                         if let session = await model.startSession() {
                             router.push(.session(session.id))
                         }
                     }
-                } label: {
-                    TLLabel(.workspaceStartSession, systemImage: "plus.circle")
                 }
                 .accessibilityIdentifier("workspaceDetail.startSession")
             } header: {
                 Text(L10nKey.workspaceSessions)
+            }
+
+            if !model.archivedSessions.isEmpty {
+                Section {
+                    ForEach(model.archivedSessions) { session in
+                        sessionLink(session)
+                    }
+                } header: {
+                    Text(L10nKey.sessionArchived)
+                }
+                .accessibilityIdentifier("workspaceDetail.archived")
             }
         }
         .navigationTitle(model.workspace?.name ?? "")
@@ -106,6 +128,47 @@ public struct WorkspaceDetailView: View {
         .task { await model.load() }
         .refreshable { await model.load() }
         .errorAlert(message: $model.errorMessage)
+    }
+
+    private func sessionLink(_ session: Session) -> some View {
+        NavigationLink(value: AppRoute.session(session.id)) {
+            SessionRow(session: session)
+        }
+        .accessibilityIdentifier("sessionRow")
+        .swipeActions(edge: .leading) {
+            Button { Task { await model.toggleFavorite(session) } } label: {
+                if session.isFavorite {
+                    TLLabel(.sessionUnfavorite, systemImage: "star.slash")
+                } else {
+                    TLLabel(.sessionFavorite, systemImage: "star")
+                }
+            }
+            .tint(.yellow)
+        }
+        .swipeActions(edge: .trailing) {
+            if session.isArchived {
+                Button { Task { await model.unarchive(session) } } label: {
+                    TLLabel(.sessionUnarchive, systemImage: "archivebox")
+                }
+            } else {
+                Button { Task { await model.archive(session) } } label: {
+                    TLLabel(.sessionArchive, systemImage: "archivebox")
+                }
+                .tint(.indigo)
+            }
+        }
+        .contextMenu {
+            Button { router.resume(session) } label: {
+                TLLabel(.sessionResume, systemImage: "play")
+            }
+            Button { Task { await model.toggleFavorite(session) } } label: {
+                if session.isFavorite {
+                    TLLabel(.sessionUnfavorite, systemImage: "star.slash")
+                } else {
+                    TLLabel(.sessionFavorite, systemImage: "star")
+                }
+            }
+        }
     }
 
     private func header(_ workspace: Workspace) -> some View {

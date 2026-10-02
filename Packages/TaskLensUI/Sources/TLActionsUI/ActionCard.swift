@@ -50,17 +50,22 @@ public struct ActionHandlers {
     public var onCalculate: ((Decimal) -> Void)?
     public var onCreateNote: ((String) -> Void)?
     public var onSearch: ((String) -> Void)?
+    /// Called after an action ran or was handed to the system, so a session
+    /// can keep its action history. Not called for actions that could not run.
+    public var onPerformed: ((Action, ActionPlan) -> Void)?
 
     public init(
         onSave: (() async -> Void)? = nil,
         onCalculate: ((Decimal) -> Void)? = nil,
         onCreateNote: ((String) -> Void)? = nil,
-        onSearch: ((String) -> Void)? = nil
+        onSearch: ((String) -> Void)? = nil,
+        onPerformed: ((Action, ActionPlan) -> Void)? = nil
     ) {
         self.onSave = onSave
         self.onCalculate = onCalculate
         self.onCreateNote = onCreateNote
         self.onSearch = onSearch
+        self.onPerformed = onPerformed
     }
 }
 
@@ -186,6 +191,12 @@ public struct ActionCard: View {
     }
 
     private func perform(_ action: Action, plan: ActionPlan) {
+        switch plan {
+        case .comingLater, .openApp, .unavailable, .share, .save:
+            break
+        default:
+            handlers.onPerformed?(action, plan)
+        }
         switch plan {
         case .open(let url):
             openURL(url)
