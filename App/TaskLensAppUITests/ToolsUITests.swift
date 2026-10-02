@@ -194,7 +194,7 @@ final class ToolsUITests: XCTestCase {
         XCTAssertTrue(element(app, "lens.image.reading").waitForNonExistence(timeout: 30), "Lens is still reading the image")
         XCTAssertFalse(element(app, "lens.image.failed").exists, "Lens could not read the sample image")
         XCTAssertFalse(element(app, "lens.image.nothing").exists, "Lens found no text in the sample image")
-        for _ in 0..<6 where !finding.exists {
+        for _ in 0..<6 where !finding.waitForExistence(timeout: 2) {
             app.swipeUp()
             _ = finding.waitForExistence(timeout: 1)
         }

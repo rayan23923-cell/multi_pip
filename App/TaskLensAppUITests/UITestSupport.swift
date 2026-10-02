@@ -14,20 +14,20 @@ extension XCUIApplication {
     func reveal(_ identifier: String, timeout: TimeInterval = 10,
                 file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
         let target = identified(identifier)
-        if !target.waitForExistence(timeout: min(timeout, 4)) {
-            for _ in 0..<10 {
-                swipeUp()
-                if target.waitForExistence(timeout: 1) { break }
-            }
+        if target.waitForExistence(timeout: min(timeout, 4)) { return target }
+        // Only scroll when the element isn't there: a swipe on a screen that
+        // already shows it can dismiss the keyboard or move the list away.
+        for _ in 0..<10 {
+            swipeUp()
+            if target.waitForExistence(timeout: 1) { break }
         }
         if !target.waitForExistence(timeout: max(timeout - 4, 1)) {
             printScreen(missing: identifier)
             XCTFail("\(identifier) not found", file: file, line: line)
             return target
         }
-        for _ in 0..<5 where !target.isHittable {
-            swipeUp()
-        }
+        // Rows created by scrolling can sit under the tab bar; one more swipe.
+        if !target.isHittable { swipeUp() }
         return target
     }
 

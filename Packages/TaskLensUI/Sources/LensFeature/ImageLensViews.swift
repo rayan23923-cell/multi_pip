@@ -164,7 +164,6 @@ struct ImageLensResultSections: View {
             } header: {
                 Text(L10nKey.lensImageFound)
             }
-            .accessibilityIdentifier("lens.image.found")
         }
 
         SelectedFindingSection(model: model, feedback: feedback, handlers: handlers)

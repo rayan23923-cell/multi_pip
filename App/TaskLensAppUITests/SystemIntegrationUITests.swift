@@ -45,7 +45,13 @@ final class SystemIntegrationUITests: XCTestCase {
         app.open(try XCTUnwrap(URL(string: "tasklens://calculator")))
         XCTAssertTrue(element(app, "calculator.display").waitForExistence(timeout: 10))
 
-        app.open(try XCTUnwrap(URL(string: "tasklens://session/not-a-session")))
+        // Through the system, as a tapped link arrives. (XCUIApplication.open
+        // can start the app again with the link, which resets the screen.)
+        XCUIDevice.shared.system.open(try XCTUnwrap(URL(string: "tasklens://session/not-a-session")))
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let confirm = springboard.buttons["Open"]
+        if confirm.waitForExistence(timeout: 3) { confirm.tap() }
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
         let kept = element(app, "calculator.display").waitForExistence(timeout: 5)
         if !kept { app.printScreen(missing: "calculator.display after an invalid link (state \(app.state.rawValue))") }
         XCTAssertTrue(kept, "An invalid link changed the screen")

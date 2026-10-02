@@ -74,7 +74,10 @@ final class ScreenLensUITests: XCTestCase {
         let labels = app.descendants(matching: .any).matching(identifier: "screenLens.highlight")
             .allElementsBoundByIndex.map { $0.label }.joined(separator: " | ")
         XCTAssertTrue(labels.contains("199"), "Highlights: \(labels)")
-        // Recommended actions for the chosen finding, nothing run on its own.
+        // Choosing the price shows its recommended actions; nothing runs on its own.
+        app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier == 'screenLens.highlight' AND label CONTAINS '199'"))
+            .firstMatch.tap()
         XCTAssertTrue(revealEither(app, "action.convertCurrency", "lens.image.confirm"),
                       "A price offers money actions, or asks to confirm a possible match")
 

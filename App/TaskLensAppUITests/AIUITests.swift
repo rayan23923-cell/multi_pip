@@ -38,7 +38,7 @@ final class AIUITests: XCTestCase {
 
     func testWithoutAILensStillWorks() {
         let app = launch()
-        openLens(app, text: "Call 0771 234 5678")
+        openLens(app, text: "+964 770 123 4567")
         // Deterministic actions come first and don't depend on AI.
         app.reveal("action.call")
         // This simulator has no Apple Intelligence and no server is set up.

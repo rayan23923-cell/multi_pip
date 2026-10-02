@@ -69,6 +69,15 @@ final class SmartSessionUITests: XCTestCase {
         }
     }
 
+    private func waitUntil(timeout: TimeInterval = 5, _ condition: () -> Bool) -> Bool {
+        let end = Date().addingTimeInterval(timeout)
+        while Date() < end {
+            if condition() { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+        }
+        return condition()
+    }
+
     private func dismissKeyboard(_ app: XCUIApplication) {
         if app.keyboards.count > 0 {
             app.navigationBars.firstMatch.tap()
@@ -123,13 +132,19 @@ final class SmartSessionUITests: XCTestCase {
         let search = app.searchFields.firstMatch
         if !search.waitForExistence(timeout: 2) { app.swipeDown() }
         XCTAssertTrue(search.waitForExistence(timeout: 5))
+        // "Pick up where you left off" also lists recent items, so count
+        // how often the question is shown rather than expecting none.
+        let question = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "What time is check in?"))
+        let shownBefore = question.count
+        XCTAssertGreaterThan(shownBefore, 0)
         search.tap()
         search.typeText("hotel")
         XCTAssertTrue(text(app, "Hotel booking 120").waitForExistence(timeout: 5))
-        XCTAssertTrue(text(app, "What time is check in?").waitForNonExistence(timeout: 5))
+        XCTAssertTrue(waitUntil { question.count < shownBefore }, "Search should hide the question in the item list")
         // iOS 26 search fields have no Cancel button: clear the text instead.
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "hotel".count))
-        XCTAssertTrue(text(app, "What time is check in?").waitForExistence(timeout: 5))
+        XCTAssertTrue(waitUntil { question.count == shownBefore }, "Clearing the search shows every item again")
     }
 
     func testSessionPersistsAcrossRelaunchAndCanBeDeleted() {
