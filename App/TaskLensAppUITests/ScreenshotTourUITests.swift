@@ -15,10 +15,6 @@ final class ScreenshotTour: XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     }
 
-    override func tearDown() {
-        XCUIDevice.shared.appearance = .light
-    }
-
     // MARK: Helpers
 
     private func launch(language: String = "en", locale: String = "en_US", extra: [String] = []) -> XCUIApplication {
@@ -207,8 +203,8 @@ final class ScreenshotTour: XCTestCase {
         shot("25-ar-settings")
     }
 
+    /// The Screenshots script switches the simulator to dark before this one.
     func test07DarkMode() {
-        XCUIDevice.shared.appearance = .dark
         let app = launch()
         shot("26-dark-command-center")
         analyze(app, "$125")

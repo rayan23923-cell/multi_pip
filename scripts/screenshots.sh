@@ -27,14 +27,22 @@ xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --
   --cellularBars 4 --wifiBars 3 || true
 
 xcodegen generate
-TEST_RUNNER_TASKLENS_SCREENSHOT_DIR="$OUT" xcodebuild test \
-  -project TaskLens.xcodeproj \
-  -scheme TaskLens \
-  -destination "platform=iOS Simulator,id=$UDID" \
-  -derivedDataPath "$ROOT/build/DerivedData" \
-  -only-testing:TaskLensAppUITests/ScreenshotTour \
-  CODE_SIGNING_ALLOWED=NO \
-  2>&1 | tee "$LOG_DIR/screenshots.log" | grep --line-buffered -E "error:|Test Case|TEST (SUCCEEDED|FAILED)" || true
+run_tour() {
+  TEST_RUNNER_TASKLENS_SCREENSHOT_DIR="$OUT" xcodebuild test \
+    -project TaskLens.xcodeproj \
+    -scheme TaskLens \
+    -destination "platform=iOS Simulator,id=$UDID" \
+    -derivedDataPath "$ROOT/build/DerivedData" \
+    CODE_SIGNING_ALLOWED=NO \
+    "$@" \
+    2>&1 | tee -a "$LOG_DIR/screenshots.log" | grep --line-buffered -E "error:|Test Case|TEST (SUCCEEDED|FAILED)" || true
+}
+# Light pass, then a dark pass: XCUIDevice.appearance does not reliably switch
+# the simulator, so the dark screens run after simctl changes the appearance.
+xcrun simctl ui "$UDID" appearance light || true
+run_tour -only-testing:TaskLensAppUITests/ScreenshotTour -skip-testing:TaskLensAppUITests/ScreenshotTour/test07DarkMode
+xcrun simctl ui "$UDID" appearance dark
+run_tour -only-testing:TaskLensAppUITests/ScreenshotTour/test07DarkMode
 
 COUNT=$(find "$OUT" -name '*.png' | wc -l | tr -d ' ')
 echo "Saved $COUNT screenshots"
