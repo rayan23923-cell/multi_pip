@@ -99,10 +99,13 @@ struct PresentationStateTests {
 
     @Test func loadingReachesReadyAtTheFirstSlide() {
         var state = PresentationState()
-        #expect(state.beginLoading())
+        let applied1 = state.beginLoading()
+        #expect(applied1)
         #expect(state.phase == .loading)
-        #expect(!state.beginLoading())
-        #expect(state.finishLoading(slideCount: 48))
+        let applied2 = state.beginLoading()
+        #expect(!applied2)
+        let applied3 = state.finishLoading(slideCount: 48)
+        #expect(applied3)
         #expect(state.phase == .ready)
         #expect(state.currentSlide == 0)
         #expect(state.displaySlideNumber == 1)
@@ -111,12 +114,14 @@ struct PresentationStateTests {
 
     @Test func finishLoadingNeedsLoadingAndSlides() {
         var state = PresentationState()
-        #expect(!state.finishLoading(slideCount: 3))
+        let applied4 = state.finishLoading(slideCount: 3)
+        #expect(!applied4)
         #expect(state.phase == .idle)
         state.beginLoading()
         state.finishLoading(slideCount: 0)
         #expect(state.phase == .error(.empty))
-        #expect(!state.next())
+        let applied5 = state.next()
+        #expect(!applied5)
     }
 
     @Test func startSlideIsClamped() {
@@ -126,17 +131,24 @@ struct PresentationStateTests {
 
     @Test func playPauseStop() {
         var state = loaded(5, at: 2)
-        #expect(!state.pause())
-        #expect(state.start())
+        let applied6 = state.pause()
+        #expect(!applied6)
+        let applied7 = state.start()
+        #expect(applied7)
         #expect(state.phase == .playing)
-        #expect(!state.start())
-        #expect(state.pause())
+        let applied8 = state.start()
+        #expect(!applied8)
+        let applied9 = state.pause()
+        #expect(applied9)
         #expect(state.phase == .paused)
-        #expect(state.start())
-        #expect(state.stop())
+        let applied10 = state.start()
+        #expect(applied10)
+        let applied11 = state.stop()
+        #expect(applied11)
         #expect(state.phase == .ready)
         #expect(state.currentSlide == 2)
-        #expect(!state.stop())
+        let applied12 = state.stop()
+        #expect(!applied12)
     }
 
     @Test(arguments: [10, 50, 100])
@@ -144,36 +156,45 @@ struct PresentationStateTests {
         var state = loaded(count)
         state.start()
         for expected in 1..<count {
-            #expect(state.next())
+            let applied13 = state.next()
+            #expect(applied13)
             #expect(state.currentSlide == expected)
         }
         #expect(state.isLastSlide)
         #expect(state.displaySlideNumber == count)
-        #expect(state.next())
+        let applied14 = state.next()
+        #expect(applied14)
         #expect(state.phase == .completed)
         #expect(state.currentSlide == count - 1)
-        #expect(!state.next())
+        let applied15 = state.next()
+        #expect(!applied15)
     }
 
     @Test func nextOnLastSlideWhenNotPlayingDoesNothing() {
         var state = loaded(3, at: 2)
-        #expect(!state.next())
+        let applied16 = state.next()
+        #expect(!applied16)
         #expect(state.phase == .ready)
     }
 
     @Test func previousStopsAtTheFirstSlide() {
         var state = loaded(3, at: 1)
-        #expect(state.previous())
+        let applied17 = state.previous()
+        #expect(applied17)
         #expect(state.isFirstSlide)
-        #expect(!state.previous())
+        let applied18 = state.previous()
+        #expect(!applied18)
     }
 
     @Test func goToClampsAndIgnoresTheSameSlide() {
         var state = loaded(12)
-        #expect(state.goTo(slide: 11))
+        let applied19 = state.goTo(slide: 11)
+        #expect(applied19)
         #expect(state.displaySlideNumber == 12)
-        #expect(!state.goTo(slide: 500))
-        #expect(state.goTo(slide: -3))
+        let applied20 = state.goTo(slide: 500)
+        #expect(!applied20)
+        let applied21 = state.goTo(slide: -3)
+        #expect(applied21)
         #expect(state.currentSlide == 0)
     }
 
@@ -182,22 +203,28 @@ struct PresentationStateTests {
         state.start()
         state.next()
         #expect(state.phase == .completed)
-        #expect(state.previous())
+        let applied22 = state.previous()
+        #expect(applied22)
         #expect(state.phase == .paused)
         state.start()
         state.goTo(slide: 2)
         state.next()
-        #expect(state.start())
+        let applied23 = state.start()
+        #expect(applied23)
         #expect(state.phase == .playing)
         #expect(state.currentSlide == 0)
     }
 
     @Test func navigationNeedsSlides() {
         var state = PresentationState()
-        #expect(!state.next())
-        #expect(!state.previous())
-        #expect(!state.goTo(slide: 1))
-        #expect(!state.start())
+        let applied24 = state.next()
+        #expect(!applied24)
+        let applied25 = state.previous()
+        #expect(!applied25)
+        let applied26 = state.goTo(slide: 1)
+        #expect(!applied26)
+        let applied27 = state.start()
+        #expect(!applied27)
     }
 
     @Test func failureStopsEverythingUntilReloaded() {
@@ -205,9 +232,12 @@ struct PresentationStateTests {
         state.start()
         state.fail(.unreadable)
         #expect(state.phase == .error(.unreadable))
-        #expect(!state.next())
-        #expect(!state.start())
-        #expect(state.beginLoading())
+        let applied28 = state.next()
+        #expect(!applied28)
+        let applied29 = state.start()
+        #expect(!applied29)
+        let applied30 = state.beginLoading()
+        #expect(applied30)
         #expect(state.currentSlide == 0)
     }
 }
