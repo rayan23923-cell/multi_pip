@@ -1,0 +1,49 @@
+# Codemagic: an unsigned Debug build of TaskLens for a real iPhone, with the
+# Video PiP Lab (Settings > Developer). Sign and install it from Windows with
+# Sideloadly and a free Apple ID; see docs/device-testing.md.
+workflows:
+  device-lab-ipa:
+    name: TaskLens device lab (unsigned IPA)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      xcode: latest
+      vars:
+        # A bundle ID prefix no other app uses. Change it in Codemagic's
+        # environment variables if Sideloadly says the ID is not available.
+        BUNDLE_PREFIX: com.tasklens.devicelab
+    scripts:
+      - name: Tools
+        script: |
+          xcodebuild -version
+          command -v xcodegen >/dev/null || brew install xcodegen
+      - name: Project with this build's bundle IDs
+        script: |
+          sed "s/com\.example\.tasklens/$BUNDLE_PREFIX/g" project.yml > project-device.yml
+          xcodegen generate --spec project-device.yml
+      - name: Build for iPhone (Debug, unsigned)
+        script: |
+          mkdir -p build
+          xcodebuild build \
+            -project TaskLens.xcodeproj \
+            -scheme TaskLens \
+            -configuration Debug \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            | tee build/xcodebuild.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" build/xcodebuild.log
+      - name: Package the IPA
+        script: |
+          APP=build/DerivedData/Build/Products/Debug-iphoneos/TaskLens.app
+          test -d "$APP"
+          rm -rf build/ipa && mkdir -p build/ipa/Payload
+          cp -R "$APP" build/ipa/Payload/
+          (cd build/ipa && zip -qry TaskLens-DeviceLab.ipa Payload)
+          ls -lh build/ipa/TaskLens-DeviceLab.ipa
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Info.plist"
+          ls "$APP/PlugIns" || true
+    artifacts:
+      - build/ipa/*.ipa
+      - build/xcodebuild.log
