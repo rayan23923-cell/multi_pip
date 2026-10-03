@@ -116,7 +116,8 @@ step "Generate Xcode project"
 xcodegen generate
 
 # UI tests are compiled every time but only run when UI_TESTS=true.
-APP_TEST_FILTER=()
+# The screenshot tour is not a check; the Screenshots workflow runs it.
+APP_TEST_FILTER=(-skip-testing:TaskLensAppUITests/ScreenshotTour)
 if [[ "${UI_TESTS:-false}" != "true" ]]; then
   APP_TEST_FILTER=(-skip-testing:TaskLensAppUITests)
 fi
