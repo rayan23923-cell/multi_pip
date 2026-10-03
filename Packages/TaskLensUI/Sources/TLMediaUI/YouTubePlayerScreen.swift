@@ -99,7 +99,7 @@ public struct YouTubePlayerScreen: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("youtube.state")
-        .accessibilityValue(Text(verbatim: service.state.name))
+        .accessibilityValue(Text(verbatim: service.state.name + (service.errorCode.map { ".\($0)" } ?? "")))
     }
 
     private var controls: some View {

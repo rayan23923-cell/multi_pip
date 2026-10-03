@@ -78,6 +78,8 @@ public final class YouTubePlayerService {
     public private(set) var video: YouTubeLink?
     public private(set) var currentTime: Double = 0
     public private(set) var duration: Double = 0
+    /// The IFrame API's onError code, for logs.
+    public private(set) var errorCode: Int?
     public private(set) var log: [LogEntry] = []
 
     public let webView: WKWebView
@@ -112,6 +114,7 @@ public final class YouTubePlayerService {
 
     public func load(_ video: YouTubeLink) {
         self.video = video
+        errorCode = nil
         currentTime = 0
         duration = 0
         set(.loading)
@@ -195,6 +198,7 @@ public final class YouTubePlayerService {
         case "error":
             timeoutTask?.cancel()
             let code = message["code"] as? Int ?? -1
+            errorCode = code
             record("error code \(code)")
             set(.failed(Failure(code: code)))
         case "time":

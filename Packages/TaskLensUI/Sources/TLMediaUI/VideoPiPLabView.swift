@@ -75,7 +75,7 @@ public struct VideoPiPLabView: View {
             Text(verbatim: "state \(youtube.state.name) · \(String(format: "%.1f", youtube.currentTime)) / \(String(format: "%.1f", youtube.duration)) s")
                 .font(.caption.monospaced())
                 .accessibilityIdentifier("lab.yt.state")
-                .accessibilityValue(Text(verbatim: youtube.state.name))
+                .accessibilityValue(Text(verbatim: youtube.state.name + (youtube.errorCode.map { ".\($0)" } ?? "")))
             HStack {
                 labControl("Play", id: "lab.yt.play") { youtube.play() }
                 labControl("Pause", id: "lab.yt.pause") { youtube.pause() }
@@ -109,10 +109,6 @@ public struct VideoPiPLabView: View {
             PlayerLayerView(layer: native.playerLayer)
                 .aspectRatio(16 / 9, contentMode: .fit)
                 .listRowInsets(EdgeInsets())
-            Text(verbatim: nativeStatus)
-                .font(.caption.monospaced())
-                .accessibilityIdentifier("lab.native.status")
-                .accessibilityValue(Text(verbatim: nativeStatus))
             HStack {
                 labControl("Play", id: "lab.native.play") { native.play() }
                 labControl("Pause", id: "lab.native.pause") { native.pause() }
@@ -122,6 +118,10 @@ public struct VideoPiPLabView: View {
                 labControl("Start PiP", id: "lab.native.startPiP") { native.startPictureInPicture() }
                 labControl("Stop PiP", id: "lab.native.stopPiP") { native.stopPictureInPicture() }
             }
+            Text(verbatim: nativeStatus)
+                .font(.caption.monospaced())
+                .accessibilityIdentifier("lab.native.status")
+                .accessibilityValue(Text(verbatim: nativeStatus))
         } header: {
             Text(verbatim: "2 · Native media → AVPictureInPictureController")
         } footer: {
