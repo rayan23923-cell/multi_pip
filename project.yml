@@ -134,6 +134,8 @@ targets:
       - package: TaskLensUI
         product: TextViewerFeature
       - package: TaskLensUI
+        product: PresentationFeature
+      - package: TaskLensUI
         product: TLActionsUI
       - package: TaskLensUI
         product: ShareFeature

@@ -9,6 +9,7 @@ import ImageViewerFeature
 import LensFeature
 import NotesFeature
 import PiPFeature
+import PresentationFeature
 import SessionsFeature
 import SettingsFeature
 import SwiftUI
@@ -240,6 +241,8 @@ private extension View {
                     documentService: container.documents,
                     toolCapture: container.toolCapture
                 ))
+            case .presentation(let request):
+                PresentationView(model: PresentationModel(request: request, documentService: container.documents))
             }
         }
     }

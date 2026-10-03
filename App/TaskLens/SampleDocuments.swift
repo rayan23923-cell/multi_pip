@@ -7,6 +7,8 @@ import UniformTypeIdentifiers
 /// Only used with the `-TaskLensSeedDocuments` launch argument.
 enum SampleDocuments {
     static let launchArgument = "-TaskLensSeedDocuments"
+    /// With the argument above, also adds "Slide 1", "Slide 2" and "Slide 3" images for presentation tests.
+    static let presentationImagesArgument = "-TaskLensSeedPresentationImages"
 
     static func seedIfRequested(_ service: DocumentService, arguments: [String] = ProcessInfo.processInfo.arguments) async {
         guard arguments.contains(launchArgument),
@@ -15,6 +17,25 @@ enum SampleDocuments {
         _ = try? await service.importData(pdf(), filename: "Sample Report.pdf", contentType: .pdf)
         _ = try? await service.importData(Data(text.utf8), filename: "Sample Notes.txt", contentType: .plainText)
         _ = try? await service.importData(image(), filename: "Sample Image.png", contentType: .png)
+        if arguments.contains(presentationImagesArgument) {
+            for (number, color) in [(1, UIColor.systemRed), (2, .systemGreen), (3, .systemBlue)] {
+                _ = try? await service.importData(slideImage(number: number, color: color), filename: "Slide \(number).png", contentType: .png)
+            }
+        }
+    }
+
+    /// A landscape picture with a large number on it.
+    static func slideImage(number: Int, color: UIColor) -> Data {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: CGSize(width: 1600, height: 900), format: format).pngData { context in
+            color.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 1600, height: 900))
+            ("\(number)" as NSString).draw(
+                at: CGPoint(x: 720, y: 300),
+                withAttributes: [.font: UIFont.boldSystemFont(ofSize: 240), .foregroundColor: UIColor.white]
+            )
+        }
     }
 
     static let text = """
