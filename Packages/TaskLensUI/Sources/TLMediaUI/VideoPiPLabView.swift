@@ -77,12 +77,12 @@ public struct VideoPiPLabView: View {
                 .accessibilityIdentifier("lab.yt.state")
                 .accessibilityValue(Text(verbatim: youtube.state.name))
             HStack {
-                labButton("Play", id: "lab.yt.play") { youtube.play() }
-                labButton("Pause", id: "lab.yt.pause") { youtube.pause() }
-                labButton("+10 s", id: "lab.yt.forward") { youtube.seek(by: 10) }
-                labButton("Stop", id: "lab.yt.stop") { youtube.stop() }
+                labControl("Play", id: "lab.yt.play") { youtube.play() }
+                labControl("Pause", id: "lab.yt.pause") { youtube.pause() }
+                labControl("+10 s", id: "lab.yt.forward") { youtube.seek(by: 10) }
+                labControl("Stop", id: "lab.yt.stop") { youtube.stop() }
             }
-            labButton("Try native PiP for this player", id: "lab.yt.pip") {
+            labControl("Try native PiP for this player", id: "lab.yt.pip") {
                 note("YouTube → AVPictureInPictureController: NOT SUPPORTED. ContentSource accepts AVPlayerLayer, "
                      + "AVSampleBufferDisplayLayer or a video-call view; the YouTube player is a WKWebView. "
                      + "isPictureInPictureSupported = \(AVPictureInPictureController.isPictureInPictureSupported())")
@@ -102,7 +102,7 @@ public struct VideoPiPLabView: View {
                 Text(verbatim: "Test video made on device (offline)").tag(NativeVideoPiP.Source.generated)
                 Text(verbatim: "Apple HLS example (network)").tag(NativeVideoPiP.Source.appleSample)
             } label: { Text(verbatim: "Media") }
-            labButton("Load Media", id: "lab.native.load") {
+            labControl("Load Media", id: "lab.native.load") {
                 note("native load \(source.rawValue)")
                 Task { await native.load(source) }
             }
@@ -114,13 +114,13 @@ public struct VideoPiPLabView: View {
                 .accessibilityIdentifier("lab.native.status")
                 .accessibilityValue(Text(verbatim: nativeStatus))
             HStack {
-                labButton("Play", id: "lab.native.play") { native.play() }
-                labButton("Pause", id: "lab.native.pause") { native.pause() }
-                labButton("+10 s", id: "lab.native.forward") { native.seek(by: 10) }
+                labControl("Play", id: "lab.native.play") { native.play() }
+                labControl("Pause", id: "lab.native.pause") { native.pause() }
+                labControl("+10 s", id: "lab.native.forward") { native.seek(by: 10) }
             }
             HStack {
-                labButton("Start PiP", id: "lab.native.startPiP") { native.startPictureInPicture() }
-                labButton("Stop PiP", id: "lab.native.stopPiP") { native.stopPictureInPicture() }
+                labControl("Start PiP", id: "lab.native.startPiP") { native.startPictureInPicture() }
+                labControl("Stop PiP", id: "lab.native.stopPiP") { native.stopPictureInPicture() }
             }
         } header: {
             Text(verbatim: "2 · Native media → AVPictureInPictureController")
@@ -139,7 +139,7 @@ public struct VideoPiPLabView: View {
 
     private var externalSection: some View {
         Section {
-            labButton("Open in YouTube", id: "lab.external.open") {
+            labControl("Open in YouTube", id: "lab.external.open") {
                 guard let parsed else { return }
                 youtube.pauseForBackground()
                 note("open \(parsed.watchURL.absoluteString)")
@@ -157,7 +157,7 @@ public struct VideoPiPLabView: View {
 
     private var logSection: some View {
         Section {
-            labButton("Copy Log", id: "lab.log.copy") { UIPasteboard.general.string = fullLog.joined(separator: "\n") }
+            labControl("Copy Log", id: "lab.log.copy") { UIPasteboard.general.string = fullLog.joined(separator: "\n") }
             ForEach(Array(fullLog.suffix(60).enumerated()), id: \.offset) { _, line in
                 Text(verbatim: line).font(.caption2.monospaced())
             }
@@ -203,7 +203,8 @@ public struct VideoPiPLabView: View {
         labLog.append("lab \(Date().formatted(.dateTime.hour().minute().second())) \(text)")
     }
 
-    private func labButton(_ title: String, id: String, action: @escaping () -> Void) -> some View {
+    /// Lab controls are English, like the rest of this Debug-only screen.
+    private func labControl(_ title: String, id: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Text(verbatim: title) }
             .buttonStyle(.bordered)
             .accessibilityIdentifier(id)
