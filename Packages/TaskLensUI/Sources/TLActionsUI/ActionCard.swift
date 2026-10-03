@@ -1,7 +1,9 @@
 import SwiftUI
+import TLCoreServices
 import TLDesignSystem
 import TLDomain
 import TLLocalization
+import TLMediaUI
 import Translation
 import UIKit
 
@@ -17,6 +19,8 @@ public final class ActionFeedback {
     public var copiedActionID: ActionID?
     /// A price waiting for the user's exchange rate.
     public var conversion: CurrencyConversion?
+    /// A YouTube video playing in YouTube's embedded player.
+    public var video: YouTubeLink?
 
     public init() {}
 }
@@ -49,6 +53,9 @@ private struct ActionFeedbackPresenter: ViewModifier {
             .sheet(item: $feedback.eventDraft) { draft in
                 EventEditor(draft: draft) { feedback.eventDraft = nil }
                     .ignoresSafeArea()
+            }
+            .sheet(item: $feedback.video) { video in
+                YouTubePlayerScreen(video: video)
             }
             .modifier(TranslationPresenter(text: $feedback.translationText))
             .modifier(ConversionPresenter(feedback: feedback))
@@ -296,6 +303,8 @@ public struct ActionCard: View {
             if let onSearch = handlers.onSearch { onSearch(query) } else { feedback.message = .actionsOpenApp }
         case .createEvent(let draft):
             feedback.eventDraft = draft
+        case .playVideo(let video):
+            feedback.video = video
         case .translate(let text):
             if #available(iOS 17.4, *) {
                 feedback.translationText = text
@@ -325,6 +334,7 @@ public struct ActionCard: View {
     private func symbol(_ action: Action, saved: Bool, copied: Bool) -> String {
         if saved { return "checkmark.circle.fill" }
         if copied { return "checkmark" }
+        if action.titleKey == Action.openInYouTubeTitleKey { return "arrow.up.forward.app" }
         return action.type.symbolName
     }
 
@@ -418,6 +428,7 @@ extension ActionType {
         case .createReminder: "checklist"
         case .search: "magnifyingglass"
         case .askAI: "sparkles"
+        case .playVideo: "play.rectangle"
         default: "bolt"
         }
     }

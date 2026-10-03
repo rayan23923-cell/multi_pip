@@ -4,23 +4,35 @@ import TLDesignSystem
 import TLDomain
 import TLLocalization
 
-/// "Detected type: Phone Number" row.
+/// "Detected type: Phone Number" row. A YouTube link reads "YouTube Video".
 public struct DetectedTypeRow: View {
     private let category: ContentCategory
+    private let isYouTubeVideo: Bool
 
     public init(_ category: ContentCategory) {
         self.category = category
+        isYouTubeVideo = false
+    }
+
+    public init(_ analysis: ContextAnalysis) {
+        category = analysis.category
+        isYouTubeVideo = analysis.youTubeLink != nil
     }
 
     public var body: some View {
         LabeledContent {
-            Text(L10nKey.category(category))
-                .accessibilityIdentifier("analysis.category.\(category.rawValue)")
+            if isYouTubeVideo {
+                Text(L10nKey.analysisYoutubeVideo)
+                    .accessibilityIdentifier("analysis.category.youtubeVideo")
+            } else {
+                Text(L10nKey.category(category))
+                    .accessibilityIdentifier("analysis.category.\(category.rawValue)")
+            }
         } label: {
             Label {
                 Text(L10nKey.lensDetectedType)
             } icon: {
-                Image(systemName: category.symbolName)
+                Image(systemName: isYouTubeVideo ? "play.rectangle" : category.symbolName)
             }
         }
         .accessibilityElement(children: .combine)
@@ -41,7 +53,18 @@ public struct DetectedValueRow: View {
     }
 
     public var body: some View {
-        if let entity {
+        if let video = entity?.youTubeLink {
+            // The video ID is read from the link itself, without the network.
+            LabeledContent {
+                Text(verbatim: video.videoID)
+                    .textSelection(.enabled)
+                    .environment(\.layoutDirection, .leftToRight)
+            } label: {
+                Text(L10nKey.analysisVideoID)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("analysis.videoID")
+        } else if let entity {
             LabeledContent {
                 VStack(alignment: .trailing, spacing: TLSpacing.xxs) {
                     value(entity)

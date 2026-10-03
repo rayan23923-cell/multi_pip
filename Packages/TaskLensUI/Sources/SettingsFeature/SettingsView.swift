@@ -5,6 +5,9 @@ import AIFeature
 import SwiftUI
 import TLDesignSystem
 import TLLocalization
+#if DEBUG
+import TLMediaUI
+#endif
 import UIKit
 
 public struct SettingsView: View {
@@ -71,6 +74,20 @@ public struct SettingsView: View {
                         .accessibilityIdentifier("settings.liveActivitiesOff")
                 }
             }
+
+            #if DEBUG
+            // Developer tools; not in Release builds.
+            Section {
+                NavigationLink {
+                    VideoPiPLabView()
+                } label: {
+                    Text(verbatim: "Video PiP Lab")
+                }
+                .accessibilityIdentifier("settings.videoPiPLab")
+            } header: {
+                Text(verbatim: "Developer")
+            }
+            #endif
 
             Section {
                 LabeledContent {

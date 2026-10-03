@@ -39,6 +39,8 @@ public enum ActionPlan: Equatable, Sendable {
     case search(String)
     /// Opens the system event editor, filled in. The user confirms or cancels.
     case createEvent(EventDraft)
+    /// Plays a YouTube video in YouTube's embedded player, inside TaskLens.
+    case playVideo(YouTubeLink)
     /// Shown honestly as not implemented yet.
     case comingLater
     /// Needs the full app (share extension).
@@ -104,6 +106,11 @@ public enum ActionPlan: Equatable, Sendable {
             return capabilities.canNavigate
                 ? .convert(amount, currency: action.parameters[Action.ParameterKey.currencyCode]?.stringValue)
                 : .openApp
+        case .playVideo:
+            guard let id = action.parameters[Action.ParameterKey.videoID]?.stringValue,
+                  let video = value.flatMap(URL.init(string:)).flatMap({ YouTubeLink.parse($0) })
+                    ?? YouTubeLink(videoID: id) else { return .unavailable }
+            return capabilities.canNavigate ? .playVideo(video) : .openApp
         case .summarize, .createReminder, .addContact, .askAI:
             return .comingLater
         default:

@@ -32,6 +32,12 @@ public enum DetectionKey {
     public static let count = "count"
     public static let language = "language"
     public static let signals = "signals"
+    /// A link to a known media platform: "youtube".
+    public static let platform = "platform"
+    /// What the link points to on that platform: "video".
+    public static let contentType = "contentType"
+    public static let videoID = "videoID"
+    public static let startSeconds = "startSeconds"
 }
 
 /// Shared helpers for building entities.
@@ -105,11 +111,18 @@ public struct URLDetector: ContentDetector {
     }
 
     private func make(_ url: URL, range: NSRange, input: NormalizedInput, confidence: Confidence) -> DetectedEntity {
-        Detection.entity(.url, .url(url), confidence: confidence, range: range, in: input, metadata: [
+        var metadata: Metadata = [
             DetectionKey.normalized: .string(url.absoluteString),
             DetectionKey.host: .string(url.host ?? ""),
             DetectionKey.scheme: .string(url.scheme ?? ""),
-        ])
+        ]
+        if let video = YouTubeLink.parse(url) {
+            metadata[DetectionKey.platform] = .string(YouTubeLink.platform)
+            metadata[DetectionKey.contentType] = .string(YouTubeLink.contentType)
+            metadata[DetectionKey.videoID] = .string(video.videoID)
+            if let start = video.startSeconds { metadata[DetectionKey.startSeconds] = .number(Double(start)) }
+        }
+        return Detection.entity(.url, .url(url), confidence: confidence, range: range, in: input, metadata: metadata)
     }
 }
 

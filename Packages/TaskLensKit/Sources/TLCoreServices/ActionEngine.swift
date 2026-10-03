@@ -53,11 +53,14 @@ public struct ActionCandidate: Sendable, Equatable {
     public var parameters: [String: JSONValue]
     /// Position in the rule table; breaks ties so ranking never depends on chance.
     public var order: Int
+    /// A title other than the action type's own ("Open in YouTube").
+    public var titleKey: String?
 
     public init(
         type: ActionType, relevance: Double, entity: DetectedEntity?, isSpecific: Bool, isPlaceholder: Bool,
-        requiresConfirmation: Bool, parameters: [String: JSONValue], order: Int
+        requiresConfirmation: Bool, parameters: [String: JSONValue], order: Int, titleKey: String? = nil
     ) {
+        self.titleKey = titleKey
         self.type = type
         self.relevance = relevance
         self.entity = entity
@@ -192,6 +195,10 @@ public struct ActionEngine: ActionSuggesting {
             candidates.append(candidate(rule, entity: entity, input: input, order: candidates.count))
         }
 
+        if category == .url, let video = primary?.youTubeLink {
+            addYouTubeActions(video, entity: primary, to: &candidates)
+        }
+
         if embedded.count >= 2, [.plainText, .code].contains(category) {
             var extract = ActionCandidate(
                 type: .extractText, relevance: extractRelevance, entity: nil, isSpecific: false, isPlaceholder: false,
@@ -202,6 +209,29 @@ public struct ActionEngine: ActionSuggesting {
             candidates.append(extract)
         }
         return candidates
+    }
+
+    /// Relevance of Play in TaskLens: below Open (the YouTube app), above Save.
+    static let playVideoRelevance = 0.9
+
+    /// A YouTube link: Open becomes "Open in YouTube", and Play in TaskLens
+    /// (YouTube's embedded player) follows it. There is no Picture in Picture
+    /// action: TaskLens cannot put YouTube's player in its own Picture in Picture.
+    private static func addYouTubeActions(_ video: YouTubeLink, entity: DetectedEntity?, to candidates: inout [ActionCandidate]) {
+        if let open = candidates.firstIndex(where: { $0.type == .openURL }) {
+            candidates[open].titleKey = Action.openInYouTubeTitleKey
+            candidates[open].parameters[Action.ParameterKey.value] = .string(video.watchURL.absoluteString)
+        }
+        var parameters: [String: JSONValue] = [
+            Action.ParameterKey.value: .string(video.watchURL.absoluteString),
+            Action.ParameterKey.videoID: .string(video.videoID),
+        ]
+        if let start = video.startSeconds { parameters[Action.ParameterKey.startSeconds] = .number(Double(start)) }
+        let play = ActionCandidate(
+            type: .playVideo, relevance: playVideoRelevance, entity: entity, isSpecific: true, isPlaceholder: false,
+            requiresConfirmation: false, parameters: parameters, order: candidates.count
+        )
+        candidates.append(play)
     }
 
     private static func candidate(_ rule: Rule, entity: DetectedEntity?, input: NormalizedInput, order: Int) -> ActionCandidate {
@@ -245,6 +275,7 @@ public struct ActionEngine: ActionSuggesting {
     /// Actions that need the full app: from the share sheet they only point to it.
     public static let needsApp: Set<ActionType> = [
         .call, .sendMessage, .sendEmail, .openURL, .openInMaps, .calculate, .search, .createNote, .addToCalendar,
+        .playVideo,
     ]
 
     /// Score adjustments by source. Deterministic, documented, and tested.
@@ -327,6 +358,7 @@ public struct ActionEngine: ActionSuggesting {
                 RankedAction(
                     action: Action(
                         type: candidate.type,
+                        titleKey: candidate.titleKey,
                         priority: ActionPriority(Int((score * 1000).rounded())),
                         parameters: candidate.parameters,
                         targetEntityID: candidate.entity?.id,

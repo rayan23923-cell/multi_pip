@@ -134,7 +134,7 @@ public struct ShareView: View {
             }
         } else {
             Section {
-                DetectedTypeRow(preview.analysis.category)
+                DetectedTypeRow(preview.analysis)
                     .accessibilityIdentifier("share.item.\(index).type")
                 DetectedValueRow(preview.analysis)
                 previewRow(preview)

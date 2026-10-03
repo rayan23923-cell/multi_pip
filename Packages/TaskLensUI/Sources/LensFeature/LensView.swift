@@ -74,7 +74,7 @@ public struct LensView: View {
             if model.imageLens.phase == .idle, screenLens?.state != .done,
                let content = model.content, let analysis = model.analysis {
                 Section {
-                    DetectedTypeRow(analysis.category)
+                    DetectedTypeRow(analysis)
                         .accessibilityIdentifier("lens.detectedType")
                     DetectedValueRow(analysis)
                 } header: {

@@ -409,7 +409,7 @@ private struct SessionItemDetail: View {
         NavigationStack {
             List {
                 Section {
-                    DetectedTypeRow(analysis.category)
+                    DetectedTypeRow(analysis)
                     DetectedValueRow(analysis)
                     Button { Task { await model.toggleImportant(current) } } label: {
                         if model.isImportant(current) {

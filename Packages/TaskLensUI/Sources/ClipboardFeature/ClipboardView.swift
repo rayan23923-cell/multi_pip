@@ -175,7 +175,7 @@ private struct ClipboardItemDetail: View {
         NavigationStack {
             List {
                 Section {
-                    DetectedTypeRow(analysis.category)
+                    DetectedTypeRow(analysis)
                     DetectedValueRow(analysis)
                 } header: {
                     Text(L10nKey.lensPreview)

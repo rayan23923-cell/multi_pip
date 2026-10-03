@@ -30,6 +30,8 @@ summarize_app_tests() {
   grep -E "^[[:space:]]*AUDIT (FAIL|NOTE)" "$log" | sed -E 's/^.*(AUDIT )/\1/' | sort -u | head -60 || true
   # What was on screen when a UI test could not find an element.
   grep -E "^[[:space:]]*MISSING " "$log" | sed -E 's/^.*(MISSING )/\1/' | head -40 || true
+  # What the YouTube player and AVKit reported in the video PiP feasibility tests.
+  grep -E "^[[:space:]]*VIDEO " "$log" | sed -E 's/^.*(VIDEO )/\1/' | head -80 || true
 }
 
 require_success() {

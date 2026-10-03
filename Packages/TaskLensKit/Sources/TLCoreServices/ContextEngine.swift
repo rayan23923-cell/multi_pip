@@ -133,4 +133,18 @@ extension DetectedEntity {
     public var normalizedText: String? {
         metadata[DetectionKey.normalized]?.stringValue ?? matchedText
     }
+
+    /// The YouTube video this link points to, read from the URL (no network).
+    public var youTubeLink: YouTubeLink? {
+        guard type == .url, metadata[DetectionKey.platform]?.stringValue == YouTubeLink.platform,
+              case .url(let url) = value else { return nil }
+        return YouTubeLink.parse(url)
+    }
+}
+
+extension ContextAnalysis {
+    /// The YouTube video, when the whole content is one YouTube link.
+    public var youTubeLink: YouTubeLink? {
+        category == .url ? primaryEntity?.youTubeLink : nil
+    }
 }

@@ -54,6 +54,9 @@ extension Action {
         public static let values = "values"
         /// True when the action is shown but not implemented yet.
         public static let placeholder = "placeholder"
+        /// A YouTube video ID (Play in TaskLens).
+        public static let videoID = "videoID"
+        public static let startSeconds = "startSeconds"
     }
 
     /// Shown so the user knows it is coming, but not performed yet.
@@ -65,6 +68,9 @@ extension Action {
     public var valueText: String? {
         parameters[ParameterKey.value]?.stringValue
     }
+
+    /// Title key for Open on a YouTube link.
+    public static let openInYouTubeTitleKey = "action.openInYouTube"
 
     /// Highest priority first; ties broken by type name so ordering is stable.
     public static func ranked(_ actions: [Action]) -> [Action] {
@@ -102,11 +108,13 @@ public struct ActionType: ExtensibleKind {
     public static let search: ActionType = "search"
     /// Reserved for an optional, clearly separated AI feature. Always a placeholder.
     public static let askAI: ActionType = "askAI"
+    /// Plays a YouTube video in YouTube's embedded player inside TaskLens.
+    public static let playVideo: ActionType = "playVideo"
 
     public static let allKnown: [ActionType] = [
         .copy, .share, .saveToSession, .createNote, .openURL, .call, .sendMessage, .sendEmail, .addContact,
         .addToCalendar, .openInMaps, .calculate, .convertCurrency, .extractText, .translate, .summarize, .createReminder,
-        .search, .askAI,
+        .search, .askAI, .playVideo,
     ]
 }
 
