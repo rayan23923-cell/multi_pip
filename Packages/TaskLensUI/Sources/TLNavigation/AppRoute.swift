@@ -43,6 +43,14 @@ public enum AppRoute: Hashable, Sendable {
     case pdf(DocumentID)
     case image(DocumentID)
     case textDocument(DocumentID)
+    /// A PDF or a set of images shown one slide at a time.
+    case presentation(PresentationRequest)
+}
+
+/// What to present. Images keep the order given.
+public enum PresentationRequest: Hashable, Sendable {
+    case pdf(DocumentID)
+    case images([DocumentID])
 }
 
 extension AppRoute {

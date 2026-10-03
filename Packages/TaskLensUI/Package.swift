@@ -30,6 +30,7 @@ let package = Package(
         .library(name: "DocumentsFeature", targets: ["DocumentsFeature"]),
         .library(name: "ImageViewerFeature", targets: ["ImageViewerFeature"]),
         .library(name: "TextViewerFeature", targets: ["TextViewerFeature"]),
+        .library(name: "PresentationFeature", targets: ["PresentationFeature"]),
         .library(name: "ShareFeature", targets: ["ShareFeature"]),
         .library(name: "PiPFeature", targets: ["PiPFeature"]),
         .library(name: "WidgetsFeature", targets: ["WidgetsFeature"]),
@@ -184,6 +185,15 @@ let package = Package(
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
             ]
         ),
+        // Presenting a PDF or images one slide at a time, on PresentationEngine.
+        .target(
+            name: "PresentationFeature",
+            dependencies: [
+                "TLLocalization", "TLDesignSystem", "TLNavigation",
+                .product(name: "TLDomain", package: "TaskLensKit"),
+                .product(name: "TLCoreServices", package: "TaskLensKit"),
+            ]
+        ),
         .target(
             name: "TextViewerFeature",
             dependencies: [
@@ -239,7 +249,7 @@ let package = Package(
                 "TLLocalization", "TLNavigation", "CommandCenterFeature", "WorkspacesFeature", "SessionsFeature",
                 "LensFeature", "ClipboardFeature",
                 "NotesFeature", "CalculatorFeature", "BrowserFeature", "DocumentsFeature",
-                "ImageViewerFeature", "TextViewerFeature", "TLActionsUI", "TLMediaUI", "ShareFeature", "PiPFeature", "WidgetsFeature",
+                "ImageViewerFeature", "TextViewerFeature", "PresentationFeature", "TLActionsUI", "TLMediaUI", "ShareFeature", "PiPFeature", "WidgetsFeature",
                 "LiveActivitiesFeature", "AIFeature", "SettingsFeature", "WorkflowsFeature",
                 .product(name: "TLFoundation", package: "TaskLensKit"),
                 .product(name: "TLDomain", package: "TaskLensKit"),

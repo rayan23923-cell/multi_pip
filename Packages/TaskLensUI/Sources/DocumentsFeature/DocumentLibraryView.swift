@@ -19,6 +19,10 @@ public struct DocumentLibraryView: View {
         _model = State(initialValue: model)
     }
 
+    private var imageIDs: [DocumentID] {
+        model.documents.filter { $0.kind == .image }.map(\.id)
+    }
+
     public var body: some View {
         List {
             if model.hasLoaded && model.documents.isEmpty {
@@ -40,6 +44,15 @@ public struct DocumentLibraryView: View {
         }
         .navigationTitle(Text(L10nKey.workspaceToolDocuments))
         .toolbar {
+            if !imageIDs.isEmpty {
+                ToolbarItem(placement: .primaryAction) {
+                    // The images in the order the list shows them.
+                    Button { router.push(.presentation(.images(imageIDs))) } label: {
+                        TLLabel(.presentationPresentImages, systemImage: "play.rectangle")
+                    }
+                    .accessibilityIdentifier("documents.presentImages")
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button { isPickingFiles = true } label: {

@@ -75,6 +75,10 @@ public struct PDFViewerView: View {
                 }
                 .accessibilityIdentifier("pdf.search")
                 Menu {
+                    Button { router.push(.presentation(.pdf(model.documentID))) } label: {
+                        TLLabel(.presentationPresent, systemImage: "play.rectangle")
+                    }
+                    .accessibilityIdentifier("pdf.present")
                     Button {
                         model.extractCurrentPageText()
                         showsText = true

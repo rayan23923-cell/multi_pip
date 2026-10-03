@@ -1,0 +1,209 @@
+import PDFKit
+import SwiftUI
+import TLDesignSystem
+import TLDomain
+import TLLocalization
+
+/// Shows one slide at a time with Previous, Next and a "Slide 12 / 48" counter.
+///
+/// The slide fills the screen. Tapping it hides or shows the controls, the
+/// navigation bar and the tab bar; nothing hides on its own. There is no auto
+/// play: slides change only with the buttons or Go to Slide.
+public struct PresentationView: View {
+    @State private var model: PresentationModel
+    @State private var showsControls = true
+    @State private var isGoingToSlide = false
+    @State private var slideInput = ""
+
+    public init(model: PresentationModel) {
+        _model = State(initialValue: model)
+    }
+
+    public var body: some View {
+        VStack(spacing: 0) {
+            content
+            if showsControls && model.hasSlides {
+                Divider()
+                controlBar
+            }
+        }
+        .navigationTitle(model.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(showsControls ? .visible : .hidden, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
+        .statusBarHidden(!showsControls)
+        .persistentSystemOverlays(showsControls ? .automatic : .hidden)
+        .alert(Text(L10nKey.presentationGoToSlide), isPresented: $isGoingToSlide) {
+            TextField(String(model.slideNumber), text: $slideInput)
+                .keyboardType(.numberPad)
+                .accessibilityIdentifier("presentation.goToSlideField")
+            Button {
+                if let number = Int(slideInput) { model.goToSlide(number: number) }
+                slideInput = ""
+            } label: { Text(L10nKey.commonOk) }
+            Button(role: .cancel) { slideInput = "" } label: { Text(L10nKey.commonCancel) }
+        }
+        .task { await model.load() }
+    }
+
+    // MARK: Content
+
+    @ViewBuilder
+    private var content: some View {
+        switch model.phase {
+        case .idle, .loading:
+            ProgressView { Text(L10nKey.presentationLoading) }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("presentation.loading")
+        case .error(let failure):
+            failureView(failure)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("presentation.error")
+        case .ready, .playing, .paused, .completed:
+            slide
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.black)
+                .contentShape(Rectangle())
+                .onTapGesture { withAnimation(.easeInOut(duration: 0.2)) { showsControls.toggle() } }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(L10n.format(.presentationCounterSpoken, model.slideNumber, model.slideCount)))
+                .accessibilityValue(Text(verbatim: model.currentSlideDescription))
+                .accessibilityAddTraits(.isImage)
+                .accessibilityAction(named: Text(L10nKey.presentationToggleControls)) { showsControls.toggle() }
+                .accessibilityIdentifier("presentation.slide")
+        }
+    }
+
+    @ViewBuilder
+    private var slide: some View {
+        switch model.currentSlide?.source {
+        case .pdfPage(_, let pageIndex):
+            if let pdf = model.pdf, pageIndex < pdf.pageCount {
+                PDFSlideView(pdf: pdf, pageIndex: pageIndex)
+            } else {
+                slideFailed
+            }
+        case .image(let id):
+            ImageSlideView(model: model, documentID: id)
+        case nil:
+            slideFailed
+        }
+    }
+
+    private var slideFailed: some View {
+        Label { Text(L10nKey.presentationSlideFailed) } icon: { Image(systemName: "exclamationmark.triangle") }
+            .foregroundStyle(.white)
+            .padding()
+            .accessibilityIdentifier("presentation.slideFailed")
+    }
+
+    @ViewBuilder
+    private func failureView(_ failure: PresentationFailure) -> some View {
+        switch failure {
+        case .empty:
+            TLEmptyState(title: .presentationEmptyTitle, message: .presentationEmptyMessage, symbolName: "rectangle.on.rectangle.slash")
+        case .unsupportedSource:
+            TLEmptyState(title: .presentationUnsupportedTitle, message: .presentationUnsupportedMessage, symbolName: "doc.badge.ellipsis")
+        case .unreadable:
+            TLEmptyState(title: .presentationUnreadableTitle, message: .presentationUnreadableMessage, symbolName: "exclamationmark.triangle")
+        }
+    }
+
+    // MARK: Controls
+
+    private var controlBar: some View {
+        HStack {
+            Button { model.previous() } label: {
+                Image(systemName: "chevron.backward")
+                    .accessibilityLabel(Text(L10nKey.presentationPrevious))
+            }
+            .disabled(!model.canGoBack)
+            .accessibilityIdentifier("presentation.previous")
+            Spacer()
+            Button { isGoingToSlide = true } label: {
+                Text(L10n.format(.presentationCounter, model.slideNumber, model.slideCount))
+                    .font(.body.monospacedDigit())
+            }
+            .accessibilityLabel(Text(L10n.format(.presentationCounterSpoken, model.slideNumber, model.slideCount)))
+            .accessibilityHint(Text(L10nKey.presentationGoToSlide))
+            .accessibilityIdentifier("presentation.counter")
+            Spacer()
+            Button { model.next() } label: {
+                Image(systemName: "chevron.forward")
+                    .accessibilityLabel(Text(L10nKey.presentationNext))
+            }
+            .disabled(!model.canGoForward)
+            .accessibilityIdentifier("presentation.next")
+        }
+        .buttonStyle(.borderless)
+        .imageScale(.large)
+        .padding(.horizontal, TLSpacing.l)
+        .padding(.vertical, TLSpacing.m)
+        .background(.bar)
+    }
+}
+
+/// One PDF page, fitted to the space. PDFKit draws only this page.
+private struct PDFSlideView: UIViewRepresentable {
+    let pdf: PDFDocument
+    let pageIndex: Int
+
+    func makeUIView(context: Context) -> PDFView {
+        let view = PDFView()
+        view.displayMode = .singlePage
+        view.displaysPageBreaks = false
+        view.autoScales = true
+        view.backgroundColor = .black
+        // Pages change only through the presentation controls.
+        view.isUserInteractionEnabled = false
+        view.document = pdf
+        return view
+    }
+
+    func updateUIView(_ view: PDFView, context: Context) {
+        if view.document !== pdf { view.document = pdf }
+        if let page = pdf.page(at: pageIndex), view.currentPage != page {
+            view.go(to: page)
+        }
+        view.scaleFactor = view.scaleFactorForSizeToFit
+    }
+}
+
+/// One image, aspect-fit, decoded for the screen size when it appears.
+private struct ImageSlideView: View {
+    let model: PresentationModel
+    let documentID: DocumentID
+    @State private var image: CGImage?
+    @State private var loadedID: DocumentID?
+    @State private var failed = false
+    @Environment(\.displayScale) private var displayScale
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                if let image, loadedID == documentID {
+                    Image(decorative: image, scale: displayScale)
+                        .resizable()
+                        .scaledToFit()
+                } else if failed {
+                    Label { Text(L10nKey.presentationSlideFailed) } icon: { Image(systemName: "exclamationmark.triangle") }
+                        .foregroundStyle(.white)
+                        .padding()
+                        .accessibilityIdentifier("presentation.slideFailed")
+                } else {
+                    ProgressView().tint(.white)
+                }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .task(id: documentID) {
+                failed = false
+                let longestSide = max(geometry.size.width, geometry.size.height) * displayScale
+                let decoded = await model.image(for: documentID, maxPixelSize: longestSide)
+                guard !Task.isCancelled else { return }
+                image = decoded
+                loadedID = documentID
+                failed = decoded == nil
+            }
+        }
+    }
+}
