@@ -5628,6 +5628,142 @@
         }
       }
     },
+    "presentation.autoPlay.custom": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مدة مخصصة…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom…"
+          }
+        }
+      }
+    },
+    "presentation.autoPlay.customMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عدد الثواني لكل شريحة، من 1 إلى 3600."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seconds per slide, from 1 to 3600."
+          }
+        }
+      }
+    },
+    "presentation.autoPlay.interval": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مدة كل شريحة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time per Slide"
+          }
+        }
+      }
+    },
+    "presentation.autoPlay.pause": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إيقاف التشغيل التلقائي مؤقتاً"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause Auto Play"
+          }
+        }
+      }
+    },
+    "presentation.autoPlay.resume": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استئناف التشغيل التلقائي"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume Auto Play"
+          }
+        }
+      }
+    },
+    "presentation.autoPlay.seconds": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ثانية"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld seconds"
+          }
+        }
+      }
+    },
+    "presentation.autoPlay.start": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بدء التشغيل التلقائي"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Auto Play"
+          }
+        }
+      }
+    },
+    "presentation.autoPlay.stop": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إنهاء التشغيل التلقائي"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop Auto Play"
+          }
+        }
+      }
+    },
     "presentation.counter": {
       "extractionState": "manual",
       "localizations": {

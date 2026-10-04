@@ -13,12 +13,13 @@ import TLNavigation
 /// Every slide change goes through `PresentationEngine`; this model never sets a
 /// slide itself. It records nothing for Resume and never touches a document's
 /// `lastReadPage`, so presenting a PDF does not move its reading position.
-/// There is no timer: slides change only when the user asks.
+/// Auto play runs through `PresentationAutoPlayer`, which owns the only timer.
 @MainActor
 @Observable
 public final class PresentationModel {
     public let request: PresentationRequest
     public let engine: PresentationEngine
+    public let autoPlayer: PresentationAutoPlayer
     /// The PDF being presented. PDFKit reads pages only when one is drawn.
     public private(set) var pdf: PDFDocument?
     /// Image titles seen so far, for VoiceOver.
@@ -26,10 +27,18 @@ public final class PresentationModel {
 
     private let documentService: DocumentService
 
-    public init(request: PresentationRequest, documentService: DocumentService, engine: PresentationEngine? = nil) {
+    public init(
+        request: PresentationRequest,
+        documentService: DocumentService,
+        engine: PresentationEngine? = nil,
+        autoPlaySleep: PresentationAutoPlayer.Sleep? = nil
+    ) {
         self.request = request
         self.documentService = documentService
-        self.engine = engine ?? PresentationEngine()
+        let engine = engine ?? PresentationEngine()
+        self.engine = engine
+        autoPlayer = autoPlaySleep.map { PresentationAutoPlayer(engine: engine, sleep: $0) }
+            ?? PresentationAutoPlayer(engine: engine)
     }
 
     public var title: String { engine.document?.title ?? "" }
@@ -66,13 +75,66 @@ public final class PresentationModel {
 
     // MARK: Commands (all through the engine)
 
-    public func next() { _ = engine.next() }
-    public func previous() { _ = engine.previous() }
+    public func next() {
+        _ = engine.next()
+        autoPlayer.slideChangedByUser()
+    }
+
+    public func previous() {
+        _ = engine.previous()
+        autoPlayer.slideChangedByUser()
+    }
 
     /// `number` is one-based, as the user types it.
     public func goToSlide(number: Int) {
         _ = engine.goToSlide(number - 1)
+        autoPlayer.slideChangedByUser()
     }
+
+    // MARK: Auto play
+
+    public enum AutoPlayButton: Equatable { case start, pause, resume }
+
+    /// What the play button does now.
+    public var autoPlayButton: AutoPlayButton {
+        switch engine.phase {
+        case .playing: .pause
+        case .paused: .resume
+        default: .start
+        }
+    }
+
+    /// True while playback is running or paused, so Stop applies.
+    public var isAutoPlayActive: Bool {
+        switch engine.phase {
+        case .playing, .paused, .completed: true
+        default: false
+        }
+    }
+
+    public var isAutoPlaying: Bool { autoPlayer.isPlaying }
+    public var autoPlayInterval: Int { autoPlayer.interval }
+
+    /// Play, Pause or Resume, as the button shows.
+    public func toggleAutoPlay() {
+        switch autoPlayButton {
+        case .start: _ = autoPlayer.play()
+        case .pause: _ = autoPlayer.pause()
+        case .resume: _ = autoPlayer.resume()
+        }
+    }
+
+    public func stopAutoPlay() { _ = autoPlayer.stop() }
+
+    /// Seconds per slide; out-of-range values are clamped.
+    public func setAutoPlayInterval(_ seconds: Int) { autoPlayer.setInterval(seconds) }
+
+    /// iOS suspends a backgrounded app, so playback pauses and waits for Resume
+    /// instead of jumping ahead when the app returns.
+    public func didEnterBackground() { _ = autoPlayer.pause() }
+
+    /// Leaving the screen ends playback; nothing keeps counting after it closes.
+    public func didLeave() { _ = autoPlayer.stop() }
 
     // MARK: Rendering
 

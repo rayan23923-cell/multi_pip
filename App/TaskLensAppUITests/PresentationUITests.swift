@@ -135,6 +135,97 @@ final class PresentationUITests: XCTestCase {
         waitFor(app, slideValue: "Slide 1")
     }
 
+    // MARK: Auto play
+
+    /// Chooses the 5-second interval from the toolbar menu.
+    private func chooseFiveSeconds(_ app: XCUIApplication) {
+        tap(app, "presentation.interval")
+        let item = element(app, "presentation.interval.5")
+        if item.waitForExistence(timeout: 5) {
+            item.tap()
+        } else {
+            let byLabel = app.buttons["5 seconds"]
+            XCTAssertTrue(byLabel.waitForExistence(timeout: 5), "The 5 seconds item should be in the menu")
+            byLabel.tap()
+        }
+    }
+
+    /// The counter stays on `label` for `seconds`, longer than one interval.
+    private func assertStays(_ app: XCUIApplication, on label: String, for seconds: TimeInterval,
+                             file: StaticString = #filePath, line: UInt = #line) {
+        let moved = app.waitForLabel("presentation.counter", timeout: seconds) { $0 != label }
+        XCTAssertFalse(moved, "The slide should not move, reads '\(element(app, "presentation.counter").label)'", file: file, line: line)
+    }
+
+    func testAutoPlayAdvancesPausesResumesStopsAndEndsOnTheLastSlide() {
+        let app = launch(presentationImages: true)
+        tap(app, "commandCenter.documents")
+        tap(app, "documents.presentImages")
+        waitFor(app, "presentation.counter", label: "Slide 1 of 4")
+        chooseFiveSeconds(app)
+        waitFor(app, "presentation.autoPlay", label: "Start Auto Play")
+
+        // Play: one slide every 5 seconds.
+        tap(app, "presentation.autoPlay")
+        waitFor(app, "presentation.autoPlay", label: "Pause Auto Play")
+        waitFor(app, "presentation.counter", label: "Slide 2 of 4", timeout: 12)
+
+        // Pause: nothing moves.
+        tap(app, "presentation.autoPlay")
+        waitFor(app, "presentation.autoPlay", label: "Resume Auto Play")
+        let paused = element(app, "presentation.counter").label
+        assertStays(app, on: paused, for: 8)
+
+        // Resume continues from the same slide.
+        tap(app, "presentation.autoPlay")
+        let next = paused == "Slide 2 of 4" ? "Slide 3 of 4" : "Slide 4 of 4"
+        waitFor(app, "presentation.counter", label: next, timeout: 12)
+
+        // Stop: playback ends and the slide stays.
+        tap(app, "presentation.autoPlayStop")
+        waitFor(app, "presentation.autoPlay", label: "Start Auto Play")
+        XCTAssertFalse(element(app, "presentation.autoPlayStop").exists)
+        let stopped = element(app, "presentation.counter").label
+        assertStays(app, on: stopped, for: 8)
+
+        // Play to the end: it stops on the last slide and does not loop.
+        tap(app, "presentation.autoPlay")
+        waitFor(app, "presentation.counter", label: "Slide 4 of 4", timeout: 25)
+        waitFor(app, "presentation.autoPlay", label: "Start Auto Play", timeout: 12)
+        waitFor(app, slideValue: "Sample Image")
+        assertStays(app, on: "Slide 4 of 4", for: 8)
+    }
+
+    func testAutoPlayPausesInTheBackgroundAndStopsWhenLeaving() {
+        let app = launch(presentationImages: true)
+        tap(app, "commandCenter.documents")
+        tap(app, "documents.presentImages")
+        waitFor(app, "presentation.counter", label: "Slide 1 of 4")
+        chooseFiveSeconds(app)
+        tap(app, "presentation.autoPlay")
+        waitFor(app, "presentation.autoPlay", label: "Pause Auto Play")
+
+        // Background: playback pauses and nothing moves while away.
+        XCUIDevice.shared.press(.home)
+        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 10) || app.wait(for: .runningBackgroundSuspended, timeout: 5))
+        sleep(8)
+        app.activate()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        waitFor(app, "presentation.autoPlay", label: "Resume Auto Play")
+        let shown = element(app, "presentation.counter").label
+        assertStays(app, on: shown, for: 8)
+
+        // Leaving ends playback; reopening starts fresh, without an old countdown.
+        tap(app, "presentation.autoPlay")
+        waitFor(app, "presentation.autoPlay", label: "Pause Auto Play")
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(element(app, "documents.presentImages").waitForExistence(timeout: 10))
+        tap(app, "documents.presentImages")
+        waitFor(app, "presentation.counter", label: "Slide 1 of 4")
+        waitFor(app, "presentation.autoPlay", label: "Start Auto Play")
+        assertStays(app, on: "Slide 1 of 4", for: 12)
+    }
+
     func testPresentationRotatesToLandscape() {
         let app = launch(presentationImages: true)
         tap(app, "commandCenter.documents")

@@ -1,5 +1,6 @@
 import PDFKit
 import SwiftUI
+import TLCoreServices
 import TLDesignSystem
 import TLDomain
 import TLLocalization
@@ -7,13 +8,16 @@ import TLLocalization
 /// Shows one slide at a time with Previous, Next and a "Slide 12 / 48" counter.
 ///
 /// The slide fills the screen. Tapping it hides or shows the controls, the
-/// navigation bar and the tab bar; nothing hides on its own. There is no auto
-/// play: slides change only with the buttons or Go to Slide.
+/// navigation bar and the tab bar; nothing hides on its own. Auto play moves
+/// slides on the chosen interval; the controls' visibility has no timer.
 public struct PresentationView: View {
     @State private var model: PresentationModel
     @State private var showsControls = true
     @State private var isGoingToSlide = false
     @State private var slideInput = ""
+    @State private var isChoosingInterval = false
+    @State private var intervalInput = ""
+    @Environment(\.scenePhase) private var scenePhase
 
     public init(model: PresentationModel) {
         _model = State(initialValue: model)
@@ -29,6 +33,11 @@ public struct PresentationView: View {
         }
         .navigationTitle(model.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                if model.hasSlides { intervalMenu }
+            }
+        }
         .toolbar(showsControls ? .visible : .hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
         .statusBarHidden(!showsControls)
@@ -43,7 +52,29 @@ public struct PresentationView: View {
             } label: { Text(L10nKey.commonOk) }
             Button(role: .cancel) { slideInput = "" } label: { Text(L10nKey.commonCancel) }
         }
+        .alert(Text(L10nKey.presentationAutoPlayInterval), isPresented: $isChoosingInterval) {
+            TextField(String(model.autoPlayInterval), text: $intervalInput)
+                .keyboardType(.numberPad)
+            Button {
+                if let seconds = Self.number(from: intervalInput) { model.setAutoPlayInterval(seconds) }
+                intervalInput = ""
+            } label: { Text(L10nKey.commonOk) }
+            Button(role: .cancel) { intervalInput = "" } label: { Text(L10nKey.commonCancel) }
+        } message: {
+            Text(L10nKey.presentationAutoPlayCustomMessage)
+        }
         .task { await model.load() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background { model.didEnterBackground() }
+        }
+        // Keep the screen awake only while slides advance on their own.
+        .onChange(of: model.isAutoPlaying) { _, playing in
+            UIApplication.shared.isIdleTimerDisabled = playing
+        }
+        .onDisappear {
+            model.didLeave()
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
     }
 
     // MARK: Content
@@ -120,6 +151,15 @@ public struct PresentationView: View {
             .disabled(!model.canGoBack)
             .accessibilityIdentifier("presentation.previous")
             Spacer()
+            autoPlayButton
+            if model.isAutoPlayActive {
+                Button { model.stopAutoPlay() } label: {
+                    Image(systemName: "stop.fill")
+                        .accessibilityLabel(Text(L10nKey.presentationAutoPlayStop))
+                }
+                .accessibilityIdentifier("presentation.autoPlayStop")
+            }
+            Spacer()
             Button { isGoingToSlide = true } label: {
                 Text(L10n.format(.presentationCounter, model.slideNumber, model.slideCount))
                     .font(.body.monospacedDigit())
@@ -140,6 +180,57 @@ public struct PresentationView: View {
         .padding(.horizontal, TLSpacing.l)
         .padding(.vertical, TLSpacing.m)
         .background(.bar)
+    }
+
+    /// A whole number typed with Western or Arabic-Indic digits.
+    static func number(from input: String) -> Int? {
+        let trimmed = input.trimmingCharacters(in: .whitespaces)
+        if let value = Int(trimmed) { return value }
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "ar")
+        formatter.allowsFloats = false
+        return formatter.number(from: trimmed)?.intValue
+    }
+
+    private var autoPlayButton: some View {
+        Button { model.toggleAutoPlay() } label: {
+            switch model.autoPlayButton {
+            case .start:
+                Image(systemName: "play.fill").accessibilityLabel(Text(L10nKey.presentationAutoPlayStart))
+            case .pause:
+                Image(systemName: "pause.fill").accessibilityLabel(Text(L10nKey.presentationAutoPlayPause))
+            case .resume:
+                Image(systemName: "play.fill").accessibilityLabel(Text(L10nKey.presentationAutoPlayResume))
+            }
+        }
+        .accessibilityIdentifier("presentation.autoPlay")
+    }
+
+    private var intervalMenu: some View {
+        Menu {
+            ForEach(PresentationAutoPlayer.presetIntervals, id: \.self) { seconds in
+                Button { model.setAutoPlayInterval(seconds) } label: {
+                    if seconds == model.autoPlayInterval {
+                        Label { Text(L10n.format(.presentationAutoPlaySeconds, seconds)) } icon: { Image(systemName: "checkmark") }
+                    } else {
+                        Text(L10n.format(.presentationAutoPlaySeconds, seconds))
+                    }
+                }
+                .accessibilityIdentifier("presentation.interval.\(seconds)")
+            }
+            Button { isChoosingInterval = true } label: {
+                if PresentationAutoPlayer.presetIntervals.contains(model.autoPlayInterval) {
+                    Text(L10nKey.presentationAutoPlayCustom)
+                } else {
+                    Label { Text(L10nKey.presentationAutoPlayCustom) } icon: { Image(systemName: "checkmark") }
+                }
+            }
+            .accessibilityIdentifier("presentation.interval.custom")
+        } label: {
+            Label { Text(L10nKey.presentationAutoPlayInterval) } icon: { Image(systemName: "timer") }
+        }
+        .accessibilityValue(Text(L10n.format(.presentationAutoPlaySeconds, model.autoPlayInterval)))
+        .accessibilityIdentifier("presentation.interval")
     }
 }
 

@@ -202,6 +202,140 @@ struct PresentationModelTests {
         #expect(await model.image(for: image.id, maxPixelSize: 100) == nil)
     }
 
+    // MARK: Auto play
+
+    /// A countdown that never ends on its own, so a test sees states without slides moving.
+    private static let neverEnds: PresentationAutoPlayer.Sleep = { _ in try await Task.sleep(for: .seconds(3600)) }
+    /// A countdown of a few milliseconds, standing in for the interval.
+    private static let quick: PresentationAutoPlayer.Sleep = { _ in try await Task.sleep(for: .milliseconds(5)) }
+
+    private func waitUntil(_ condition: () -> Bool) async -> Bool {
+        let deadline = ContinuousClock.now + .seconds(3)
+        while !condition() {
+            if ContinuousClock.now > deadline { return false }
+            try? await Task.sleep(for: .milliseconds(2))
+        }
+        return true
+    }
+
+    @Test func playButtonFollowsThePlaybackState() async throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let document = try await importPDF(pages: 5)
+        let model = PresentationModel(request: .pdf(document.id), documentService: documents, autoPlaySleep: Self.neverEnds)
+        await model.load()
+        #expect(model.autoPlayButton == .start)
+        #expect(!model.isAutoPlayActive)
+        #expect(model.autoPlayInterval == 10)
+
+        model.toggleAutoPlay()
+        #expect(model.autoPlayButton == .pause)
+        #expect(model.isAutoPlaying)
+        #expect(model.isAutoPlayActive)
+        model.toggleAutoPlay()
+        #expect(model.autoPlayButton == .resume)
+        #expect(!model.isAutoPlaying)
+        #expect(!model.autoPlayer.hasCountdown)
+        model.toggleAutoPlay()
+        #expect(model.autoPlayButton == .pause)
+        model.stopAutoPlay()
+        #expect(model.autoPlayButton == .start)
+        #expect(!model.isAutoPlayActive)
+        #expect(!model.autoPlayer.hasCountdown)
+        #expect(model.slideNumber == 1)
+
+        model.setAutoPlayInterval(30)
+        #expect(model.autoPlayInterval == 30)
+    }
+
+    @Test func autoPlayRunsToTheLastSlideAndStops() async throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let document = try await importPDF(pages: 4)
+        let model = PresentationModel(request: .pdf(document.id), documentService: documents, autoPlaySleep: Self.quick)
+        await model.load()
+        model.toggleAutoPlay()
+
+        #expect(await waitUntil { model.phase == .completed })
+        #expect(model.slideNumber == 4, "It stops on the last slide; it does not loop")
+        #expect(!model.autoPlayer.hasCountdown)
+        #expect(model.autoPlayButton == .start)
+        try await Task.sleep(for: .milliseconds(30))
+        #expect(model.slideNumber == 4)
+    }
+
+    @Test func backgroundPausesAndLeavingStops() async throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let document = try await importPDF(pages: 10)
+        let model = PresentationModel(request: .pdf(document.id), documentService: documents, autoPlaySleep: Self.neverEnds)
+        await model.load()
+        model.next()
+        model.toggleAutoPlay()
+
+        model.didEnterBackground()
+        #expect(model.phase == .paused, "A suspended app cannot count, so playback pauses")
+        #expect(!model.autoPlayer.hasCountdown)
+        #expect(model.slideNumber == 2)
+        // Back in the foreground it waits for Resume, on the same slide.
+        model.toggleAutoPlay()
+        #expect(model.phase == .playing)
+        #expect(model.slideNumber == 2)
+
+        model.didLeave()
+        #expect(model.phase == .ready)
+        #expect(!model.autoPlayer.hasCountdown)
+    }
+
+    @Test func manualNavigationWhilePlayingKeepsPlaying() async throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let document = try await importPDF(pages: 10)
+        let model = PresentationModel(request: .pdf(document.id), documentService: documents, autoPlaySleep: Self.neverEnds)
+        await model.load()
+        model.toggleAutoPlay()
+        model.next()
+        model.goToSlide(number: 8)
+        model.previous()
+        #expect(model.slideNumber == 7)
+        #expect(model.phase == .playing)
+        #expect(model.autoPlayer.hasCountdown)
+        model.stopAutoPlay()
+    }
+
+    @Test func autoPlayDoesNotMoveTheReadingPage() async throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let document = try await importPDF(pages: 6)
+        let reader = PDFViewerModel(documentID: document.id, documentService: documents, toolCapture: services.toolCapture)
+        await reader.load()
+        reader.goTo(page: 2)
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(try await documents.document(id: document.id).lastReadPage == 2)
+
+        let model = PresentationModel(request: .pdf(document.id), documentService: documents, autoPlaySleep: Self.quick)
+        await model.load()
+        model.toggleAutoPlay()
+        #expect(await waitUntil { model.phase == .completed })
+        model.didLeave()
+
+        #expect(try await documents.document(id: document.id).lastReadPage == 2)
+        let reopened = PDFViewerModel(documentID: document.id, documentService: documents, toolCapture: services.toolCapture)
+        await reopened.load()
+        #expect(reopened.currentPage == 2)
+    }
+
+    @Test func reopeningStartsWithoutPlayback() async throws {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let document = try await importPDF(pages: 10)
+        let first = PresentationModel(request: .pdf(document.id), documentService: documents, autoPlaySleep: Self.neverEnds)
+        await first.load()
+        first.toggleAutoPlay()
+        first.didLeave()
+
+        let second = PresentationModel(request: .pdf(document.id), documentService: documents, autoPlaySleep: Self.neverEnds)
+        await second.load()
+        #expect(second.phase == .ready)
+        #expect(second.slideNumber == 1)
+        #expect(!second.autoPlayer.hasCountdown)
+        #expect(second.autoPlayButton == .start)
+    }
+
     // MARK: Route
 
     @Test func routeCarriesTheRequest() {
