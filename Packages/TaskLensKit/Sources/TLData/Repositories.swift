@@ -18,6 +18,8 @@ public struct Repositories: Sendable {
     public let aiRecords: any Repository<AIRecord>
     /// Workflows the user made.
     public let workflows: any Repository<Workflow>
+    /// Where each presentation was left.
+    public let presentationSessions: any Repository<PresentationSession>
 
     public init(
         workspaces: any Repository<Workspace>,
@@ -31,7 +33,8 @@ public struct Repositories: Sendable {
         pipCards: any Repository<PiPCard> = InMemoryRepository<PiPCard>(),
         pipPresentation: any Repository<PiPPresentation> = InMemoryRepository<PiPPresentation>(),
         aiRecords: any Repository<AIRecord> = InMemoryRepository<AIRecord>(),
-        workflows: any Repository<Workflow> = InMemoryRepository<Workflow>()
+        workflows: any Repository<Workflow> = InMemoryRepository<Workflow>(),
+        presentationSessions: any Repository<PresentationSession> = InMemoryRepository<PresentationSession>()
     ) {
         self.workspaces = workspaces
         self.sessions = sessions
@@ -45,6 +48,7 @@ public struct Repositories: Sendable {
         self.pipPresentation = pipPresentation
         self.aiRecords = aiRecords
         self.workflows = workflows
+        self.presentationSessions = presentationSessions
     }
 
     public static func inMemory() -> Repositories {
@@ -60,7 +64,8 @@ public struct Repositories: Sendable {
             pipCards: InMemoryRepository<PiPCard>(),
             pipPresentation: InMemoryRepository<PiPPresentation>(),
             aiRecords: InMemoryRepository<AIRecord>(),
-            workflows: InMemoryRepository<Workflow>()
+            workflows: InMemoryRepository<Workflow>(),
+            presentationSessions: InMemoryRepository<PresentationSession>()
         )
     }
 
@@ -82,7 +87,8 @@ public struct Repositories: Sendable {
             pipCards: JSONFileRepository<PiPCard>(directory: directory, logger: logger),
             pipPresentation: JSONFileRepository<PiPPresentation>(directory: directory, logger: logger),
             aiRecords: JSONFileRepository<AIRecord>(directory: directory, logger: logger),
-            workflows: JSONFileRepository<Workflow>(directory: directory, logger: logger)
+            workflows: JSONFileRepository<Workflow>(directory: directory, logger: logger),
+            presentationSessions: JSONFileRepository<PresentationSession>(directory: directory, logger: logger)
         )
     }
 }

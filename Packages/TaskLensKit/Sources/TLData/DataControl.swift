@@ -33,6 +33,7 @@ public struct DataControl: Sendable {
         public var pictureInPictureCards: [PiPCard]
         public var aiHistory: [AIRecord]
         public var workflows: [Workflow]
+        public var presentationSessions: [PresentationSession]
     }
 
     public func makeExport(now: Date) async throws -> Export {
@@ -48,7 +49,8 @@ public struct DataControl: Sendable {
             actionHistory: try await repositories.actionRecords.fetchAll(),
             pictureInPictureCards: try await repositories.pipCards.fetchAll(),
             aiHistory: try await repositories.aiRecords.fetchAll(),
-            workflows: try await repositories.workflows.fetchAll()
+            workflows: try await repositories.workflows.fetchAll(),
+            presentationSessions: try await repositories.presentationSessions.fetchAll()
         )
     }
 
@@ -85,6 +87,7 @@ public struct DataControl: Sendable {
         try await Self.clear(repositories.pipPresentation)
         try await Self.clear(repositories.aiRecords)
         try await Self.clear(repositories.workflows)
+        try await Self.clear(repositories.presentationSessions)
         for directory in [filesDirectory] + otherDirectories {
             Self.removeContents(of: directory)
         }

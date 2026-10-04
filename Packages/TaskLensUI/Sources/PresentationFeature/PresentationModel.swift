@@ -14,6 +14,8 @@ import TLNavigation
 /// slide itself. It records nothing for Resume and never touches a document's
 /// `lastReadPage`, so presenting a PDF does not move its reading position.
 /// Auto play runs through `PresentationAutoPlayer`, which owns the only timer.
+/// Where the presentation was left (slide and Auto Play interval) is kept per
+/// presentation by `PresentationSessionRecorder` and restored on opening.
 @MainActor
 @Observable
 public final class PresentationModel {
@@ -25,16 +27,23 @@ public final class PresentationModel {
     /// Image titles seen so far, for VoiceOver.
     public private(set) var imageTitles: [DocumentID: String] = [:]
 
+    /// Saves where this presentation is left; nil keeps nothing.
+    public let sessionRecorder: PresentationSessionRecorder?
+
     private let documentService: DocumentService
+    private let sessionStore: PresentationSessionStore?
 
     public init(
         request: PresentationRequest,
         documentService: DocumentService,
+        sessionStore: PresentationSessionStore? = nil,
         engine: PresentationEngine? = nil,
         autoPlaySleep: PresentationAutoPlayer.Sleep? = nil
     ) {
         self.request = request
         self.documentService = documentService
+        self.sessionStore = sessionStore
+        sessionRecorder = sessionStore.map { PresentationSessionRecorder(source: request.sessionSource, store: $0) }
         let engine = engine ?? PresentationEngine()
         self.engine = engine
         autoPlayer = autoPlaySleep.map { PresentationAutoPlayer(engine: engine, sleep: $0) }
@@ -62,15 +71,77 @@ public final class PresentationModel {
 
     public func load() async {
         guard engine.phase == .idle else { return }
+        let saved = await sessionStore?.session(for: request.sessionSource)
         switch request {
         case .pdf(let id):
             await engine.load(from: PDFPresentationLoader(documentID: id, documentService: documentService))
+            await restore(saved)
             if engine.state.hasSlides, let document = try? await documentService.document(id: id) {
                 pdf = PDFDocument(url: documentService.fileURL(for: document))
             }
         case .images(let ids):
             await engine.load(from: ImagePresentationLoader(documentIDs: ids, documentService: documentService))
+            await restore(saved)
         }
+    }
+
+    // MARK: Session
+
+    /// The state to save now.
+    private var sessionSnapshot: PresentationSessionRecorder.Snapshot {
+        .init(currentSlide: engine.currentSlide, slideCount: engine.slideCount, autoPlayInterval: autoPlayer.interval)
+    }
+
+    /// Opens on the saved slide and interval. Runs right after loading, before
+    /// anything else suspends, so the first slide never flashes.
+    ///
+    /// A saved slide is used only when the slide count is unchanged and the slide
+    /// is in range; otherwise the source changed, the presentation opens on the
+    /// first slide, and that replaces the stale record. A presentation that no
+    /// longer loads (document deleted, unreadable, empty) loses its record.
+    /// Auto Play never starts on its own after restoring.
+    private func restore(_ saved: PresentationSession?) async {
+        guard let recorder = sessionRecorder else { return }
+        guard engine.state.hasSlides else {
+            if saved != nil { try? await sessionStore?.remove(request.sessionSource) }
+            return
+        }
+        if let saved {
+            if let interval = saved.autoPlayInterval { autoPlayer.setInterval(interval) }
+            if let slide = saved.restorableSlide(forSlideCount: engine.slideCount) {
+                if slide != engine.currentSlide { _ = engine.goToSlide(slide) }
+                recorder.markStored(sessionSnapshot)
+            } else {
+                recorder.record(sessionSnapshot)
+            }
+        }
+        observeSession()
+    }
+
+    /// Records the state each time the slide or interval changes, whoever changed it
+    /// (buttons, Go to Slide or Auto Play).
+    private func observeSession() {
+        withObservationTracking {
+            _ = engine.state.currentSlide
+            _ = autoPlayer.interval
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.recordSession()
+                self.observeSession()
+            }
+        }
+    }
+
+    private func recordSession() {
+        guard engine.state.hasSlides else { return }
+        sessionRecorder?.record(sessionSnapshot)
+    }
+
+    /// Records the current state and waits until it is stored.
+    public func saveSession() async {
+        recordSession()
+        await sessionRecorder?.flush()
     }
 
     // MARK: Commands (all through the engine)
@@ -131,10 +202,16 @@ public final class PresentationModel {
 
     /// iOS suspends a backgrounded app, so playback pauses and waits for Resume
     /// instead of jumping ahead when the app returns.
-    public func didEnterBackground() { _ = autoPlayer.pause() }
+    public func didEnterBackground() {
+        _ = autoPlayer.pause()
+        recordSession()
+    }
 
     /// Leaving the screen ends playback; nothing keeps counting after it closes.
-    public func didLeave() { _ = autoPlayer.stop() }
+    public func didLeave() {
+        _ = autoPlayer.stop()
+        recordSession()
+    }
 
     // MARK: Rendering
 
@@ -159,5 +236,15 @@ public final class PresentationModel {
             kCGImageSourceShouldCacheImmediately: true,
         ]
         return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+    }
+}
+
+extension PresentationRequest {
+    /// The saved-session identity of this presentation.
+    public var sessionSource: PresentationSessionSource {
+        switch self {
+        case .pdf(let id): .pdf(id)
+        case .images(let ids): .images(ids)
+        }
     }
 }

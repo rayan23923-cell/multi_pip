@@ -242,7 +242,11 @@ private extension View {
                     toolCapture: container.toolCapture
                 ))
             case .presentation(let request):
-                PresentationView(model: PresentationModel(request: request, documentService: container.documents))
+                PresentationView(model: PresentationModel(
+                    request: request,
+                    documentService: container.documents,
+                    sessionStore: container.presentationSessions
+                ))
             }
         }
     }

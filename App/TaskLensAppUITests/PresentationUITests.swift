@@ -215,15 +215,54 @@ final class PresentationUITests: XCTestCase {
         let shown = element(app, "presentation.counter").label
         assertStays(app, on: shown, for: 8)
 
-        // Leaving ends playback; reopening starts fresh, without an old countdown.
+        // Leaving ends playback; reopening has no old countdown. Since A7 the
+        // presentation reopens on the slide where it was left.
         tap(app, "presentation.autoPlay")
         waitFor(app, "presentation.autoPlay", label: "Pause Auto Play")
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(element(app, "documents.presentImages").waitForExistence(timeout: 10))
         tap(app, "documents.presentImages")
-        waitFor(app, "presentation.counter", label: "Slide 1 of 4")
+        XCTAssertTrue(app.waitForLabel("presentation.counter", timeout: 10) { $0.hasPrefix("Slide ") && $0.hasSuffix(" of 4") })
         waitFor(app, "presentation.autoPlay", label: "Start Auto Play")
-        assertStays(app, on: "Slide 1 of 4", for: 12)
+        let reopened = element(app, "presentation.counter").label
+        assertStays(app, on: reopened, for: 12)
+    }
+
+    // MARK: Session (A7)
+
+    func testPresentationReopensWhereItWasLeftEvenAfterTheAppQuits() {
+        let app = launch(presentationImages: true)
+        tap(app, "commandCenter.documents")
+        tap(app, "documents.presentImages")
+        waitFor(app, "presentation.counter", label: "Slide 1 of 4")
+        tap(app, "presentation.next")
+        waitFor(app, "presentation.counter", label: "Slide 2 of 4")
+
+        // Leave and reopen.
+        app.navigationBars.buttons.firstMatch.tap()
+        tap(app, "documents.presentImages")
+        waitFor(app, "presentation.counter", label: "Slide 2 of 4")
+        waitFor(app, slideValue: "Slide 2")
+        tap(app, "presentation.next")
+        waitFor(app, "presentation.counter", label: "Slide 3 of 4")
+
+        // Background and back.
+        XCUIDevice.shared.press(.home)
+        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 10) || app.wait(for: .runningBackgroundSuspended, timeout: 5))
+        app.activate()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        waitFor(app, "presentation.counter", label: "Slide 3 of 4")
+
+        // Quit the app and start it again, on the same data.
+        app.terminate()
+        let relaunched = XCUIApplication()
+        relaunched.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-TaskLensUITestStore"]
+        relaunched.launch()
+        tap(relaunched, "commandCenter.documents")
+        tap(relaunched, "documents.presentImages")
+        waitFor(relaunched, "presentation.counter", label: "Slide 3 of 4")
+        waitFor(relaunched, slideValue: "Slide 1")
+        waitFor(relaunched, "presentation.autoPlay", label: "Start Auto Play")
     }
 
     func testPresentationRotatesToLandscape() {

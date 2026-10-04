@@ -73,7 +73,8 @@ extension Repositories {
             pipCards: pipCards,
             pipPresentation: pipPresentation,
             aiRecords: aiRecords,
-            workflows: workflows
+            workflows: workflows,
+            presentationSessions: presentationSessions
         )
     }
 }

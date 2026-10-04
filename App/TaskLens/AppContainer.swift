@@ -34,6 +34,8 @@ struct AppContainer: Sendable {
     let semanticRanker: OnDeviceSemanticRanker
     let calculator: CalculatorService
     let documents: DocumentService
+    /// Where each presentation was left.
+    let presentationSessions: PresentationSessionStore
     let toolCapture: ToolCaptureService
     let share: ShareService
     /// Where the share extension leaves shared items for the app.
@@ -136,6 +138,7 @@ struct AppContainer: Sendable {
             clock: clock,
             logger: logger.scoped("documents")
         )
+        self.presentationSessions = PresentationSessionStore(sessions: repositories.presentationSessions, clock: clock)
         self.toolCapture = ToolCaptureService(capture: capture, sessions: self.sessions)
         self.share = ShareService(capture: capture, documents: self.documents)
         self.shareOutbox = ShareOutbox(storeRoot: storeRoot)
