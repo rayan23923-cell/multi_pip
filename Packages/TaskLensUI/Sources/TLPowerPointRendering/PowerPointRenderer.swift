@@ -106,6 +106,7 @@ public final class PowerPointRenderer {
         await Self.gate.acquire()
         defer { Self.gate.release() }
         Self.lastFailureDetail = nil
+        Self.lastUnpaintedImage = nil
 
         let clock = ContinuousClock()
         let started = clock.now
@@ -263,11 +264,12 @@ public final class PowerPointRenderer {
     fileprivate static func recordFailure(_ detail: String) { lastFailureDetail = detail }
 
     /// The last snapshot thrown away because WebKit hadn't finished painting, and where.
-    @_spi(Testing) public private(set) static var lastUnpaintedSnapshot: Data?
+    @_spi(Testing) public static var lastUnpaintedSnapshot: Data? { lastUnpaintedImage.flatMap { UIImage(cgImage: $0).pngData() } }
     @_spi(Testing) public private(set) static var lastUnpaintedArea: String?
+    private static var lastUnpaintedImage: CGImage?
 
-    fileprivate static func recordUnpainted(_ png: Data?, area: String) {
-        lastUnpaintedSnapshot = png
+    fileprivate static func recordUnpainted(_ image: CGImage, area: String) {
+        lastUnpaintedImage = image
         lastUnpaintedArea = area
     }
 }
@@ -511,25 +513,75 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
             }
             let pageColor = Self.pageColorArea(image)
             if pageColor.count >= 3 {
-                PowerPointRenderer.recordUnpainted(UIImage(cgImage: image).pngData(), area: pageColor.description)
+                PowerPointRenderer.recordUnpainted(image, area: pageColor.description)
                 waiter.finish(.success(Shot(data: Data(), width: 0, height: 0, unpainted: true)))
                 return
             }
+            let trimmed = Self.trimmingPageColorEdges(image)
             let encoded: Data? = switch format {
-            case .png: UIImage(cgImage: image).pngData()
-            case .jpeg(let quality): UIImage(cgImage: image).jpegData(compressionQuality: quality)
+            case .png: UIImage(cgImage: trimmed).pngData()
+            case .jpeg(let quality): UIImage(cgImage: trimmed).jpegData(compressionQuality: quality)
             }
             guard let encoded else {
                 waiter.finish(.failure(PowerPointRenderError.renderingFailed(.snapshotFailed(slide: slide))))
                 return
             }
-            waiter.finish(.success(Shot(data: encoded, width: image.width, height: image.height, unpainted: false)))
+            waiter.finish(.success(Shot(data: encoded, width: trimmed.width, height: trimmed.height, unpainted: false)))
         }
         return try await wait(for: waiter)
     }
 
     /// The page and under-page color: a magenta no deck is expected to use.
     static let pageColor = (red: 254, green: 0, blue: 254)
+
+    /// The slide's rect can reach a few points past its edge into the page.
+    /// Rows and columns of page color along the edges are cut off and the
+    /// rest is scaled back to the full size, so no magenta line is kept.
+    static func trimmingPageColorEdges(_ image: CGImage) -> CGImage {
+        let width = image.width, height = image.height
+        guard width > 8, height > 8, let space = CGColorSpace(name: CGColorSpace.sRGB) else { return image }
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let drawn = pixels.withUnsafeMutableBytes { raw -> Bool in
+            guard let context = CGContext(data: raw.baseAddress, width: width, height: height, bitsPerComponent: 8,
+                                          bytesPerRow: width * 4, space: space,
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else { return false }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        guard drawn else { return image }
+
+        func isPage(_ x: Int, _ y: Int) -> Bool {
+            let offset = (y * width + x) * 4
+            return pixels[offset] > 200 && pixels[offset + 1] < 80 && pixels[offset + 2] > 200
+        }
+        func rowIsPage(_ y: Int) -> Bool {
+            stride(from: 0, to: width, by: 4).filter { isPage($0, y) }.count * 8 > width
+        }
+        func columnIsPage(_ x: Int) -> Bool {
+            stride(from: 0, to: height, by: 4).filter { isPage(x, $0) }.count * 8 > height
+        }
+        let maximumRows = max(2, height / 50), maximumColumns = max(2, width / 50)
+        var top = 0, bottom = height - 1, left = 0, right = width - 1
+        while top < maximumRows, rowIsPage(top) { top += 1 }
+        while height - 1 - bottom < maximumRows, rowIsPage(bottom) { bottom -= 1 }
+        while left < maximumColumns, columnIsPage(left) { left += 1 }
+        while width - 1 - right < maximumColumns, columnIsPage(right) { right -= 1 }
+        guard top > 0 || left > 0 || bottom < height - 1 || right < width - 1 else { return image }
+        // One more line on each trimmed side takes the blended edge too.
+        if top > 0 { top += 1 }
+        if left > 0 { left += 1 }
+        if bottom < height - 1 { bottom -= 1 }
+        if right < width - 1 { right -= 1 }
+
+        guard let cropped = image.cropping(to: CGRect(x: left, y: top, width: right - left + 1, height: bottom - top + 1)),
+              let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return image }
+        context.interpolationQuality = .high
+        context.draw(cropped, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return context.makeImage() ?? image
+    }
 
     /// Where the page color shows on a 64 × 36 grid of the image, edges left out.
     struct PageColorArea: CustomStringConvertible {

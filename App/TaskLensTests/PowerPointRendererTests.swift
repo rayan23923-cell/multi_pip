@@ -27,7 +27,12 @@ struct PowerPointRendererTests {
             for slide in output.slides {
                 #expect(slide.pixelWidth == 1920, "slide \(slide.index)")
                 #expect(abs(slide.pixelHeight - 1080) <= 2, "slide \(slide.index)")
-                #expect(try Pixels(slide.fileURL).distinctColors > 2, "slide \(slide.index) is blank")
+                let pixels = try Pixels(slide.fileURL)
+                #expect(pixels.distinctColors > 2, "slide \(slide.index) is blank")
+                // No line of the page around the slide.
+                for (x, y) in [(0.5, 0.0), (0.5, 0.9999), (0.0, 0.5), (0.9999, 0.5), (0.25, 0.0), (0.75, 0.9999)] {
+                    #expect(!pixels.matches((254, 0, 254), atX: x, y: y, tolerance: 60), "slide \(slide.index) edge \(x), \(y)")
+                }
             }
             #expect(output.diagnostics.externalRequestCount == 0)
         }
