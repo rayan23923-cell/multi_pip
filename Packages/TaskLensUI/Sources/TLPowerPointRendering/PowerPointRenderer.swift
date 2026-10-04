@@ -298,7 +298,7 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
     }
 
     /// The A8 direction fix, plus hiding WebKit's static "Loading…" placeholders.
-    /// Also paints the page magenta (`pageColor`) so unpainted areas can be told from slides.
+    /// Also paints the page magenta (`PageColor.primary`) so unpainted areas can be told from slides.
     static let style = "p { unicode-bidi: plaintext; } div.loading-slide { display: none !important; } "
         + "html, body { margin: 0 !important; background: rgb(254, 0, 254) !important; } "
         // PowerPoint's default: a slide with no fill of its own is white.
@@ -343,7 +343,7 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
 
         let webView = WKWebView(frame: frame, configuration: configuration)
         webView.allowsLinkPreview = false
-        let pageColor = UIColor(red: 254 / 255, green: 0, blue: 254 / 255, alpha: 1)
+        let pageColor = PageColor.primary.uiColor
         webView.underPageBackgroundColor = pageColor
         webView.backgroundColor = pageColor
         webView.scrollView.backgroundColor = pageColor
@@ -480,8 +480,16 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
         for attempt in 0..<Self.snapshotAttempts {
             if attempt > 0 { try await pause(.milliseconds(50 * attempt)) }
             var shot = try await capture(configuration, slide: slide, format: format)
+            if shot.unpainted {
+                // Page color, or a picture that happens to be that color? With the
+                // page in a second color, only a real gap changes.
+                try await setPageColor(.alternate)
+                let check = try await capture(configuration, slide: slide, format: format)
+                try await setPageColor(.primary)
+                if check.unpainted { continue }
+                shot = check
+            }
             shot.retries = attempt
-            if shot.unpainted { continue }
             if pictureCount == 0 || shot.fingerprint == previous { return shot }
             previous = shot.fingerprint
         }
@@ -522,18 +530,19 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
     private func capture(_ configuration: WKSnapshotConfiguration, slide: Int,
                          format: PowerPointRenderer.ImageFormat) async throws -> Shot {
         let waiter = Waiter<Shot>()
+        let color = pageColor
         webView.takeSnapshot(with: configuration) { image, _ in
             guard let image = image?.cgImage else {
                 waiter.finish(.failure(PowerPointRenderError.renderingFailed(.snapshotFailed(slide: slide))))
                 return
             }
-            let pageColor = Self.pageColorArea(image)
-            if pageColor.count >= 3 {
-                PowerPointRenderer.recordUnpainted(image, area: pageColor.description)
+            let area = Self.pageColorArea(image, color: color)
+            if area.count >= 3 {
+                PowerPointRenderer.recordUnpainted(image, area: area.description)
                 waiter.finish(.success(Shot(data: Data(), width: 0, height: 0, unpainted: true)))
                 return
             }
-            let trimmed = Self.trimmingPageColorEdges(image)
+            let trimmed = Self.trimmingPageColorEdges(image, color: color)
             let encoded: Data? = switch format {
             case .png: UIImage(cgImage: trimmed).pngData()
             case .jpeg(let quality): UIImage(cgImage: trimmed).jpegData(compressionQuality: quality)
@@ -543,18 +552,49 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
                 return
             }
             waiter.finish(.success(Shot(data: encoded, width: trimmed.width, height: trimmed.height, unpainted: false,
-                                        fingerprint: pageColor.grid)))
+                                        fingerprint: area.grid)))
         }
         return try await wait(for: waiter)
     }
 
-    /// The page and under-page color: a magenta no deck is expected to use.
-    static let pageColor = (red: 254, green: 0, blue: 254)
+    /// The color behind the slides. Magenta, which slides rarely use; cyan
+    /// to tell a magenta picture from a gap.
+    struct PageColor: Sendable, Equatable {
+        var red: Int, green: Int, blue: Int
+
+        static let primary = PageColor(red: 254, green: 0, blue: 254)
+        static let alternate = PageColor(red: 0, green: 254, blue: 254)
+
+        var uiColor: UIColor { UIColor(red: CGFloat(red) / 255, green: CGFloat(green) / 255, blue: CGFloat(blue) / 255, alpha: 1) }
+        var css: String { "rgb(\(red), \(green), \(blue))" }
+
+        func matches(_ r: UInt8, _ g: UInt8, _ b: UInt8, tolerance: Int) -> Bool {
+            abs(Int(r) - red) < tolerance && abs(Int(g) - green) < tolerance && abs(Int(b) - blue) < tolerance
+        }
+    }
+
+    private var pageColor = PageColor.primary
+
+    private func setPageColor(_ color: PageColor) async throws {
+        pageColor = color
+        webView.underPageBackgroundColor = color.uiColor
+        webView.backgroundColor = color.uiColor
+        webView.scrollView.backgroundColor = color.uiColor
+        _ = try await evaluate("""
+        (() => {
+          let s = document.getElementById('tasklens-pptx-page');
+          if (!s) { s = document.createElement('style'); s.id = 'tasklens-pptx-page'; document.head.appendChild(s); }
+          s.textContent = 'html, body { background: \(color.css) !important; }';
+          return '';
+        })()
+        """)
+        _ = try await evaluate("''")
+    }
 
     /// The slide's rect can reach a few points past its edge into the page.
     /// Rows and columns of page color along the edges are cut off and the
     /// rest is scaled back to the full size, so no magenta line is kept.
-    static func trimmingPageColorEdges(_ image: CGImage) -> CGImage {
+    static func trimmingPageColorEdges(_ image: CGImage, color: PageColor) -> CGImage {
         let width = image.width, height = image.height
         guard width > 8, height > 8, let space = CGColorSpace(name: CGColorSpace.sRGB) else { return image }
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
@@ -570,7 +610,7 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
 
         func isPage(_ x: Int, _ y: Int) -> Bool {
             let offset = (y * width + x) * 4
-            return pixels[offset] > 200 && pixels[offset + 1] < 80 && pixels[offset + 2] > 200
+            return color.matches(pixels[offset], pixels[offset + 1], pixels[offset + 2], tolerance: 56)
         }
         func rowIsPage(_ y: Int) -> Bool {
             stride(from: 0, to: width, by: 4).filter { isPage($0, y) }.count * 8 > width
@@ -608,7 +648,7 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
         var description: String { "\(count) of 64x36 cells, x \(minX)...\(maxX), y \(minY)...\(maxY)" }
     }
 
-    static func pageColorArea(_ image: CGImage) -> PageColorArea {
+    static func pageColorArea(_ image: CGImage, color: PageColor) -> PageColorArea {
         let width = 64, height = 36
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
         let drawn = pixels.withUnsafeMutableBytes { raw -> Bool in
@@ -625,8 +665,7 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
         // Rounded to 32 levels so the same picture always gives the same grid.
         var area = PageColorArea(grid: pixels.map { $0 / 8 })
         for offset in stride(from: 0, to: pixels.count, by: 4)
-        where abs(Int(pixels[offset]) - pageColor.red) < 16 && Int(pixels[offset + 1]) < 16
-            && abs(Int(pixels[offset + 2]) - pageColor.blue) < 16 {
+        where color.matches(pixels[offset], pixels[offset + 1], pixels[offset + 2], tolerance: 16) {
             let x = offset / 4 % width, y = offset / 4 / width
             // The outer cells can catch a sliver of page at a rounded slide edge.
             guard x > 0, y > 0, x < width - 1, y < height - 1 else { continue }
