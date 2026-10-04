@@ -28,5 +28,5 @@ xcodegen generate
 TEST_RUNNER_PPTX_DIR="$DECKS" xcodebuild test \
   -project PPTXProbe.xcodeproj -scheme PPTXProbe \
   -destination "platform=iOS Simulator,id=$UDID" \
-  -derivedDataPath "$ROOT/build/pptx-dd" 2>&1 | tee "$ROOT/build/pptx-probe.log" | grep -E "PROBE|error:|Test Case|\*\* TEST" || true
+  -derivedDataPath "$ROOT/build/pptx-dd" 2>&1 | tee "$ROOT/build/pptx-probe.log" | grep -E "PROBE|error:|note:|Test Case|\*\* TEST" || true
 grep -q "\*\* TEST SUCCEEDED \*\*" "$ROOT/build/pptx-probe.log"
