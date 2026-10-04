@@ -1,0 +1,24 @@
+name: PPTX audit probe
+
+# Started by hand. Runs the A8 PowerPoint probe (Tools/PPTXAudit/Probe) on an
+# iPhone 11 simulator. It does not build or test the app.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: pptx-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    name: PPTX probe (iPhone 11 simulator)
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Probe
+        run: Tools/PPTXAudit/Probe/run.sh

@@ -1,0 +1,30 @@
+# Throwaway probe for the A8 PowerPoint audit. Not part of the app.
+#   xcodegen generate && xcodebuild test -scheme PPTXProbe ...
+name: PPTXProbe
+
+options:
+  bundleIdPrefix: com.example.pptxprobe
+  deploymentTarget:
+    iOS: "17.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    CODE_SIGNING_ALLOWED: NO
+
+targets:
+  PPTXProbe:
+    type: application
+    platform: iOS
+    sources: [App]
+    scheme:
+      testTargets: [PPTXProbeTests]
+  PPTXProbeTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: PPTXProbe
