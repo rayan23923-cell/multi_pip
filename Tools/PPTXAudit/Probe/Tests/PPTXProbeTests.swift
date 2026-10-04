@@ -17,7 +17,7 @@ final class PPTXProbeTests: XCTestCase {
     // MARK: Quick Look
 
     func test1QuickLookThumbnail() async throws {
-        for name in ["audit.pptx", "macro.pptm", "garbage.pptx", "xxe.pptx", "zipbomb.pptx", "scale-100.pptx"] {
+        for name in ["scale-10.pptx", "only-01.pptx", "only-09.pptx"] {
             let url = decks.appendingPathComponent(name)
             let request = QLThumbnailGenerator.Request(
                 fileAt: url, size: CGSize(width: 960, height: 540), scale: 1, representationTypes: .thumbnail
@@ -28,7 +28,7 @@ final class PPTXProbeTests: XCTestCase {
                 let image = representation.uiImage
                 log("QLTHUMB \(name) ok type=\(representation.type.rawValue) size=\(image.size) "
                     + "time=\(seconds(since: started)) colors=\(distinctColors(image))")
-                if name == "audit.pptx" || name == "xxe.pptx" { emit("qlthumb-\(name)", image, width: 960) }
+                if name == "only-09.pptx" { emit("qlthumb-\(name)", image, width: 960) }
             } catch {
                 log("QLTHUMB \(name) error=\(error) time=\(seconds(since: started))")
             }
@@ -41,13 +41,13 @@ final class PPTXProbeTests: XCTestCase {
             let url = decks.appendingPathComponent(name)
             log("QLPREVIEW \(name) canPreview=\(QLPreviewController.canPreview(url as NSURL))")
         }
-        let source = PreviewSource(url: decks.appendingPathComponent("audit.pptx"))
+        let source = PreviewSource(url: decks.appendingPathComponent("scale-10.pptx"))
         let preview = QLPreviewController()
         preview.dataSource = source
         let started = Date()
         window.rootViewController?.present(preview, animated: false)
-        try await Task.sleep(nanoseconds: 6_000_000_000)
-        log("QLPREVIEW audit.pptx presented after=\(seconds(since: started)) "
+        try await Task.sleep(nanoseconds: 10_000_000_000)
+        log("QLPREVIEW scale-10.pptx presented after=\(seconds(since: started)) "
             + "subviews=\(countViews(preview.view)) footprintMB=\(footprintMB())")
         emit("qlpreview-window", snapshot(window), width: 414)
         preview.dismiss(animated: false)
@@ -56,20 +56,20 @@ final class PPTXProbeTests: XCTestCase {
 
     // MARK: WebKit
 
-    func test3WebViewAuditDeck() async throws {
+    func test3WebViewWholeDeck() async throws {
         let window = try await hostWindow()
-        let url = decks.appendingPathComponent("audit.pptx")
+        let url = decks.appendingPathComponent("scale-10.pptx")
         let (web, delegate) = makeWebView(in: window, width: 414)
         let before = footprintMB()
         let started = Date()
         web.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
         try await waitForLoad(web, delegate, timeout: 120)
-        log("WEB audit.pptx finished=\(delegate.finished) error=\(String(describing: delegate.error)) "
+        log("WEB scale-10.pptx finished=\(delegate.finished) error=\(String(describing: delegate.error)) "
             + "crashed=\(delegate.crashed) time=\(seconds(since: started)) appFootprintMB \(before)->\(footprintMB())")
         try await Task.sleep(nanoseconds: 2_000_000_000)
 
         let dom = try await evaluate(web, Self.domSummary)
-        log("WEBDOM audit.pptx \(dom)")
+        log("WEBDOM scale-10.pptx \(dom)")
         let head = try await evaluate(web, "document.documentElement.outerHTML.slice(0, 6000)")
         for (index, chunk) in chunks(head, 1500).enumerated() { log("WEBHTML \(index) \(chunk)") }
 
@@ -93,7 +93,7 @@ final class PPTXProbeTests: XCTestCase {
         log("WEBSLIDES rects=\(rects)")
         if let data = rects.data(using: .utf8),
            let list = try? JSONSerialization.jsonObject(with: data) as? [[Double]] {
-            for index in [0, 8, 9, 13] where index < list.count {
+            for index in [0, 1, 2] where index < list.count {
                 let r = list[index]
                 let slideConfig = WKSnapshotConfiguration()
                 slideConfig.rect = CGRect(x: r[0], y: r[1], width: r[2], height: r[3])
@@ -123,8 +123,9 @@ final class PPTXProbeTests: XCTestCase {
 
     func test4WebViewScaleAndHostileFiles() async throws {
         let window = try await hostWindow()
-        let names = ["scale-10.pptx", "scale-50.pptx", "scale-100.pptx",
+        let names = ["audit.pptx", "scale-10.pptx", "scale-50.pptx", "scale-100.pptx",
                      "macro.pptm", "garbage.pptx", "xxe.pptx", "zipbomb.pptx"]
+            + (1...15).map { String(format: "only-%02d.pptx", $0) }
         for name in names {
             let url = decks.appendingPathComponent(name)
             let (web, delegate) = makeWebView(in: window, width: 414)
@@ -137,6 +138,14 @@ final class PPTXProbeTests: XCTestCase {
             if delegate.finished { dom = (try? await evaluate(web, Self.domSummary)) ?? "eval failed" }
             log("WEB \(name) finished=\(delegate.finished) error=\(String(describing: delegate.error)) "
                 + "crashed=\(delegate.crashed) time=\(elapsed) appFootprintMB \(before)->\(footprintMB()) dom=\(dom)")
+            if name.hasPrefix("only-"), delegate.finished,
+               let rect = try? await evaluate(web, "JSON.stringify((r => [r.x + scrollX, r.y + scrollY, r.width, r.height])(document.querySelector('div.slide').getBoundingClientRect()))"),
+               let data = rect.data(using: .utf8), let r = try? JSONSerialization.jsonObject(with: data) as? [Double] {
+                let config = WKSnapshotConfiguration()
+                config.rect = CGRect(x: r[0], y: r[1], width: r[2], height: r[3])
+                config.snapshotWidth = 900
+                if let image = try? await web.takeSnapshot(configuration: config) { emit("web-\(name)", image, width: 900) }
+            }
             if name == "xxe.pptx", delegate.finished {
                 let text = (try? await evaluate(web, "document.body ? document.body.innerText.slice(0, 400) : ''")) ?? ""
                 log("WEBXXE text=\(text.replacingOccurrences(of: "\n", with: " | "))")

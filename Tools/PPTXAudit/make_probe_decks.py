@@ -48,16 +48,30 @@ def scale_deck(count):
 for count in (10, 50, 100):
     scale_deck(count)
 
+# One deck per audit slide, to see which slide features a renderer accepts.
+for keep in range(15):
+    prs = Presentation(audit)
+    slide_ids = prs.slides._sldIdLst
+    for index, slide_id in reversed(list(enumerate(slide_ids))):
+        if index != keep:
+            prs.part.drop_rel(slide_id.rId)
+            slide_ids.remove(slide_id)
+    prs.save(out / f"only-{keep + 1:02d}.pptx")
+print("only-01 … only-15 written")
+
+# The hostile files start from scale-10, a deck every renderer here accepts.
+base = out / "scale-10.pptx"
+
 # Same deck under the macro-enabled extension (no macro inside; tests what the
 # renderers do with the type).
-shutil.copy(audit, out / "macro.pptm")
+shutil.copy(base, out / "macro.pptm")
 
 # Not a ZIP at all.
 (out / "garbage.pptx").write_bytes(b"This is not a PowerPoint file. " * 200)
 
 
 def rewrite(target, change):
-    with zipfile.ZipFile(audit) as source, zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as copy:
+    with zipfile.ZipFile(base) as source, zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as copy:
         for item in source.infolist():
             data = source.read(item.filename)
             copy.writestr(item, change(item.filename, data))
@@ -81,7 +95,7 @@ def xxe(name, data):
         decl_end = data.index(b"?>") + 2
         data = (data[:decl_end] + b'\n<!DOCTYPE p:sld [<!ENTITY xxe SYSTEM "file:///etc/hosts">]>'
                 + data[decl_end:])
-        return data.replace(b"TaskLens PowerPoint audit.", b"XXE[&xxe;]")
+        return data.replace("Slide 1 — ".encode(), b"XXE[&xxe;] ")
     return data
 
 
