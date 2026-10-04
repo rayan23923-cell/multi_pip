@@ -110,7 +110,8 @@ struct PowerPointRendererTests {
         let renamed = folder.appendingPathComponent("Deck")
         try FileManager.default.copyItem(at: try fixture("order"), to: renamed)
         try await withOutput { destination in
-            #expect(try await renderer.render(renamed, to: destination).slides.count == 5)
+            let output = try await renderer.render(renamed, to: destination)
+            #expect(output.slides.count == 5)
         }
     }
 
