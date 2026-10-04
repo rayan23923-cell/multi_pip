@@ -259,6 +259,23 @@ struct DocumentToolTests {
         #expect(library.errorMessage == L10n.string(.errorUnsupportedContent))
     }
 
+    @Test func libraryRecognizesPowerPointAndRefusesFakes() async throws {
+        let services = Services()
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let documents = services.documents(in: directory.appendingPathComponent("Files"))
+        let library = DocumentLibraryModel(workspaceID: nil, documentService: documents, sessionService: services.sessions)
+
+        let deck = try #require(await library.importData(minimalPowerPoint(), filename: "Pitch.pptx", contentType: nil))
+        #expect(deck.kind == .powerpoint)
+        #expect(library.errorMessage == nil)
+        #expect(AppRoute.viewer(for: deck) == .powerPoint(deck.id))
+
+        #expect(await library.importData(Data("%PDF-1.4".utf8), filename: "Fake.pptx", contentType: nil) == nil)
+        #expect(library.errorMessage == L10n.string(.errorValidationInvalidPresentation))
+        #expect(library.documents.map(\.id) == [deck.id])
+    }
+
     @Test func pdfPagesSearchExtractAndSave() async throws {
         let services = Services()
         let session = try await services.activeSession()
@@ -363,4 +380,21 @@ struct ToolActionTests {
         }
         #expect(AppRoute.tool("future", workspaceID: nil) == nil)
     }
+}
+
+/// The smallest uncompressed ZIP TaskLens accepts as a .pptx.
+func minimalPowerPoint() -> Data {
+    func le16(_ value: Int) -> Data { withUnsafeBytes(of: UInt16(value).littleEndian) { Data($0) } }
+    func le32(_ value: Int) -> Data { withUnsafeBytes(of: UInt32(value).littleEndian) { Data($0) } }
+    var body = Data(), directory = Data()
+    for name in ["[Content_Types].xml", "ppt/presentation.xml", "ppt/slides/slide1.xml"] {
+        let nameData = Data(name.utf8), content = Data("<x/>".utf8), offset = body.count
+        body += le32(0x0403_4B50) + le16(20) + le16(0) + le16(0) + le16(0) + le16(0) + le32(0)
+            + le32(content.count) + le32(content.count) + le16(nameData.count) + le16(0) + nameData + content
+        directory += le32(0x0201_4B50) + le16(20) + le16(20) + le16(0) + le16(0) + le16(0) + le16(0) + le32(0)
+            + le32(content.count) + le32(content.count) + le16(nameData.count) + le16(0) + le16(0)
+            + le16(0) + le16(0) + le32(0) + le32(offset) + nameData
+    }
+    return body + directory + le32(0x0605_4B50) + le16(0) + le16(0) + le16(3) + le16(3)
+        + le32(directory.count) + le32(body.count) + le16(0)
 }

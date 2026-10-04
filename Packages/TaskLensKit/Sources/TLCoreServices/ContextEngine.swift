@@ -55,7 +55,7 @@ public struct ContextEngine: EntityDetecting {
             switch file.kind {
             case .image: return (.image, [])
             case .pdf: return (.pdf, [])
-            case .text, .document: return (.document, [])
+            case .text, .document, .powerpoint: return (.document, [])
             }
         case .url:
             return (.url, URLDetector().detect(in: input))

@@ -56,12 +56,14 @@ public enum FileKind: String, Codable, Sendable, CaseIterable {
     /// Plain text files (.txt, .md, .csv, source code...).
     case text
     case document
+    /// PowerPoint presentations (.pptx).
+    case powerpoint
 
     var itemType: ContextItemType {
         switch self {
         case .image: .image
         case .pdf: .pdf
-        case .text, .document: .document
+        case .text, .document, .powerpoint: .document
         }
     }
 }

@@ -41,6 +41,29 @@ final class PresentationUITests: XCTestCase {
         XCTAssertTrue(found, "The slide should show '\(expected)', shows '\(slide.value ?? "")'", file: file, line: line)
     }
 
+    /// A9.1: an imported .pptx is listed as a PowerPoint presentation, a fake one is refused,
+    /// and the other documents are listed as before.
+    func testPowerPointIsRecognizedInTheLibrary() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-TaskLensUITestStore",
+                               "-TaskLensResetStore", "-TaskLensSeedDocuments", "-TaskLensSeedPowerPoint"]
+        app.launch()
+        tap(app, "commandCenter.documents")
+        let deck = element(app, "documentRow.Sample Deck")
+        XCTAssertTrue(deck.waitForExistence(timeout: 10), "The .pptx should be in the library")
+        XCTAssertTrue(deck.label.contains("PowerPoint Presentation"), "Row reads '\(deck.label)'")
+        XCTAssertFalse(element(app, "documentRow.Broken Deck").exists, "A fake .pptx is refused at import")
+        for title in ["Sample Report", "Sample Notes", "Sample Image"] {
+            XCTAssertTrue(element(app, "documentRow.\(title)").exists, "\(title) is still listed")
+        }
+        XCTAssertFalse(element(app, "documentRow.Sample Report").label.contains("PowerPoint"))
+
+        deck.tap()
+        XCTAssertTrue(element(app, "powerpoint.placeholder").waitForExistence(timeout: 10),
+                      "Opening the deck shows the PowerPoint screen, not the PDF reader")
+        XCTAssertFalse(element(app, "pdf.pageLabel").exists)
+    }
+
     func testPresentPDFNavigatesWithinBoundsAndKeepsTheReadingPage() {
         let app = launch()
         tap(app, "commandCenter.documents")

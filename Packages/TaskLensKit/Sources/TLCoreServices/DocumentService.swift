@@ -3,7 +3,7 @@ import TLDomain
 import TLFoundation
 import UniformTypeIdentifiers
 
-/// Imports, lists and removes documents the user opened in TaskLens (PDF, images, text).
+/// Imports, lists and removes documents the user opened in TaskLens (PDF, images, text, PowerPoint).
 ///
 /// Files are copied into the store's files directory, so a document keeps
 /// working after the original is moved or deleted, and never leaves the device.
@@ -93,6 +93,8 @@ public struct DocumentService: Sendable {
         }
         guard !data.isEmpty else { throw TaskLensError.validationFailed(.emptyContent) }
         guard Int64(data.count) <= Self.maximumFileSize else { throw TaskLensError.validationFailed(.contentTooLarge) }
+        // A renamed or damaged file is refused before anything is stored.
+        if kind == .powerpoint { try PowerPointPackage.validate(data) }
 
         let fileExtension = type.preferredFilenameExtension ?? (filename as NSString).pathExtension
         let storedName = UUID().uuidString + (fileExtension.isEmpty ? "" : ".\(fileExtension)")
@@ -288,15 +290,16 @@ public struct DocumentService: Sendable {
         switch kind {
         case .image: .imageViewer
         case .text: .textViewer
-        case .pdf, .document: .documentViewer
+        case .pdf, .document, .powerpoint: .documentViewer
         }
     }
 
     // MARK: Types
 
-    /// Supported content: PDF, images and plain text (including source code, CSV, JSON).
+    /// Supported content: PDF, images, plain text (including source code, CSV, JSON) and PowerPoint (.pptx).
     public static func kind(for type: UTType) -> FileKind? {
         if type.conforms(to: .pdf) { return .pdf }
+        if type.conforms(to: powerPoint) { return .powerpoint }
         if type.conforms(to: .image) { return .image }
         if type.conforms(to: .plainText) || type.conforms(to: .sourceCode) || type.conforms(to: .commaSeparatedText)
             || type.conforms(to: .json) || type.conforms(to: .xml) {
@@ -305,8 +308,12 @@ public struct DocumentService: Sendable {
         return nil
     }
 
+    /// PowerPoint's .pptx format. The older binary .ppt and macro-enabled .pptm are different types.
+    public static let powerPoint = UTType("org.openxmlformats.presentationml.presentation")
+        ?? UTType(importedAs: "org.openxmlformats.presentationml.presentation")
+
     /// Content types offered in the file picker.
-    public static let importableTypes: [UTType] = [.pdf, .image, .plainText, .sourceCode, .commaSeparatedText, .json, .xml]
+    public static let importableTypes: [UTType] = [.pdf, .image, .plainText, .sourceCode, .commaSeparatedText, .json, .xml, powerPoint]
 
     static func title(fromFilename filename: String) -> String {
         let base = (filename as NSString).deletingPathExtension.trimmingCharacters(in: .whitespacesAndNewlines)

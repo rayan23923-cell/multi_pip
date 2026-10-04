@@ -159,7 +159,7 @@ public struct WorkflowService: Sendable {
             switch file.kind {
             case .image: return [.sharedImage]
             case .pdf: return [.sharedPDF]
-            case .text, .document: return []
+            case .text, .document, .powerpoint: return []
             }
         case .text(let text):
             var triggers: Set<WorkflowTrigger> = [.sharedText]

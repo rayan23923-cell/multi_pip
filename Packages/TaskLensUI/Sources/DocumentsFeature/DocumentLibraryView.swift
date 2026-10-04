@@ -134,7 +134,11 @@ struct DocumentRow: View {
             VStack(alignment: .leading, spacing: TLSpacing.xxs) {
                 Text(document.title).font(.headline).lineLimit(2)
                 HStack(spacing: TLSpacing.xs) {
-                    Text(L10nKey.itemType(ContextContent.file(document.file).itemType))
+                    if document.kind == .powerpoint {
+                        Text(L10nKey.documentsKindPowerpoint)
+                    } else {
+                        Text(L10nKey.itemType(ContextContent.file(document.file).itemType))
+                    }
                     if let bytes = document.file.byteCount {
                         Text(bytes, format: .byteCount(style: .file))
                     }
@@ -156,6 +160,7 @@ struct DocumentRow: View {
         case .image: "photo"
         case .text: "doc.plaintext"
         case .document: "doc"
+        case .powerpoint: PowerPointDocumentView.symbolName
         }
     }
 }

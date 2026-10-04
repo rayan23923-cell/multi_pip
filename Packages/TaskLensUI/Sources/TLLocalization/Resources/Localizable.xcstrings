@@ -3424,13 +3424,13 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "استورد ملف PDF أو صورة أو ملفاً نصياً. يبقى على هذا الجهاز."
+            "value": "استورد ملف PDF أو صورة أو ملفاً نصياً أو عرض PowerPoint. يبقى على هذا الجهاز."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Import a PDF, image or text file. It stays on this device."
+            "value": "Import a PDF, image, text or PowerPoint file. It stays on this device."
           }
         }
       }
@@ -3503,6 +3503,23 @@
         }
       }
     },
+    "documents.kind.powerpoint": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عرض PowerPoint تقديمي"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PowerPoint Presentation"
+          }
+        }
+      }
+    },
     "documents.openFailed": {
       "extractionState": "manual",
       "localizations": {
@@ -3533,6 +3550,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Photo"
+          }
+        }
+      }
+    },
+    "documents.powerpoint.notYet": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عرض ملفات PowerPoint غير متاح بعد. الملف محفوظ في TaskLens."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presenting PowerPoint files isn't available yet. The file is saved in TaskLens."
           }
         }
       }
@@ -3737,6 +3771,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "That is not a calculation TaskLens can do."
+          }
+        }
+      }
+    },
+    "error.validation.invalidPresentation": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هذا الملف ليس عرض PowerPoint تقديمياً صالحاً بصيغة pptx."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file isn't a valid PowerPoint presentation (.pptx)."
           }
         }
       }

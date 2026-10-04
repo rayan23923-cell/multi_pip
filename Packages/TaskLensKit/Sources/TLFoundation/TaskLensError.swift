@@ -21,6 +21,8 @@ public enum ValidationFailure: String, Sendable, Codable, CaseIterable {
     case invalidURL
     case invalidExpression
     case outOfRange
+    /// A file named or typed as a PowerPoint presentation that isn't one.
+    case invalidPresentation
 }
 
 public enum InvalidStateReason: String, Sendable, Codable, CaseIterable {

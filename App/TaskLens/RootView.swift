@@ -241,6 +241,8 @@ private extension View {
                     documentService: container.documents,
                     toolCapture: container.toolCapture
                 ))
+            case .powerPoint(let id):
+                PowerPointDocumentView(documentID: id, documentService: container.documents)
             case .presentation(let request):
                 PresentationView(model: PresentationModel(
                     request: request,

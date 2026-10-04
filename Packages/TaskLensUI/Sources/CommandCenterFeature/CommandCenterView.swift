@@ -251,6 +251,7 @@ public struct CommandCenterView: View {
             switch document.fileKind {
             case .some(.image): return .image(DocumentID(document.targetID))
             case .some(.text): return .textDocument(DocumentID(document.targetID))
+            case .some(.powerpoint): return .powerPoint(DocumentID(document.targetID))
             default: return .pdf(DocumentID(document.targetID))
             }
         case .clipboard:

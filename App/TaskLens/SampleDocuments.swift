@@ -9,6 +9,8 @@ enum SampleDocuments {
     static let launchArgument = "-TaskLensSeedDocuments"
     /// With the argument above, also adds "Slide 1", "Slide 2" and "Slide 3" images for presentation tests.
     static let presentationImagesArgument = "-TaskLensSeedPresentationImages"
+    /// With the argument above, also imports "Sample Deck.pptx" and tries a fake "Broken Deck.pptx" (refused).
+    static let powerPointArgument = "-TaskLensSeedPowerPoint"
 
     static func seedIfRequested(_ service: DocumentService, arguments: [String] = ProcessInfo.processInfo.arguments) async {
         guard arguments.contains(launchArgument),
@@ -21,6 +23,10 @@ enum SampleDocuments {
             for (number, color) in [(1, UIColor.systemRed), (2, .systemGreen), (3, .systemBlue)] {
                 _ = try? await service.importData(slideImage(number: number, color: color), filename: "Slide \(number).png", contentType: .png)
             }
+        }
+        if arguments.contains(powerPointArgument) {
+            _ = try? await service.importData(powerPoint(), filename: "Sample Deck.pptx", contentType: nil)
+            _ = try? await service.importData(Data("%PDF-1.4".utf8), filename: "Broken Deck.pptx", contentType: nil)
         }
     }
 
@@ -70,5 +76,22 @@ enum SampleDocuments {
                 withAttributes: [.font: UIFont.boldSystemFont(ofSize: 44), .foregroundColor: UIColor.black]
             )
         }
+    }
+
+    /// The smallest uncompressed package TaskLens accepts as a .pptx (it holds no real slides).
+    static func powerPoint() -> Data {
+        func le16(_ value: Int) -> Data { withUnsafeBytes(of: UInt16(value).littleEndian) { Data($0) } }
+        func le32(_ value: Int) -> Data { withUnsafeBytes(of: UInt32(value).littleEndian) { Data($0) } }
+        var body = Data(), directory = Data()
+        for name in ["[Content_Types].xml", "ppt/presentation.xml", "ppt/slides/slide1.xml"] {
+            let nameData = Data(name.utf8), content = Data("<x/>".utf8), offset = body.count
+            body += le32(0x0403_4B50) + le16(20) + le16(0) + le16(0) + le16(0) + le16(0) + le32(0)
+                + le32(content.count) + le32(content.count) + le16(nameData.count) + le16(0) + nameData + content
+            directory += le32(0x0201_4B50) + le16(20) + le16(20) + le16(0) + le16(0) + le16(0) + le16(0) + le32(0)
+                + le32(content.count) + le32(content.count) + le16(nameData.count) + le16(0) + le16(0)
+                + le16(0) + le16(0) + le32(0) + le32(offset) + nameData
+        }
+        return body + directory + le32(0x0605_4B50) + le16(0) + le16(0) + le16(3) + le16(3)
+            + le32(directory.count) + le32(body.count) + le16(0)
     }
 }

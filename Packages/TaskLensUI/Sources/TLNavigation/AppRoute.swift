@@ -43,6 +43,8 @@ public enum AppRoute: Hashable, Sendable {
     case pdf(DocumentID)
     case image(DocumentID)
     case textDocument(DocumentID)
+    /// An imported PowerPoint file.
+    case powerPoint(DocumentID)
     /// A PDF or a set of images shown one slide at a time.
     case presentation(PresentationRequest)
 }
@@ -81,6 +83,7 @@ extension AppRoute {
         case .pdf, .document: .pdf(document.id)
         case .image: .image(document.id)
         case .text: .textDocument(document.id)
+        case .powerpoint: .powerPoint(document.id)
         }
     }
 
