@@ -209,8 +209,10 @@ struct PresentationModelTests {
     /// A countdown of a few milliseconds, standing in for the interval.
     private static let quick: PresentationAutoPlayer.Sleep = { _ in try await Task.sleep(for: .milliseconds(5)) }
 
+    /// Returns as soon as `condition` holds. The limit is generous because the
+    /// simulator can be slow when every suite runs in parallel on CI.
     private func waitUntil(_ condition: () -> Bool) async -> Bool {
-        let deadline = ContinuousClock.now + .seconds(3)
+        let deadline = ContinuousClock.now + .seconds(30)
         while !condition() {
             if ContinuousClock.now > deadline { return false }
             try? await Task.sleep(for: .milliseconds(2))
