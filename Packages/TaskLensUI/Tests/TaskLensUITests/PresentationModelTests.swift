@@ -53,6 +53,16 @@ struct PresentationModelTests {
         return imported
     }
 
+    /// True once the stored reading page is `page`, checked for up to five seconds.
+    private func savedPage(of id: DocumentID, becomes page: Int) async -> Bool {
+        let deadline = ContinuousClock.now + .seconds(5)
+        while ContinuousClock.now < deadline {
+            if (try? await documents.document(id: id).lastReadPage) == page { return true }
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        return false
+    }
+
     // MARK: PDF
 
     @Test(arguments: [1, 3, 10, 50])
@@ -106,8 +116,8 @@ struct PresentationModelTests {
         let reader = PDFViewerModel(documentID: document.id, documentService: documents, toolCapture: services.toolCapture)
         await reader.load()
         reader.goTo(page: 3)
-        try await Task.sleep(for: .milliseconds(200)) // The reader saves its page in the background.
-        #expect(try await documents.document(id: document.id).lastReadPage == 3)
+        // The reader saves its page in the background; wait for it rather than for a fixed time.
+        #expect(await savedPage(of: document.id, becomes: 3))
 
         let model = PresentationModel(request: .pdf(document.id), documentService: documents)
         await model.load()
@@ -305,8 +315,8 @@ struct PresentationModelTests {
         let reader = PDFViewerModel(documentID: document.id, documentService: documents, toolCapture: services.toolCapture)
         await reader.load()
         reader.goTo(page: 2)
-        try await Task.sleep(for: .milliseconds(200))
-        #expect(try await documents.document(id: document.id).lastReadPage == 2)
+        // The reader saves its page in the background; wait for it rather than for a fixed time.
+        #expect(await savedPage(of: document.id, becomes: 2))
 
         let model = PresentationModel(request: .pdf(document.id), documentService: documents, autoPlaySleep: Self.quick)
         await model.load()

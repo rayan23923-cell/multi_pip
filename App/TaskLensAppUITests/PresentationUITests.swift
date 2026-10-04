@@ -111,6 +111,31 @@ final class PresentationUITests: XCTestCase {
         waitFor(app, "pdf.pageLabel", label: "Page 2 of 3")
     }
 
+    /// The reader reopens on its saved page every time, not only most of the time.
+    func testReaderReopensOnTheSavedPageRepeatedly() {
+        let app = launch()
+        tap(app, "commandCenter.documents")
+        tap(app, "documentRow.Sample Report")
+        waitFor(app, "pdf.pageLabel", label: "Page 1 of 3")
+        tap(app, "pdf.nextPage")
+        tap(app, "pdf.nextPage")
+        waitFor(app, "pdf.pageLabel", label: "Page 3 of 3")
+        for _ in 0..<5 {
+            app.navigationBars.buttons.firstMatch.tap()
+            tap(app, "documentRow.Sample Report")
+            waitFor(app, "pdf.pageLabel", label: "Page 3 of 3")
+        }
+        // Visiting another screen and coming back keeps the page too.
+        tap(app, "pdf.menu")
+        tap(app, "pdf.present")
+        waitFor(app, "presentation.counter", label: "Slide 1 of 3")
+        app.navigationBars.buttons.firstMatch.tap()
+        waitFor(app, "pdf.pageLabel", label: "Page 3 of 3")
+        app.navigationBars.buttons.firstMatch.tap()
+        tap(app, "documentRow.Sample Report")
+        waitFor(app, "pdf.pageLabel", label: "Page 3 of 3")
+    }
+
     func testPresentImagesInLibraryOrder() {
         let app = launch(presentationImages: true)
         tap(app, "commandCenter.documents")

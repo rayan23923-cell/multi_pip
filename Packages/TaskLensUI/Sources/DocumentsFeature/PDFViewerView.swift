@@ -216,6 +216,71 @@ struct ExtractedTextSheet: View {
     }
 }
 
+/// Decides which of PDFKit's page-change notifications are the user's.
+///
+/// PDFKit also reports pages it shows on its own: a new view starts on page 1
+/// and can report it while it lays out, after the reader already asked for the
+/// saved page, and a view that is off screen (another screen pushed on top) can
+/// report page 1 when it is resized. Saving those moved the reading position,
+/// so a reopened PDF sometimes showed page 1. Only moves the user makes, or that
+/// match what the reader asked for, count.
+struct PDFPageChangeFilter: Equatable {
+    enum Decision: Equatable {
+        /// The user moved: save this page.
+        case report(Int)
+        /// Nothing to do.
+        case ignore
+        /// PDFKit moved on its own before showing the requested page: show it again.
+        case restore(Int)
+    }
+
+    /// The page the reader asked the view to show, until the view shows it.
+    private(set) var pending: Int?
+
+    mutating func requested(_ page: Int) { pending = page }
+
+    /// The view is on the requested page.
+    mutating func settled() { pending = nil }
+
+    mutating func pageChanged(to index: Int, isOnScreen: Bool, isUserScrolling: Bool) -> Decision {
+        guard isOnScreen else { return .ignore }
+        if isUserScrolling {
+            pending = nil
+            return .report(index)
+        }
+        guard let pending else { return .report(index) }
+        if index == pending {
+            self.pending = nil
+            return .ignore
+        }
+        return .restore(pending)
+    }
+}
+
+/// A PDF view that says when it comes back on screen.
+final class ReaderPDFView: PDFView {
+    var onWindowChange: (@MainActor () -> Void)?
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        onWindowChange?()
+    }
+
+    /// True while the user drags or flings the pages.
+    var isUserScrolling: Bool {
+        // The scroll view that holds the pages sits between the document view and this view.
+        var ancestor = documentView?.superview
+        while let view = ancestor, view !== self {
+            if let scrollView = view as? UIScrollView,
+               scrollView.isTracking || scrollView.isDragging || scrollView.isDecelerating {
+                return true
+            }
+            ancestor = view.superview
+        }
+        return false
+    }
+}
+
 /// PDFKit's view, kept in sync with the model's page and current search match.
 struct PDFKitView: UIViewRepresentable {
     let pdf: PDFDocument
@@ -226,7 +291,7 @@ struct PDFKitView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(onPageChange: onPageChange) }
 
     func makeUIView(context: Context) -> PDFView {
-        let view = PDFView()
+        let view = ReaderPDFView()
         view.autoScales = true
         view.displayMode = .singlePageContinuous
         view.displayDirection = .vertical
@@ -239,9 +304,7 @@ struct PDFKitView: UIViewRepresentable {
     func updateUIView(_ view: PDFView, context: Context) {
         context.coordinator.onPageChange = onPageChange
         if view.document !== pdf { view.document = pdf }
-        if let target = pdf.page(at: page), view.currentPage != target {
-            view.go(to: target)
-        }
+        context.coordinator.show(page: page, in: view)
         if view.highlightedSelections != highlight.map({ [$0] }) {
             highlight?.color = .systemYellow
             view.highlightedSelections = highlight.map { [$0] }
@@ -251,25 +314,55 @@ struct PDFKitView: UIViewRepresentable {
 
     static func dismantleUIView(_ view: PDFView, coordinator: Coordinator) {
         coordinator.stopObserving()
+        (view as? ReaderPDFView)?.onWindowChange = nil
     }
 
     @MainActor
     final class Coordinator {
         var onPageChange: @MainActor (Int) -> Void
         private var observer: NSObjectProtocol?
+        private var filter = PDFPageChangeFilter()
+        /// The page the reader wants shown.
+        private var target = 0
 
         init(onPageChange: @escaping @MainActor (Int) -> Void) {
             self.onPageChange = onPageChange
         }
 
-        func observe(_ view: PDFView) {
+        /// Shows the reader's page, and remembers it until the view gets there.
+        func show(page: Int, in view: PDFView) {
+            target = page
+            guard let document = view.document, let wanted = document.page(at: page) else { return }
+            if view.currentPage == wanted {
+                filter.settled()
+            } else {
+                filter.requested(page)
+                view.go(to: wanted)
+            }
+        }
+
+        func observe(_ view: ReaderPDFView) {
+            view.onWindowChange = { [weak self, weak view] in
+                // Back on screen: show the reader's page, whatever PDFKit did while away.
+                guard let self, let view, view.window != nil else { return }
+                self.show(page: self.target, in: view)
+            }
             observer = NotificationCenter.default.addObserver(
                 forName: .PDFViewPageChanged, object: view, queue: .main
             ) { [weak self, weak view] _ in
                 MainActor.assumeIsolated {
-                    guard let view, let page = view.currentPage, let document = view.document else { return }
+                    guard let self, let view, let page = view.currentPage, let document = view.document else { return }
                     let index = document.index(for: page)
-                    if index != NSNotFound { self?.onPageChange(index) }
+                    guard index != NSNotFound else { return }
+                    switch self.filter.pageChanged(to: index, isOnScreen: view.window != nil, isUserScrolling: view.isUserScrolling) {
+                    case .report(let index):
+                        self.target = index
+                        self.onPageChange(index)
+                    case .ignore:
+                        break
+                    case .restore(let index):
+                        if let wanted = document.page(at: index) { view.go(to: wanted) }
+                    }
                 }
             }
         }

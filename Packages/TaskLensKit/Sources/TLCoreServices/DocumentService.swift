@@ -18,6 +18,10 @@ public struct DocumentService: Sendable {
     private let filesDirectory: URL
     private let clock: any DateProviding
     private let logger: TLLogger
+    /// Read-modify-write changes run one at a time. Without it two changes to
+    /// the same document (say the search indexer and the reader's page) could
+    /// both read it, and the later write would undo the earlier one.
+    private let changes = SerialChanges()
 
     public init(
         documents: any Repository<Document>,
@@ -149,10 +153,12 @@ public struct DocumentService: Sendable {
     /// Stores the document's text (for example a PDF's text layer) for search.
     @discardableResult
     public func setSearchText(_ id: DocumentID, text: String) async throws -> Document {
-        var document = try await documentStore.require(id: id)
-        document.metadata[Self.searchTextKey] = .string(String(text.prefix(Self.maximumSearchTextLength)))
-        try await documentStore.upsert(document)
-        return document
+        try await changes.run {
+            var document = try await documentStore.require(id: id)
+            document.metadata[Self.searchTextKey] = .string(String(text.prefix(Self.maximumSearchTextLength)))
+            try await documentStore.upsert(document)
+            return document
+        }
     }
 
     public static func searchText(of document: Document) -> String? {
@@ -161,32 +167,38 @@ public struct DocumentService: Sendable {
 
     @discardableResult
     public func markOpened(_ id: DocumentID, pageCount: Int? = nil) async throws -> Document {
-        var document = try await documentStore.require(id: id)
-        document.lastOpenedAt = clock.now()
-        if let pageCount { document.pageCount = pageCount }
-        try await documentStore.upsert(document)
-        return document
+        try await changes.run {
+            var document = try await documentStore.require(id: id)
+            document.lastOpenedAt = clock.now()
+            if let pageCount { document.pageCount = pageCount }
+            try await documentStore.upsert(document)
+            return document
+        }
     }
 
     /// Remembers the zero-based page being read, for resume.
     @discardableResult
     public func setLastReadPage(_ id: DocumentID, page: Int) async throws -> Document {
-        var document = try await documentStore.require(id: id)
-        var page = max(page, 0)
-        if let count = document.pageCount, count > 0 { page = min(page, count - 1) }
-        document.lastReadPage = page
-        try await documentStore.upsert(document)
-        return document
+        try await changes.run {
+            var document = try await documentStore.require(id: id)
+            var page = max(page, 0)
+            if let count = document.pageCount, count > 0 { page = min(page, count - 1) }
+            document.lastReadPage = page
+            try await documentStore.upsert(document)
+            return document
+        }
     }
 
     /// Links a document to a session (and that session's workspace).
     @discardableResult
     public func attach(_ id: DocumentID, to session: Session) async throws -> Document {
-        var document = try await documentStore.require(id: id)
-        document.sessionID = session.id
-        document.workspaceID = session.workspaceID
-        try await documentStore.upsert(document)
-        return document
+        try await changes.run {
+            var document = try await documentStore.require(id: id)
+            document.sessionID = session.id
+            document.workspaceID = session.workspaceID
+            try await documentStore.upsert(document)
+            return document
+        }
     }
 
     /// Deletes the record and its stored file.
@@ -311,5 +323,30 @@ public struct DocumentService: Sendable {
     static func title(fromFilename filename: String) -> String {
         let base = (filename as NSString).deletingPathExtension.trimmingCharacters(in: .whitespacesAndNewlines)
         return base.isEmpty ? filename : base
+    }
+}
+
+/// Runs async operations one after another, in the order they arrive.
+///
+/// A plain async lock: an operation that arrives while another runs waits its
+/// turn, and the finishing one hands the turn straight to the next.
+actor SerialChanges {
+    private var isBusy = false
+    private var waiting: [CheckedContinuation<Void, Never>] = []
+
+    func run<T: Sendable>(_ operation: @Sendable () async throws -> T) async throws -> T {
+        if isBusy {
+            await withCheckedContinuation { waiting.append($0) }
+        } else {
+            isBusy = true
+        }
+        defer {
+            if waiting.isEmpty {
+                isBusy = false
+            } else {
+                waiting.removeFirst().resume()
+            }
+        }
+        return try await operation()
     }
 }
