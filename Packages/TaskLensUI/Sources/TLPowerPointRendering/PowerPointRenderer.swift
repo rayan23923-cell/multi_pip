@@ -293,6 +293,8 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
         var height: Int
         var unpainted: Bool
         var retries = 0
+        /// The 64 × 36 grid the page color check looked at.
+        var fingerprint: [UInt8] = []
     }
 
     /// The A8 direction fix, plus hiding WebKit's static "Loading…" placeholders.
@@ -399,6 +401,9 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
           }
           const slides = Array.from(d.querySelectorAll('div.slide'));
           const images = Array.from(d.images);
+          // WebKit draws large pictures only once a background decode ends; a snapshot
+          // taken before that shows the slide without them.
+          images.forEach(i => { if (i.decoding !== 'sync') { i.decoding = 'sync'; } });
           const p = d.querySelector('div.slide p');
           return JSON.stringify({
             complete: d.readyState === 'complete' && (!d.fonts || d.fonts.status === 'loaded'),
@@ -451,7 +456,7 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
         let zoom = scrollView.zoomScale
         let target = CGPoint(x: cssRect.minX * zoom, y: cssRect.minY * zoom)
         scrollView.setContentOffset(target, animated: false)
-        try await decodePictures(onSlide: webIndex)
+        let pictureCount = try await decodePictures(onSlide: webIndex)
         let offset = scrollView.contentOffset
 
         let rect = CGRect(x: target.x - offset.x, y: target.y - offset.y, width: cssRect.width * zoom, height: cssRect.height * zoom)
@@ -469,13 +474,18 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
         // WebKit paints a newly scrolled-in area in tiles, a little later. Where it
         // hasn't painted yet the page color shows, so a snapshot with that color in
         // it is taken again rather than kept.
+        // A picture still being drawn leaves no page color, only a gap, so a slide
+        // with pictures is kept once two snapshots in a row look the same.
+        var previous: [UInt8]?
         for attempt in 0..<Self.snapshotAttempts {
             if attempt > 0 { try await pause(.milliseconds(50 * attempt)) }
             var shot = try await capture(configuration, slide: slide, format: format)
             shot.retries = attempt
-            if !shot.unpainted { return shot }
+            if shot.unpainted { continue }
+            if pictureCount == 0 || shot.fingerprint == previous { return shot }
+            previous = shot.fingerprint
         }
-        PowerPointRenderer.recordFailure("slide \(slide) was not fully painted after \(Self.snapshotAttempts) snapshots: "
+        PowerPointRenderer.recordFailure("slide \(slide) was not fully painted or settled after \(Self.snapshotAttempts) snapshots: "
             + "\(PowerPointRenderer.lastUnpaintedArea ?? "-") rect \(rect) bounds \(webView.bounds) zoom \(zoom) "
             + "offset \(scrollView.contentOffset) content \(scrollView.contentSize) css \(cssRect)")
         throw PowerPointRenderError.renderingFailed(.snapshotFailed(slide: slide))
@@ -484,7 +494,8 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
     private static let snapshotAttempts = 6
 
     /// Waits until every picture on the slide is decoded, so none is captured empty.
-    private func decodePictures(onSlide index: Int) async throws {
+    @discardableResult
+    private func decodePictures(onSlide index: Int) async throws -> Int {
         let script = """
         (() => {
           const slide = document.querySelectorAll('div.slide')[\(index)];
@@ -495,12 +506,17 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
               i.decode().then(() => { i.dataset.tlDecode = 'done'; }, () => { i.dataset.tlDecode = 'done'; });
             }
           });
-          return images.every(i => i.dataset.tlDecode === 'done') ? 'ready' : 'waiting';
+          return images.every(i => i.dataset.tlDecode === 'done') ? String(images.length) : 'waiting';
         })()
         """
-        while try await evaluate(script) != "ready" { try await pause(.milliseconds(20)) }
+        var answer = try await evaluate(script)
+        while answer == "waiting" {
+            try await pause(.milliseconds(20))
+            answer = try await evaluate(script)
+        }
         // One more round trip so the decoded pictures reach the screen.
         _ = try await evaluate("''")
+        return Int(answer) ?? 0
     }
 
     private func capture(_ configuration: WKSnapshotConfiguration, slide: Int,
@@ -526,7 +542,8 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
                 waiter.finish(.failure(PowerPointRenderError.renderingFailed(.snapshotFailed(slide: slide))))
                 return
             }
-            waiter.finish(.success(Shot(data: encoded, width: trimmed.width, height: trimmed.height, unpainted: false)))
+            waiter.finish(.success(Shot(data: encoded, width: trimmed.width, height: trimmed.height, unpainted: false,
+                                        fingerprint: pageColor.grid)))
         }
         return try await wait(for: waiter)
     }
@@ -585,6 +602,7 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
 
     /// Where the page color shows on a 64 × 36 grid of the image, edges left out.
     struct PageColorArea: CustomStringConvertible {
+        var grid: [UInt8] = []
         var count = 0
         var minX = Int.max, minY = Int.max, maxX = -1, maxY = -1
         var description: String { "\(count) of 64x36 cells, x \(minX)...\(maxX), y \(minY)...\(maxY)" }
@@ -604,7 +622,8 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
             return true
         }
         guard drawn else { return PageColorArea() }
-        var area = PageColorArea()
+        // Rounded to 32 levels so the same picture always gives the same grid.
+        var area = PageColorArea(grid: pixels.map { $0 / 8 })
         for offset in stride(from: 0, to: pixels.count, by: 4)
         where abs(Int(pixels[offset]) - pageColor.red) < 16 && Int(pixels[offset + 1]) < 16
             && abs(Int(pixels[offset + 2]) - pageColor.blue) < 16 {
