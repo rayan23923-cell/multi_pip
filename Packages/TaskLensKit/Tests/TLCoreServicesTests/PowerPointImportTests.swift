@@ -28,15 +28,15 @@ enum TestZip {
             let offset = UInt32(body.count)
             let compressed = entry.declaredCompressed ?? UInt32(entry.data.count)
             let uncompressed = entry.declaredUncompressed ?? UInt32(entry.data.count)
-            body += le32(0x0403_4B50) + le16(20) + le16(0) + le16(0) + le16(0) + le16(0) + le32(0)
-                + le32(UInt32(entry.data.count)) + le32(UInt32(entry.data.count))
-                + le16(UInt16(name.count)) + le16(0) + name + entry.data
-            directory += le32(0x0201_4B50) + le16(20) + le16(20) + le16(0) + le16(0) + le16(0) + le16(0) + le32(0)
-                + le32(compressed) + le32(uncompressed) + le16(UInt16(name.count)) + le16(0) + le16(0)
-                + le16(0) + le16(0) + le32(0) + le32(offset) + name
+            body += join([le32(0x0403_4B50), le16(20), le16(0), le16(0), le16(0), le16(0), le32(0),
+                          le32(UInt32(entry.data.count)), le32(UInt32(entry.data.count)),
+                          le16(UInt16(name.count)), le16(0), name, entry.data])
+            directory += join([le32(0x0201_4B50), le16(20), le16(20), le16(0), le16(0), le16(0), le16(0), le32(0),
+                               le32(compressed), le32(uncompressed), le16(UInt16(name.count)), le16(0), le16(0),
+                               le16(0), le16(0), le32(0), le32(offset), name])
         }
-        let end = le32(0x0605_4B50) + le16(0) + le16(0) + le16(UInt16(entries.count)) + le16(UInt16(entries.count))
-            + le32(UInt32(directory.count)) + le32(UInt32(body.count)) + le16(0)
+        let end = join([le32(0x0605_4B50), le16(0), le16(0), le16(UInt16(entries.count)), le16(UInt16(entries.count)),
+                         le32(UInt32(directory.count)), le32(UInt32(body.count)), le16(0)])
         return body + directory + end
     }
 
@@ -46,6 +46,7 @@ enum TestZip {
             + (1...max(slides, 1)).map { Entry("ppt/slides/slide\($0).xml") } + extra)
     }
 
+    private static func join(_ parts: [Data]) -> Data { parts.reduce(into: Data()) { $0.append($1) } }
     private static func le16(_ value: UInt16) -> Data { withUnsafeBytes(of: value.littleEndian) { Data($0) } }
     private static func le32(_ value: UInt32) -> Data { withUnsafeBytes(of: value.littleEndian) { Data($0) } }
 }
@@ -54,12 +55,6 @@ enum TestZip {
 struct PowerPointImportTests {
     private let env = TestEnvironment()
 
-    private func withService(_ body: (DocumentService, URL) async throws -> Void) async throws {
-        let directory = TemporaryDirectory.make()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        try await body(env.documents(in: directory), directory)
-    }
-
     private func storedFiles(in directory: URL) -> [String] {
         (try? FileManager.default.contentsOfDirectory(atPath: directory.appendingPathComponent("Documents").path)) ?? []
     }
@@ -67,7 +62,10 @@ struct PowerPointImportTests {
     // MARK: Detection
 
     @Test func pptxIsRecognizedAsAPowerPointPresentation() async throws {
-        try await withService { service, directory in
+        let directory = TemporaryDirectory.make()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let service = env.documents(in: directory)
+        do {
             let document = try await service.importData(TestZip.powerPoint(), filename: "Quarterly Review.pptx", contentType: nil)
             #expect(document.kind == .powerpoint)
             #expect(document.file.contentType == "org.openxmlformats.presentationml.presentation")
@@ -85,7 +83,10 @@ struct PowerPointImportTests {
     }
 
     @Test func pptxImportsFromAFileLikeOtherDocuments() async throws {
-        try await withService { service, directory in
+        let directory = TemporaryDirectory.make()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let service = env.documents(in: directory)
+        do {
             let source = directory.appendingPathComponent("Pitch.pptx")
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             try TestZip.powerPoint().write(to: source)
@@ -141,7 +142,10 @@ struct PowerPointImportTests {
     @Test(arguments: invalidFiles.indices)
     func invalidPowerPointIsRejectedAndNothingIsKept(index: Int) async throws {
         let (label, data) = Self.invalidFiles[index]
-        try await withService { service, directory in
+        let directory = TemporaryDirectory.make()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let service = env.documents(in: directory)
+        do {
             await #expect(throws: TaskLensError.validationFailed(.invalidPresentation), "\(label)") {
                 try await service.importData(data, filename: "Deck.pptx", contentType: nil)
             }
@@ -151,7 +155,10 @@ struct PowerPointImportTests {
     }
 
     @Test func emptyPowerPointIsEmptyContent() async throws {
-        try await withService { service, _ in
+        let directory = TemporaryDirectory.make()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let service = env.documents(in: directory)
+        do {
             await #expect(throws: TaskLensError.validationFailed(.emptyContent)) {
                 try await service.importData(Data(), filename: "Deck.pptx", contentType: nil)
             }
@@ -159,7 +166,10 @@ struct PowerPointImportTests {
     }
 
     @Test func otherFormatsAreUnaffected() async throws {
-        try await withService { service, _ in
+        let directory = TemporaryDirectory.make()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let service = env.documents(in: directory)
+        do {
             // A real PowerPoint package named .pdf is still treated as a PDF, as before A9.
             #expect(try await service.importData(TestZip.powerPoint(), filename: "a.pdf", contentType: nil).kind == .pdf)
             #expect(try await service.importData(Data([1]), filename: "b.png", contentType: nil).kind == .image)
@@ -176,6 +186,6 @@ struct PowerPointImportTests {
         let file = FileReference(relativePath: "Deck.pptx", originalFilename: "Deck.pptx",
                                  contentType: DocumentService.powerPoint.identifier, kind: .powerpoint, byteCount: 10)
         #expect(ContextContent.file(file).itemType == .document)
-        #expect(WorkflowEngine.triggers(for: .file(file)).isEmpty)
+        #expect(WorkflowService.triggers(for: ContextContent.file(file)).isEmpty)
     }
 }

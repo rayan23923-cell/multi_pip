@@ -82,16 +82,17 @@ enum SampleDocuments {
     static func powerPoint() -> Data {
         func le16(_ value: Int) -> Data { withUnsafeBytes(of: UInt16(value).littleEndian) { Data($0) } }
         func le32(_ value: Int) -> Data { withUnsafeBytes(of: UInt32(value).littleEndian) { Data($0) } }
+        func join(_ parts: [Data]) -> Data { parts.reduce(into: Data()) { $0.append($1) } }
         var body = Data(), directory = Data()
         for name in ["[Content_Types].xml", "ppt/presentation.xml", "ppt/slides/slide1.xml"] {
             let nameData = Data(name.utf8), content = Data("<x/>".utf8), offset = body.count
-            body += le32(0x0403_4B50) + le16(20) + le16(0) + le16(0) + le16(0) + le16(0) + le32(0)
-                + le32(content.count) + le32(content.count) + le16(nameData.count) + le16(0) + nameData + content
-            directory += le32(0x0201_4B50) + le16(20) + le16(20) + le16(0) + le16(0) + le16(0) + le16(0) + le32(0)
-                + le32(content.count) + le32(content.count) + le16(nameData.count) + le16(0) + le16(0)
-                + le16(0) + le16(0) + le32(0) + le32(offset) + nameData
+            body += join([le32(0x0403_4B50), le16(20), le16(0), le16(0), le16(0), le16(0), le32(0),
+                          le32(content.count), le32(content.count), le16(nameData.count), le16(0), nameData, content])
+            directory += join([le32(0x0201_4B50), le16(20), le16(20), le16(0), le16(0), le16(0), le16(0), le32(0),
+                               le32(content.count), le32(content.count), le16(nameData.count), le16(0), le16(0),
+                               le16(0), le16(0), le32(0), le32(offset), nameData])
         }
-        return body + directory + le32(0x0605_4B50) + le16(0) + le16(0) + le16(3) + le16(3)
-            + le32(directory.count) + le32(body.count) + le16(0)
+        return join([body, directory, le32(0x0605_4B50), le16(0), le16(0), le16(3), le16(3),
+                     le32(directory.count), le32(body.count), le16(0)])
     }
 }
