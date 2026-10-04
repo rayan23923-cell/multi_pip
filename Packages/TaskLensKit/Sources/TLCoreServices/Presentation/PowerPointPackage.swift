@@ -23,7 +23,7 @@ public enum PowerPointPackage {
     static let ratioCheckThreshold: Int64 = 50 * 1024 * 1024
     static let maximumRatio: Int64 = 100
 
-    private static let localHeader: UInt32 = 0x0403_4B50
+    static let localHeader: UInt32 = 0x0403_4B50
     private static let centralHeader: UInt32 = 0x0201_4B50
     private static let endOfDirectory: UInt32 = 0x0605_4B50
 
@@ -37,10 +37,33 @@ public enum PowerPointPackage {
 
     static func inspect(_ data: Data) -> Summary? {
         // Reads in place: an imported file may be up to 200 MB and memory-mapped.
-        data.withUnsafeBytes { inspect($0) }
+        data.withUnsafeBytes { bytes in directory(bytes).flatMap(summary) }
     }
 
-    private static func inspect(_ bytes: UnsafeRawBufferPointer) -> Summary? {
+    private static func summary(_ entries: [Entry]) -> Summary? {
+        let names = Set(entries.map(\.name))
+        guard names.contains("[Content_Types].xml"), names.contains("ppt/presentation.xml"),
+              // A macro project means a renamed .pptm.
+              !names.contains("ppt/vbaProject.bin")
+        else { return nil }
+        return Summary(
+            entryCount: entries.count,
+            slidePartCount: entries.filter { isSlidePart($0.name) }.count,
+            uncompressedSize: entries.reduce(0) { $0 + $1.uncompressedSize }
+        )
+    }
+
+    /// One file in the package, as the ZIP central directory describes it.
+    struct Entry {
+        var name: String
+        var method: UInt16
+        var compressedSize: Int64
+        var uncompressedSize: Int64
+        var localHeaderOffset: Int
+    }
+
+    /// The central directory, or nil when the archive breaks any of the rules above.
+    static func directory(_ bytes: UnsafeRawBufferPointer) -> [Entry]? {
         guard bytes.count >= 22, read32(bytes, 0) == localHeader else { return nil }
 
         // The end-of-directory record sits in the last 22 bytes plus an optional comment.
@@ -50,24 +73,25 @@ public enum PowerPointPackage {
         guard end >= lowest else { return nil }
 
         let disk = read16(bytes, end + 4), directoryDisk = read16(bytes, end + 6)
-        let entries = Int(read16(bytes, end + 10))
+        let count = Int(read16(bytes, end + 10))
         let directorySize = Int(read32(bytes, end + 12)), directoryOffset = Int(read32(bytes, end + 16))
         // Split archives and ZIP64 (over 65,535 entries or 4 GB) are not PowerPoint files TaskLens accepts.
-        guard disk == 0, directoryDisk == 0, entries > 0, entries < 0xFFFF, entries <= maximumEntries,
+        guard disk == 0, directoryDisk == 0, count > 0, count < 0xFFFF, count <= maximumEntries,
               directoryOffset != 0xFFFF_FFFF, directoryOffset + directorySize <= end
         else { return nil }
 
-        var names = Set<String>()
-        var slideParts = 0
+        var entries: [Entry] = []
         var total: Int64 = 0
         var offset = directoryOffset
-        for _ in 0..<entries {
+        for _ in 0..<count {
             guard offset + 46 <= end, read32(bytes, offset) == centralHeader else { return nil }
+            let method = read16(bytes, offset + 10)
             let compressed = Int64(read32(bytes, offset + 20))
             let uncompressed = Int64(read32(bytes, offset + 24))
             let nameLength = Int(read16(bytes, offset + 28))
             let extraLength = Int(read16(bytes, offset + 30))
             let commentLength = Int(read16(bytes, offset + 32))
+            let localOffset = Int(read32(bytes, offset + 42))
             let nameEnd = offset + 46 + nameLength
             guard nameEnd <= end, let name = String(bytes: UnsafeRawBufferPointer(rebasing: bytes[(offset + 46)..<nameEnd]), encoding: .utf8) else { return nil }
 
@@ -76,16 +100,11 @@ public enum PowerPointPackage {
             guard total <= maximumUncompressedSize else { return nil }
             if uncompressed > ratioCheckThreshold, uncompressed / max(compressed, 1) > maximumRatio { return nil }
 
-            names.insert(name)
-            if isSlidePart(name) { slideParts += 1 }
+            entries.append(Entry(name: name, method: method, compressedSize: compressed,
+                                 uncompressedSize: uncompressed, localHeaderOffset: localOffset))
             offset = nameEnd + extraLength + commentLength
         }
-
-        guard names.contains("[Content_Types].xml"), names.contains("ppt/presentation.xml"),
-              // A macro project means a renamed .pptm.
-              !names.contains("ppt/vbaProject.bin")
-        else { return nil }
-        return Summary(entryCount: entries, slidePartCount: slideParts, uncompressedSize: total)
+        return entries
     }
 
     private static func isSafe(_ name: String) -> Bool {
@@ -99,11 +118,11 @@ public enum PowerPointPackage {
         return !number.isEmpty && number.allSatisfy(\.isASCII) && number.allSatisfy(\.isNumber)
     }
 
-    private static func read16(_ bytes: UnsafeRawBufferPointer, _ offset: Int) -> UInt16 {
+    static func read16(_ bytes: UnsafeRawBufferPointer, _ offset: Int) -> UInt16 {
         UInt16(bytes[offset]) | UInt16(bytes[offset + 1]) << 8
     }
 
-    private static func read32(_ bytes: UnsafeRawBufferPointer, _ offset: Int) -> UInt32 {
+    static func read32(_ bytes: UnsafeRawBufferPointer, _ offset: Int) -> UInt32 {
         UInt32(bytes[offset]) | UInt32(bytes[offset + 1]) << 8 | UInt32(bytes[offset + 2]) << 16 | UInt32(bytes[offset + 3]) << 24
     }
 }

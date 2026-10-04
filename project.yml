@@ -136,6 +136,8 @@ targets:
       - package: TaskLensUI
         product: PresentationFeature
       - package: TaskLensUI
+        product: TLPowerPointRendering
+      - package: TaskLensUI
         product: TLActionsUI
       - package: TaskLensUI
         product: ShareFeature

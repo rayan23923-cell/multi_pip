@@ -31,6 +31,7 @@ let package = Package(
         .library(name: "ImageViewerFeature", targets: ["ImageViewerFeature"]),
         .library(name: "TextViewerFeature", targets: ["TextViewerFeature"]),
         .library(name: "PresentationFeature", targets: ["PresentationFeature"]),
+        .library(name: "TLPowerPointRendering", targets: ["TLPowerPointRendering"]),
         .library(name: "ShareFeature", targets: ["ShareFeature"]),
         .library(name: "PiPFeature", targets: ["PiPFeature"]),
         .library(name: "WidgetsFeature", targets: ["WidgetsFeature"]),
@@ -191,6 +192,13 @@ let package = Package(
             dependencies: [
                 "TLLocalization", "TLDesignSystem", "TLNavigation",
                 .product(name: "TLDomain", package: "TaskLensKit"),
+                .product(name: "TLCoreServices", package: "TaskLensKit"),
+            ]
+        ),
+        // Offline PowerPoint to slide images with WebKit. Not connected to any screen yet.
+        .target(
+            name: "TLPowerPointRendering",
+            dependencies: [
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
             ]
         ),

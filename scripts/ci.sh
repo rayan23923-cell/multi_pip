@@ -135,7 +135,7 @@ xcodebuild test \
   -default-test-execution-time-allowance 300 \
   -maximum-test-execution-time-allowance 600 \
   CODE_SIGNING_ALLOWED=NO \
-  2>&1 | tee "$LOG_DIR/app-ios.log" | grep --line-buffered -E "error:|✔|✘|passed|failed|skipped|measured|TEST (SUCCEEDED|FAILED)" || true
+  2>&1 | tee "$LOG_DIR/app-ios.log" | grep --line-buffered -E "error:|✔|✘|passed|failed|skipped|measured|PPTX |PROBEIMG |TEST (SUCCEEDED|FAILED)" || true
 summarize_app_tests
 require_success "$LOG_DIR/app-ios.log"
 

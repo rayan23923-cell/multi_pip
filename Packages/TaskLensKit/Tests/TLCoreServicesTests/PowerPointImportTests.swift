@@ -1,3 +1,4 @@
+import Compression
 import Foundation
 import Testing
 import TLCoreServices
@@ -5,20 +6,35 @@ import TLDomain
 import TLFoundation
 import UniformTypeIdentifiers
 
-/// Builds uncompressed ZIP archives. Declared sizes can be overridden to imitate a ZIP bomb.
+/// Builds ZIP archives, stored or (per entry) deflated. Declared sizes can be overridden to imitate a ZIP bomb.
 enum TestZip {
     struct Entry {
         var name: String
         var data: Data
         var declaredCompressed: UInt32?
         var declaredUncompressed: UInt32?
+        var deflated = false
 
-        init(_ name: String, _ text: String = "<x/>", declaredCompressed: UInt32? = nil, declaredUncompressed: UInt32? = nil) {
+        init(_ name: String, _ text: String = "<x/>", declaredCompressed: UInt32? = nil, declaredUncompressed: UInt32? = nil,
+             deflated: Bool = false) {
             self.name = name
             self.data = Data(text.utf8)
             self.declaredCompressed = declaredCompressed
             self.declaredUncompressed = declaredUncompressed
+            self.deflated = deflated
         }
+    }
+
+    /// Raw DEFLATE, as ZIP method 8 stores it.
+    static func deflate(_ data: Data) -> Data {
+        var output = Data(count: data.count + 1024)
+        let written = output.withUnsafeMutableBytes { destination in
+            data.withUnsafeBytes { source in
+                compression_encode_buffer(destination.bindMemory(to: UInt8.self).baseAddress!, destination.count,
+                                          source.bindMemory(to: UInt8.self).baseAddress!, data.count, nil, COMPRESSION_ZLIB)
+            }
+        }
+        return output.prefix(written)
     }
 
     static func make(_ entries: [Entry]) -> Data {
@@ -26,12 +42,14 @@ enum TestZip {
         for entry in entries {
             let name = Data(entry.name.utf8)
             let offset = UInt32(body.count)
-            let compressed = entry.declaredCompressed ?? UInt32(entry.data.count)
+            let stored = entry.deflated ? deflate(entry.data) : entry.data
+            let method: UInt16 = entry.deflated ? 8 : 0
+            let compressed = entry.declaredCompressed ?? UInt32(stored.count)
             let uncompressed = entry.declaredUncompressed ?? UInt32(entry.data.count)
-            body += join([le32(0x0403_4B50), le16(20), le16(0), le16(0), le16(0), le16(0), le32(0),
-                          le32(UInt32(entry.data.count)), le32(UInt32(entry.data.count)),
-                          le16(UInt16(name.count)), le16(0), name, entry.data])
-            directory += join([le32(0x0201_4B50), le16(20), le16(20), le16(0), le16(0), le16(0), le16(0), le32(0),
+            body += join([le32(0x0403_4B50), le16(20), le16(0), le16(method), le16(0), le16(0), le32(0),
+                          le32(UInt32(stored.count)), le32(UInt32(entry.data.count)),
+                          le16(UInt16(name.count)), le16(0), name, stored])
+            directory += join([le32(0x0201_4B50), le16(20), le16(20), le16(0), le16(method), le16(0), le16(0), le32(0),
                                le32(compressed), le32(uncompressed), le16(UInt16(name.count)), le16(0), le16(0),
                                le16(0), le16(0), le32(0), le32(offset), name])
         }
