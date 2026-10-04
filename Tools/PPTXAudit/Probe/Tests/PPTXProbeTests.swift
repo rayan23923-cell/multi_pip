@@ -155,6 +155,50 @@ final class PPTXProbeTests: XCTestCase {
         }
     }
 
+    /// Arabic direction: WebKit's slides keep right alignment but not the RTL
+    /// paragraph direction. Renders slides 9 and 10 as-is, then with each
+    /// paragraph taking its direction from its first strong letter.
+    func test5WebViewArabicDirection() async throws {
+        let window = try await hostWindow()
+        for name in ["only-09.pptx", "only-10.pptx"] {
+            let url = decks.appendingPathComponent(name)
+            let (web, delegate) = makeWebView(in: window, width: 960)
+            web.frame.size.height = 560
+            web.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+            try await waitForLoad(web, delegate, timeout: 60)
+            try await Task.sleep(nanoseconds: 1_500_000_000)
+            let config = WKSnapshotConfiguration()
+            config.rect = CGRect(x: 0, y: 0, width: 960, height: 550)
+            config.snapshotWidth = 960
+            let asIs = try await web.takeSnapshot(configuration: config)
+            emit("dir-asis-\(name)", asIs, width: 960)
+            _ = try await evaluate(web, """
+            (() => { const s = document.createElement('style');
+              s.textContent = 'p { unicode-bidi: plaintext; }'; document.head.appendChild(s); return 'ok'; })()
+            """)
+            try await Task.sleep(nanoseconds: 500_000_000)
+            let plain = try await web.takeSnapshot(configuration: config)
+            emit("dir-plaintext-\(name)", plain, width: 960)
+            web.removeFromSuperview()
+        }
+    }
+
+    /// Slides arrive progressively: count placeholders over time on 100 slides.
+    func test6WebViewProgressiveLoading() async throws {
+        let window = try await hostWindow()
+        let url = decks.appendingPathComponent("scale-100.pptx")
+        let (web, delegate) = makeWebView(in: window, width: 414)
+        let started = Date()
+        web.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+        try await waitForLoad(web, delegate, timeout: 180)
+        for _ in 0..<6 {
+            let counts = try await evaluate(web, "JSON.stringify([document.querySelectorAll('div.slide').length, document.querySelectorAll('div.loading-slide').length, document.images.length, Array.from(document.images).filter(i => i.complete && i.naturalWidth > 0).length])")
+            log("WEBPROGRESS scale-100 t=\(seconds(since: started)) [slides, placeholders, images, decoded]=\(counts)")
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+        }
+        web.removeFromSuperview()
+    }
+
     // MARK: Helpers
 
     private static let domSummary = """
