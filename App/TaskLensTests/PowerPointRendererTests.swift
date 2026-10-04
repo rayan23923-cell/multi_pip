@@ -258,6 +258,11 @@ struct PowerPointRendererTests {
             return try await renderer.render(try fixture(name), to: destination, options: options)
         } catch {
             log("\(name) failed \(error) detail=\(PowerPointRenderer.lastFailureDetail ?? "-")")
+            if let png = PowerPointRenderer.lastUnpaintedSnapshot {
+                let file = FileManager.default.temporaryDirectory.appendingPathComponent("unpainted-\(name).png")
+                try? png.write(to: file)
+                emit("unpainted-\(name)", file, width: 640)
+            }
             throw error
         }
     }

@@ -261,6 +261,15 @@ public final class PowerPointRenderer {
     fileprivate static func webViewClosed() { liveWebViewCount -= 1 }
 
     fileprivate static func recordFailure(_ detail: String) { lastFailureDetail = detail }
+
+    /// The last snapshot thrown away because WebKit hadn't finished painting, and where.
+    @_spi(Testing) public private(set) static var lastUnpaintedSnapshot: Data?
+    @_spi(Testing) public private(set) static var lastUnpaintedArea: String?
+
+    fileprivate static func recordUnpainted(_ png: Data?, area: String) {
+        lastUnpaintedSnapshot = png
+        lastUnpaintedArea = area
+    }
 }
 
 // MARK: - The web view
@@ -464,7 +473,9 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
             shot.retries = attempt
             if !shot.unpainted { return shot }
         }
-        PowerPointRenderer.recordFailure("slide \(slide) was not fully painted after \(Self.snapshotAttempts) snapshots")
+        PowerPointRenderer.recordFailure("slide \(slide) was not fully painted after \(Self.snapshotAttempts) snapshots: "
+            + "\(PowerPointRenderer.lastUnpaintedArea ?? "-") rect \(rect) bounds \(webView.bounds) zoom \(zoom) "
+            + "offset \(scrollView.contentOffset) content \(scrollView.contentSize) css \(cssRect)")
         throw PowerPointRenderError.renderingFailed(.snapshotFailed(slide: slide))
     }
 
@@ -498,7 +509,9 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
                 waiter.finish(.failure(PowerPointRenderError.renderingFailed(.snapshotFailed(slide: slide))))
                 return
             }
-            if Self.showsPageColor(image) {
+            let pageColor = Self.pageColorArea(image)
+            if pageColor.count >= 3 {
+                PowerPointRenderer.recordUnpainted(UIImage(cgImage: image).pngData(), area: pageColor.description)
                 waiter.finish(.success(Shot(data: Data(), width: 0, height: 0, unpainted: true)))
                 return
             }
@@ -518,8 +531,14 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
     /// The page and under-page color: a magenta no deck is expected to use.
     static let pageColor = (red: 254, green: 0, blue: 254)
 
-    /// Looks for the page color on a 64 × 36 grid of the image.
-    static func showsPageColor(_ image: CGImage) -> Bool {
+    /// Where the page color shows on a 64 × 36 grid of the image, edges left out.
+    struct PageColorArea: CustomStringConvertible {
+        var count = 0
+        var minX = Int.max, minY = Int.max, maxX = -1, maxY = -1
+        var description: String { "\(count) of 64x36 cells, x \(minX)...\(maxX), y \(minY)...\(maxY)" }
+    }
+
+    static func pageColorArea(_ image: CGImage) -> PageColorArea {
         let width = 64, height = 36
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
         let drawn = pixels.withUnsafeMutableBytes { raw -> Bool in
@@ -532,14 +551,21 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
             context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
             return true
         }
-        guard drawn else { return false }
-        var hits = 0
+        guard drawn else { return PageColorArea() }
+        var area = PageColorArea()
         for offset in stride(from: 0, to: pixels.count, by: 4)
         where abs(Int(pixels[offset]) - pageColor.red) < 16 && Int(pixels[offset + 1]) < 16
             && abs(Int(pixels[offset + 2]) - pageColor.blue) < 16 {
-            hits += 1
+            let x = offset / 4 % width, y = offset / 4 / width
+            // The outer cells can catch a sliver of page at a rounded slide edge.
+            guard x > 0, y > 0, x < width - 1, y < height - 1 else { continue }
+            area.count += 1
+            area.minX = min(area.minX, x)
+            area.maxX = max(area.maxX, x)
+            area.minY = min(area.minY, y)
+            area.maxY = max(area.maxY, y)
         }
-        return hits >= 3
+        return area
     }
 
     // MARK: Time limits
