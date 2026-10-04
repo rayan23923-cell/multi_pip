@@ -274,6 +274,7 @@ final class PPTXProbeTests: XCTestCase {
     }
 }
 
+@MainActor
 final class NavigationProbe: NSObject, WKNavigationDelegate {
     static var key = 0
     var finished = false
@@ -295,6 +296,7 @@ final class NavigationProbe: NSObject, WKNavigationDelegate {
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { crashed = true }
 }
 
+@MainActor
 final class PreviewSource: NSObject, QLPreviewControllerDataSource {
     let url: URL
     init(url: URL) { self.url = url }
