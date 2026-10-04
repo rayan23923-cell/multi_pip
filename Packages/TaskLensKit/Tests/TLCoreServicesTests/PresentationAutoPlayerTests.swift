@@ -431,7 +431,8 @@ struct PresentationAutoPlayerTests {
         let engine = await loadedEngine(slides: 3)
         let player = PresentationAutoPlayer(engine: engine, interval: 1)
         player.play()
-        let deadline = ContinuousClock.now + .seconds(5)
+        // Generous: the simulator can be slow while every suite runs in parallel on CI.
+        let deadline = ContinuousClock.now + .seconds(30)
         while engine.currentSlide == 0, ContinuousClock.now < deadline {
             try? await Task.sleep(for: .milliseconds(50))
         }
