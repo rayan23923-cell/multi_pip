@@ -42,6 +42,7 @@ struct PowerPointRendererTests {
             #expect(output.slides.map(\.source.position) == [1, 2, 3, 4, 5])
             #expect(Set(output.slides.map(\.source.slideID)).count == 5)
             for (slide, color) in zip(output.slides, expected) {
+                emit("order-\(slide.index)", slide.fileURL, width: 240)
                 #expect(try Pixels(slide.fileURL).matches(color, atX: 0.95, y: 0.9), "slide \(slide.index)")
             }
             // Rendering again gives the same order and identities.
@@ -89,7 +90,7 @@ struct PowerPointRendererTests {
                 #expect(try Pixels(slide.fileURL).distinctColors > 2, "slide \(slide.index) is blank")
                 emit("audit-\(slide.index)", slide.fileURL, width: 480)
             }
-            log("audit-15 brokenImages=\(output.diagnostics.brokenImageCount) bytes=\(output.diagnostics.totalBytes)")
+            log("audit-15 brokenImages=\(output.diagnostics.brokenImageCount) bytes=\(output.diagnostics.totalBytes) retries=\(output.diagnostics.snapshotRetries)")
             #expect(output.diagnostics.brokenImageCount == 0)
         }
     }
@@ -238,9 +239,9 @@ struct PowerPointRendererTests {
                 let output = try await render(name, to: destination, options: .init(format: format))
                 let d = output.diagnostics
                 let count = output.slides.count
-                log(String(format: "PERF %@ %@ slides=%d total=%.2fs load=%.2fs snapshots=%.2fs perSlide=%.3fs storage=%.1fMB peakRSS=%.0fMB (+%.0f)",
+                log(String(format: "PERF %@ %@ slides=%d total=%.2fs load=%.2fs snapshots=%.2fs perSlide=%.3fs storage=%.1fMB retries=%d peakRSS=%.0fMB (+%.0f)",
                            name, format == .png ? "png" : "jpeg", count, d.totalSeconds, d.loadSeconds, d.snapshotSeconds,
-                           d.snapshotSeconds / Double(max(count, 1)), Double(d.totalBytes) / 1_048_576,
+                           d.snapshotSeconds / Double(max(count, 1)), Double(d.totalBytes) / 1_048_576, d.snapshotRetries,
                            peakResidentMB(), peakResidentMB() - before))
                 #expect(count == Int(name.dropFirst("scale-".count)))
                 #expect(try Pixels(output.slides[count - 1].fileURL).distinctColors > 2)

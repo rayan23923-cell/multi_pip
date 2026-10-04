@@ -84,6 +84,8 @@ public final class PowerPointRenderer {
         /// The computed `unicode-bidi` of slide paragraphs is `plaintext`.
         public var directionFixApplied = false
         public var totalBytes = 0
+        /// Snapshots taken again because WebKit hadn't finished painting the slide.
+        public var snapshotRetries = 0
         /// WebKit's slide size in CSS pixels.
         public var webKitSlideSize: CGSize = .zero
     }
@@ -103,6 +105,7 @@ public final class PowerPointRenderer {
                        in scene: UIWindowScene? = nil) async throws -> Output {
         await Self.gate.acquire()
         defer { Self.gate.release() }
+        Self.lastFailureDetail = nil
 
         let clock = ContinuousClock()
         let started = clock.now
@@ -158,8 +161,9 @@ public final class PowerPointRenderer {
             var slides: [Output.Slide] = []
             for (number, pair) in pairs.enumerated() {
                 let index = number + 1
-                let shot = try await web.snapshot(layout.rects[pair.webIndex], slide: index, deckAspect: deck.aspectRatio,
+                let shot = try await web.snapshot(layout.rects[pair.webIndex], webIndex: pair.webIndex, slide: index, deckAspect: deck.aspectRatio,
                                                   longestSidePixels: options.longestSidePixels, format: options.format)
+                diagnostics.snapshotRetries += shot.retries
                 let name = String(format: "slide-%03d.%@", index, options.format.fileExtension)
                 do {
                     try shot.data.write(to: images.appendingPathComponent(name), options: .atomic)
@@ -276,10 +280,16 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
         var data: Data
         var width: Int
         var height: Int
+        var unpainted: Bool
+        var retries = 0
     }
 
     /// The A8 direction fix, plus hiding WebKit's static "Loading…" placeholders.
-    static let style = "p { unicode-bidi: plaintext; } div.loading-slide { display: none !important; } body { margin: 0 !important; }"
+    /// Also paints the page magenta (`pageColor`) so unpainted areas can be told from slides.
+    static let style = "p { unicode-bidi: plaintext; } div.loading-slide { display: none !important; } "
+        + "html, body { margin: 0 !important; background: rgb(254, 0, 254) !important; } "
+        // PowerPoint's default: a slide with no fill of its own is white.
+        + "div.slide { background-color: #fff; }"
 
     private let deck: PowerPointDeck
     private let deadline: ContinuousClock.Instant
@@ -320,6 +330,10 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
 
         let webView = WKWebView(frame: frame, configuration: configuration)
         webView.allowsLinkPreview = false
+        let pageColor = UIColor(red: 254 / 255, green: 0, blue: 254 / 255, alpha: 1)
+        webView.underPageBackgroundColor = pageColor
+        webView.backgroundColor = pageColor
+        webView.scrollView.backgroundColor = pageColor
         webView.allowsBackForwardNavigationGestures = false
         webView.isUserInteractionEnabled = false
         webView.scrollView.contentInsetAdjustmentBehavior = .never
@@ -420,14 +434,13 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
 
     // MARK: Snapshots
 
-    func snapshot(_ cssRect: CGRect, slide: Int, deckAspect: Double, longestSidePixels: Int,
+    func snapshot(_ cssRect: CGRect, webIndex: Int, slide: Int, deckAspect: Double, longestSidePixels: Int,
                   format: PowerPointRenderer.ImageFormat) async throws -> Shot {
         let scrollView = webView.scrollView
         let zoom = scrollView.zoomScale
         let target = CGPoint(x: cssRect.minX * zoom, y: cssRect.minY * zoom)
         scrollView.setContentOffset(target, animated: false)
-        // A round trip to the page lets WebKit paint the newly exposed slide.
-        _ = try await evaluate("''")
+        try await decodePictures(onSlide: webIndex)
         let offset = scrollView.contentOffset
 
         let rect = CGRect(x: target.x - offset.x, y: target.y - offset.y, width: cssRect.width * zoom, height: cssRect.height * zoom)
@@ -442,10 +455,51 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
         configuration.snapshotWidth = NSNumber(value: pixelWidth / Double(screenScale))
         configuration.afterScreenUpdates = true
 
+        // WebKit paints a newly scrolled-in area in tiles, a little later. Where it
+        // hasn't painted yet the page color shows, so a snapshot with that color in
+        // it is taken again rather than kept.
+        for attempt in 0..<Self.snapshotAttempts {
+            if attempt > 0 { try await pause(.milliseconds(50 * attempt)) }
+            var shot = try await capture(configuration, slide: slide, format: format)
+            shot.retries = attempt
+            if !shot.unpainted { return shot }
+        }
+        PowerPointRenderer.recordFailure("slide \(slide) was not fully painted after \(Self.snapshotAttempts) snapshots")
+        throw PowerPointRenderError.renderingFailed(.snapshotFailed(slide: slide))
+    }
+
+    private static let snapshotAttempts = 6
+
+    /// Waits until every picture on the slide is decoded, so none is captured empty.
+    private func decodePictures(onSlide index: Int) async throws {
+        let script = """
+        (() => {
+          const slide = document.querySelectorAll('div.slide')[\(index)];
+          const images = slide ? Array.from(slide.querySelectorAll('img')) : [];
+          images.forEach(i => {
+            if (!i.dataset.tlDecode) {
+              i.dataset.tlDecode = 'pending';
+              i.decode().then(() => { i.dataset.tlDecode = 'done'; }, () => { i.dataset.tlDecode = 'done'; });
+            }
+          });
+          return images.every(i => i.dataset.tlDecode === 'done') ? 'ready' : 'waiting';
+        })()
+        """
+        while try await evaluate(script) != "ready" { try await pause(.milliseconds(20)) }
+        // One more round trip so the decoded pictures reach the screen.
+        _ = try await evaluate("''")
+    }
+
+    private func capture(_ configuration: WKSnapshotConfiguration, slide: Int,
+                         format: PowerPointRenderer.ImageFormat) async throws -> Shot {
         let waiter = Waiter<Shot>()
         webView.takeSnapshot(with: configuration) { image, _ in
             guard let image = image?.cgImage else {
                 waiter.finish(.failure(PowerPointRenderError.renderingFailed(.snapshotFailed(slide: slide))))
+                return
+            }
+            if Self.showsPageColor(image) {
+                waiter.finish(.success(Shot(data: Data(), width: 0, height: 0, unpainted: true)))
                 return
             }
             let encoded: Data? = switch format {
@@ -456,9 +510,36 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
                 waiter.finish(.failure(PowerPointRenderError.renderingFailed(.snapshotFailed(slide: slide))))
                 return
             }
-            waiter.finish(.success(Shot(data: encoded, width: image.width, height: image.height)))
+            waiter.finish(.success(Shot(data: encoded, width: image.width, height: image.height, unpainted: false)))
         }
         return try await wait(for: waiter)
+    }
+
+    /// The page and under-page color: a magenta no deck is expected to use.
+    static let pageColor = (red: 254, green: 0, blue: 254)
+
+    /// Looks for the page color on a 64 × 36 grid of the image.
+    static func showsPageColor(_ image: CGImage) -> Bool {
+        let width = 64, height = 36
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let drawn = pixels.withUnsafeMutableBytes { raw -> Bool in
+            guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+                  let context = CGContext(data: raw.baseAddress, width: width, height: height, bitsPerComponent: 8,
+                                          bytesPerRow: width * 4, space: space,
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else { return false }
+            context.interpolationQuality = .none
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        guard drawn else { return false }
+        var hits = 0
+        for offset in stride(from: 0, to: pixels.count, by: 4)
+        where abs(Int(pixels[offset]) - pageColor.red) < 16 && Int(pixels[offset + 1]) < 16
+            && abs(Int(pixels[offset + 2]) - pageColor.blue) < 16 {
+            hits += 1
+        }
+        return hits >= 3
     }
 
     // MARK: Time limits
@@ -487,8 +568,12 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
     }
 
     private func tick() async throws {
+        try await pause(.milliseconds(100))
+    }
+
+    private func pause(_ duration: Duration) async throws {
         guard ContinuousClock.now < deadline else { throw PowerPointRenderError.timeout }
-        try await Task.sleep(for: .milliseconds(100))
+        try await Task.sleep(for: duration)
     }
 
     // MARK: WKNavigationDelegate
