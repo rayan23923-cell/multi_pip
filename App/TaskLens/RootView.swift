@@ -258,7 +258,10 @@ private extension AppContainer {
             request: request,
             documentService: documents,
             sessionStore: presentationSessions,
-            slideImages: powerPointSlides
+            slideImages: powerPointSlides,
+            // A9.5.2 shows Import PDF on the PowerPoint failure screen; the PDF
+            // fallback it starts (choose a PDF, import it, present it) is A9.5.3.
+            onImportPDF: {}
         ))
     }
 }

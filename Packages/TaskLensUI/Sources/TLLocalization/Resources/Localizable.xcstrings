@@ -5917,6 +5917,329 @@
         }
       }
     },
+    "presentation.pptx.failed.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر على TaskLens عرض ملف PowerPoint هذا. حاول مرة أخرى، أو صدِّره بصيغة PDF واستورد ملف PDF بدلاً منه."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TaskLens couldn't display this PowerPoint presentation. Try again, or export it as a PDF and import the PDF instead."
+          }
+        }
+      }
+    },
+    "presentation.pptx.failed.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر عرض هذا العرض التقديمي"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't display this presentation"
+          }
+        }
+      }
+    },
+    "presentation.pptx.importPDF": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استيراد PDF"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import PDF"
+          }
+        }
+      }
+    },
+    "presentation.pptx.importPDFHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اختر ملف PDF مُصدَّراً من هذا العرض."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a PDF exported from this presentation."
+          }
+        }
+      }
+    },
+    "presentation.pptx.invalid.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هذا الملف ليس عرض PowerPoint صالحاً، أو تعذّرت قراءته."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file isn't a valid PowerPoint presentation or it couldn't be read."
+          }
+        }
+      }
+    },
+    "presentation.pptx.invalid.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ملف PowerPoint غير صالح"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid PowerPoint file"
+          }
+        }
+      }
+    },
+    "presentation.pptx.missing.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر تحميل بعض محتوى العرض المطلوب. حاول فتحه مرة أخرى."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some required presentation content could not be loaded. Try opening it again."
+          }
+        }
+      }
+    },
+    "presentation.pptx.notes.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يحتوي عرض PowerPoint هذا على ملاحظات للمتحدث لا يستطيع TaskLens عرضها مباشرة. صدِّر العرض بصيغة PDF ثم استورد ملف PDF إلى TaskLens."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This PowerPoint contains Speaker Notes that TaskLens can't display directly. Export the presentation as a PDF and import the PDF into TaskLens."
+          }
+        }
+      }
+    },
+    "presentation.pptx.notes.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ملاحظات المتحدث غير مدعومة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speaker Notes aren't supported"
+          }
+        }
+      }
+    },
+    "presentation.pptx.retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إعادة المحاولة"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try Again"
+          }
+        }
+      }
+    },
+    "presentation.pptx.retryHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يعيد تجهيز العرض."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepares the presentation again."
+          }
+        }
+      }
+    },
+    "presentation.pptx.security.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر على TaskLens فتح ملف PowerPoint هذا بأمان."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TaskLens couldn't safely open this PowerPoint file."
+          }
+        }
+      }
+    },
+    "presentation.pptx.security.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا يمكن فتح هذا الملف"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file can't be opened"
+          }
+        }
+      }
+    },
+    "presentation.pptx.storage.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر على TaskLens حفظ بيانات العرض اللازمة لعرضه. تحقّق من المساحة المتاحة وحاول مرة أخرى."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TaskLens couldn't save the presentation data needed to display it. Check available storage and try again."
+          }
+        }
+      }
+    },
+    "presentation.pptx.storage.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر تجهيز العرض"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't prepare the presentation"
+          }
+        }
+      }
+    },
+    "presentation.pptx.timeout.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يتمكن TaskLens من إكمال تجهيز هذا العرض. حاول مرة أخرى، أو صدِّره بصيغة PDF واستورد ملف PDF بدلاً منه."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TaskLens couldn't finish preparing this presentation. Try again, or export it as a PDF and import the PDF instead."
+          }
+        }
+      }
+    },
+    "presentation.pptx.timeout.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استغرق تجهيز العرض وقتاً طويلاً"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presentation took too long"
+          }
+        }
+      }
+    },
+    "presentation.pptx.unsupported.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يستخدم هذا العرض محتوى لا يستطيع TaskLens عرضه مباشرة. صدِّره بصيغة PDF ثم استورد ملف PDF إلى TaskLens."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This presentation uses content that TaskLens can't display directly. Export it as a PDF and import the PDF into TaskLens."
+          }
+        }
+      }
+    },
+    "presentation.pptx.unsupported.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا يمكن عرض ملف PowerPoint"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PowerPoint can't be displayed"
+          }
+        }
+      }
+    },
     "presentation.present": {
       "extractionState": "manual",
       "localizations": {

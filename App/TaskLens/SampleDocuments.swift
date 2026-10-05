@@ -13,6 +13,8 @@ enum SampleDocuments {
     static let powerPointArgument = "-TaskLensSeedPowerPoint"
     /// A real deck from a UI test, base64; with the PowerPoint argument it is imported as "Slides A" and "Slides B".
     static let powerPointDeckEnvironmentKey = "TASKLENS_SEED_PPTX"
+    /// A real deck with speaker notes from a UI test, base64; imported as "Notes Deck".
+    static let notesDeckEnvironmentKey = "TASKLENS_SEED_PPTX_NOTES"
 
     static func seedIfRequested(
         _ service: DocumentService,
@@ -37,6 +39,9 @@ enum SampleDocuments {
                 for title in ["Slides A", "Slides B"] {
                     _ = try? await service.importData(deck, filename: "\(title).pptx", contentType: nil)
                 }
+            }
+            if let deck = environment[notesDeckEnvironmentKey].flatMap({ Data(base64Encoded: $0) }) {
+                _ = try? await service.importData(deck, filename: "Notes Deck.pptx", contentType: nil)
             }
         }
     }

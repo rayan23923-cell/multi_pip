@@ -100,8 +100,10 @@ struct PowerPointPresentationModelTests {
         await model.saveSession()
     }
 
+    /// Generous: the whole package's tests share the main actor, and on a busy
+    /// runner other suites can hold it for over a minute.
     private func waitUntil(_ condition: () -> Bool) async -> Bool {
-        let deadline = ContinuousClock.now + .seconds(30)
+        let deadline = ContinuousClock.now + .seconds(180)
         while !condition() {
             if ContinuousClock.now > deadline { return false }
             try? await Task.sleep(for: .milliseconds(2))

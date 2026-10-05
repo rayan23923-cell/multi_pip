@@ -40,6 +40,8 @@ public final class PresentationModel {
     private let sessionStore: PresentationSessionStore?
     /// Renders (or finds) the slide images of a PowerPoint file.
     private let slideImages: (any PowerPointSlideImageProviding)?
+    /// Import PDF on the failure screen. Nil hides the action.
+    private let onImportPDF: (@MainActor () -> Void)?
 
     public init(
         request: PresentationRequest,
@@ -47,12 +49,14 @@ public final class PresentationModel {
         sessionStore: PresentationSessionStore? = nil,
         slideImages: (any PowerPointSlideImageProviding)? = nil,
         engine: PresentationEngine? = nil,
-        autoPlaySleep: PresentationAutoPlayer.Sleep? = nil
+        autoPlaySleep: PresentationAutoPlayer.Sleep? = nil,
+        onImportPDF: (@MainActor () -> Void)? = nil
     ) {
         self.request = request
         self.documentService = documentService
         self.sessionStore = sessionStore
         self.slideImages = slideImages
+        self.onImportPDF = onImportPDF
         sessionRecorder = sessionStore.map { PresentationSessionRecorder(source: request.sessionSource, store: $0) }
         let engine = engine ?? PresentationEngine()
         self.engine = engine
@@ -155,6 +159,36 @@ public final class PresentationModel {
     private func recordSession() {
         guard engine.state.hasSlides else { return }
         sessionRecorder?.record(sessionSnapshot)
+    }
+
+    // MARK: Failure (A9.5.2)
+
+    /// What the failure screen shows for a PowerPoint file that didn't load;
+    /// nil while loading, when presenting, for other sources, and when the
+    /// load was cancelled.
+    public var failureContent: PowerPointFailureContent? {
+        guard case .error = engine.phase, let powerPointFailure,
+              let content = PowerPointFailureContent(powerPointFailure)
+        else { return nil }
+        return onImportPDF == nil ? content.removing(.importPDF) : content
+    }
+
+    /// The load stopped because the person left; nothing is shown for it.
+    public var wasCancelled: Bool { powerPointFailure == .cancelled }
+
+    /// Loads the file again through the same cache, renderer and engine.
+    /// Only where the failure screen offers Try Again.
+    public func retry() async {
+        guard failureContent?.canRetry == true else { return }
+        powerPointFailure = nil
+        engine.reset()
+        await load()
+    }
+
+    /// Hands Import PDF to the caller. The PDF fallback itself is A9.5.3.
+    public func importPDF() {
+        guard failureContent?.canImportPDF == true else { return }
+        onImportPDF?()
     }
 
     /// Records the current state and waits until it is stored.

@@ -18,6 +18,7 @@ public struct PresentationView: View {
     @State private var isChoosingInterval = false
     @State private var intervalInput = ""
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dismiss) private var dismiss
 
     public init(model: PresentationModel) {
         _model = State(initialValue: model)
@@ -87,9 +88,25 @@ public struct PresentationView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .accessibilityIdentifier("presentation.loading")
         case .error(let failure):
-            failureView(failure)
+            if let content = model.failureContent {
+                PresentationFailureView(content) { action in
+                    switch action {
+                    case .retry: Task { await model.retry() }
+                    case .importPDF: model.importPDF()
+                    case .cancel: dismiss()
+                    }
+                }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("presentation.error")
+            } else if model.wasCancelled {
+                // Leaving is not a failure: no message, just back.
+                Color.clear.onAppear { dismiss() }
+            } else {
+                failureView(failure)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityIdentifier("presentation.error")
+            }
         case .ready, .playing, .paused, .completed:
             slide
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
