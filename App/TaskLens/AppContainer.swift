@@ -5,6 +5,7 @@ import TLCoreServices
 import TLData
 import TLDomain
 import TLFoundation
+import TLPowerPointRendering
 import WidgetKit
 
 /// Composition root: the only place that knows concrete implementations.
@@ -36,6 +37,8 @@ struct AppContainer: Sendable {
     let documents: DocumentService
     /// Where each presentation was left.
     let presentationSessions: PresentationSessionStore
+    /// Slide images rendered from imported PowerPoint files, kept with each file.
+    let powerPointSlides: PowerPointSlideCache
     let toolCapture: ToolCaptureService
     let share: ShareService
     /// Where the share extension leaves shared items for the app.
@@ -139,6 +142,7 @@ struct AppContainer: Sendable {
             logger: logger.scoped("documents")
         )
         self.presentationSessions = PresentationSessionStore(sessions: repositories.presentationSessions, clock: clock)
+        self.powerPointSlides = PowerPointSlideCache(documentService: self.documents)
         self.toolCapture = ToolCaptureService(capture: capture, sessions: self.sessions)
         self.share = ShareService(capture: capture, documents: self.documents)
         self.shareOutbox = ShareOutbox(storeRoot: storeRoot)

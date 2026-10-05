@@ -4,7 +4,7 @@ import Foundation
 public enum PresentationFailure: String, Codable, Sendable, CaseIterable {
     /// The source has no slides.
     case empty
-    /// The source type cannot be presented (PowerPoint, unknown).
+    /// The source type cannot be presented (unknown, or a PowerPoint file iOS cannot render).
     case unsupportedSource
     /// The file could not be opened.
     case unreadable

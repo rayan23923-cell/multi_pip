@@ -481,7 +481,6 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case documentsDeleteMessage = "documents.delete.message"
     case documentsOpenFailed = "documents.openFailed"
     case documentsKindPowerpoint = "documents.kind.powerpoint"
-    case documentsPowerpointNotYet = "documents.powerpoint.notYet"
     case pdfPage = "pdf.page"
     case pdfPreviousPage = "pdf.previousPage"
     case pdfNextPage = "pdf.nextPage"

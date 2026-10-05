@@ -3554,23 +3554,6 @@
         }
       }
     },
-    "documents.powerpoint.notYet": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "عرض ملفات PowerPoint غير متاح بعد. الملف محفوظ في TaskLens."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Presenting PowerPoint files isn't available yet. The file is saved in TaskLens."
-          }
-        }
-      }
-    },
     "error.generic": {
       "extractionState": "manual",
       "localizations": {

@@ -53,6 +53,8 @@ public enum AppRoute: Hashable, Sendable {
 public enum PresentationRequest: Hashable, Sendable {
     case pdf(DocumentID)
     case images([DocumentID])
+    /// An imported PowerPoint file, shown from its rendered slide images.
+    case powerPoint(DocumentID)
 }
 
 extension AppRoute {

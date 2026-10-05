@@ -242,15 +242,24 @@ private extension View {
                     toolCapture: container.toolCapture
                 ))
             case .powerPoint(let id):
-                PowerPointDocumentView(documentID: id, documentService: container.documents)
+                // A PowerPoint file opens straight into the presentation of its slides.
+                container.presentationView(.powerPoint(id))
             case .presentation(let request):
-                PresentationView(model: PresentationModel(
-                    request: request,
-                    documentService: container.documents,
-                    sessionStore: container.presentationSessions
-                ))
+                container.presentationView(request)
             }
         }
+    }
+}
+
+private extension AppContainer {
+    @MainActor
+    func presentationView(_ request: PresentationRequest) -> PresentationView {
+        PresentationView(model: PresentationModel(
+            request: request,
+            documentService: documents,
+            sessionStore: presentationSessions,
+            slideImages: powerPointSlides
+        ))
     }
 }
 

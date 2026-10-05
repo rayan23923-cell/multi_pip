@@ -5,8 +5,8 @@ public typealias PresentationID = Identifier<PresentationDocument>
 
 /// Where a presentation's slides come from.
 ///
-/// Only `pdf` and `image` can be built today. `powerpoint` and `unknown` exist so
-/// stored data and later phases have a name for them; no PowerPoint import exists.
+/// `pdf`, `image` and `powerpoint` can be presented. A PowerPoint file is shown
+/// as the slide images rendered from it. `unknown` exists so stored data has a name for it.
 public enum PresentationSourceType: String, Codable, Sendable, CaseIterable {
     case pdf
     case image
@@ -16,8 +16,8 @@ public enum PresentationSourceType: String, Codable, Sendable, CaseIterable {
     /// True for the sources TaskLens can present today.
     public var isSupported: Bool {
         switch self {
-        case .pdf, .image: true
-        case .powerpoint, .unknown: false
+        case .pdf, .image, .powerpoint: true
+        case .unknown: false
         }
     }
 }
@@ -28,10 +28,13 @@ public enum PresentationSlideSource: Codable, Sendable, Hashable {
     case pdfPage(DocumentID, pageIndex: Int)
     /// An imported image, shown whole.
     case image(DocumentID)
+    /// An image rendered from an imported document (a PowerPoint slide), shown
+    /// whole like `image`. `index` is zero-based among the rendered images.
+    case renderedImage(DocumentID, index: Int)
 
     public var documentID: DocumentID {
         switch self {
-        case .pdfPage(let id, _), .image(let id): id
+        case .pdfPage(let id, _), .image(let id), .renderedImage(let id, _): id
         }
     }
 }
@@ -109,6 +112,17 @@ public struct PresentationDocument: Codable, Sendable, Equatable, Identifiable {
         let slides = documents.enumerated().map { PresentationSlide(index: $0.offset, source: .image($0.element.id)) }
         return PresentationDocument(
             documentID: first.id, title: title, sourceType: .image, slides: slides, createdAt: createdAt
+        )
+    }
+
+    /// One slide per image rendered from an imported PowerPoint file, in the
+    /// order they were rendered. The images are not copied or imported.
+    public static func powerPoint(_ document: Document, renderedSlideCount: Int, createdAt: Date) throws -> PresentationDocument {
+        guard document.kind == .powerpoint else { throw TaskLensError.unsupportedContent(type: document.kind.rawValue) }
+        guard renderedSlideCount > 0 else { throw TaskLensError.validationFailed(.emptyContent) }
+        let slides = (0..<renderedSlideCount).map { PresentationSlide(index: $0, source: .renderedImage(document.id, index: $0)) }
+        return PresentationDocument(
+            documentID: document.id, title: document.title, sourceType: .powerpoint, slides: slides, createdAt: createdAt
         )
     }
 }

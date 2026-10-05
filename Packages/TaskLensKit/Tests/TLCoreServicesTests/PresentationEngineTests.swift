@@ -107,7 +107,7 @@ struct PresentationEngineTests {
 
     @Test func unsupportedSourceTypeIsRejected() async {
         let engine = PresentationEngine()
-        let loaded = await engine.load(from: StubLoader(result: .success(makePresentation(slides: 3, type: .powerpoint))))
+        let loaded = await engine.load(from: StubLoader(result: .success(makePresentation(slides: 3, type: .unknown))))
         #expect(!loaded)
         #expect(engine.phase == .error(.unsupportedSource))
         #expect(engine.document == nil)

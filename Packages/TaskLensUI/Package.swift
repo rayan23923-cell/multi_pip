@@ -186,16 +186,18 @@ let package = Package(
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
             ]
         ),
-        // Presenting a PDF or images one slide at a time, on PresentationEngine.
+        // Presenting a PDF, images or a PowerPoint file's rendered slides one
+        // slide at a time, on PresentationEngine.
         .target(
             name: "PresentationFeature",
             dependencies: [
                 "TLLocalization", "TLDesignSystem", "TLNavigation",
+                .product(name: "TLFoundation", package: "TaskLensKit"),
                 .product(name: "TLDomain", package: "TaskLensKit"),
                 .product(name: "TLCoreServices", package: "TaskLensKit"),
             ]
         ),
-        // Offline PowerPoint to slide images with WebKit. Not connected to any screen yet.
+        // Offline PowerPoint to slide images with WebKit, kept with the document.
         .target(
             name: "TLPowerPointRendering",
             dependencies: [

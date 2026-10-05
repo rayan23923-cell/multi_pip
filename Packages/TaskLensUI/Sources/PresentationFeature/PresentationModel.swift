@@ -5,6 +5,7 @@ import Observation
 import PDFKit
 import TLCoreServices
 import TLDomain
+import TLFoundation
 import TLNavigation
 
 /// Opens a presentation through the engine and gives the screen what it needs
@@ -16,6 +17,8 @@ import TLNavigation
 /// Auto play runs through `PresentationAutoPlayer`, which owns the only timer.
 /// Where the presentation was left (slide and Auto Play interval) is kept per
 /// presentation by `PresentationSessionRecorder` and restored on opening.
+/// A PowerPoint file is presented from its rendered slide images, loaded by
+/// `ImagePresentationLoader` like any image presentation.
 @MainActor
 @Observable
 public final class PresentationModel {
@@ -32,17 +35,21 @@ public final class PresentationModel {
 
     private let documentService: DocumentService
     private let sessionStore: PresentationSessionStore?
+    /// Renders (or finds) the slide images of a PowerPoint file.
+    private let slideImages: (any PowerPointSlideImageProviding)?
 
     public init(
         request: PresentationRequest,
         documentService: DocumentService,
         sessionStore: PresentationSessionStore? = nil,
+        slideImages: (any PowerPointSlideImageProviding)? = nil,
         engine: PresentationEngine? = nil,
         autoPlaySleep: PresentationAutoPlayer.Sleep? = nil
     ) {
         self.request = request
         self.documentService = documentService
         self.sessionStore = sessionStore
+        self.slideImages = slideImages
         sessionRecorder = sessionStore.map { PresentationSessionRecorder(source: request.sessionSource, store: $0) }
         let engine = engine ?? PresentationEngine()
         self.engine = engine
@@ -60,11 +67,12 @@ public final class PresentationModel {
     public var canGoForward: Bool { hasSlides && engine.currentSlide + 1 < engine.slideCount }
     public var currentSlide: PresentationSlide? { engine.currentSlideContent }
 
-    /// What VoiceOver reads as the slide's content: the image's name, or the PDF's title.
+    /// What VoiceOver reads as the slide's content: the image's name, or the PDF's
+    /// or PowerPoint file's title.
     public var currentSlideDescription: String {
         switch currentSlide?.source {
         case .image(let id): imageTitles[id] ?? ""
-        case .pdfPage: title
+        case .pdfPage, .renderedImage: title
         case nil: ""
         }
     }
@@ -81,6 +89,13 @@ public final class PresentationModel {
             }
         case .images(let ids):
             await engine.load(from: ImagePresentationLoader(documentIDs: ids, documentService: documentService))
+            await restore(saved)
+        case .powerPoint(let id):
+            if let slideImages {
+                await engine.load(from: ImagePresentationLoader(powerPoint: id, slideImages: slideImages, documentService: documentService))
+            } else {
+                await engine.load(from: NoSlideImages())
+            }
             await restore(saved)
         }
     }
@@ -215,6 +230,22 @@ public final class PresentationModel {
 
     // MARK: Rendering
 
+    /// The image of an image slide or a rendered PowerPoint slide, decoded at no
+    /// more than `maxPixelSize` on its longest side; nil for a PDF page.
+    public func image(for source: PresentationSlideSource, maxPixelSize: CGFloat) async -> CGImage? {
+        switch source {
+        case .image(let id):
+            return await image(for: id, maxPixelSize: maxPixelSize)
+        case .renderedImage(let id, let index):
+            guard let url = slideImages?.slideImage(for: id, index: index) else { return nil }
+            return await Task.detached(priority: .userInitiated) {
+                Self.downsampledImage(at: url, maxPixelSize: maxPixelSize)
+            }.value
+        case .pdfPage:
+            return nil
+        }
+    }
+
     /// The image for an image slide, decoded at no more than `maxPixelSize` on
     /// its longest side. Only the slide on screen is decoded.
     public func image(for id: DocumentID, maxPixelSize: CGFloat) async -> CGImage? {
@@ -245,6 +276,14 @@ extension PresentationRequest {
         switch self {
         case .pdf(let id): .pdf(id)
         case .images(let ids): .images(ids)
+        case .powerPoint(let id): .powerPoint(id)
         }
+    }
+}
+
+/// Used when no PowerPoint renderer was given: the presentation fails cleanly.
+private struct NoSlideImages: PresentationLoading {
+    func loadPresentation() async throws -> PresentationDocument {
+        throw TaskLensError.unsupportedContent(type: "pptx")
     }
 }

@@ -58,9 +58,12 @@ final class PresentationUITests: XCTestCase {
         }
         XCTAssertFalse(element(app, "documentRow.Sample Report").label.contains("PowerPoint"))
 
+        // A9.3: it opens as a presentation. This package has no real slides, so
+        // rendering fails cleanly instead of showing an empty presentation.
         deck.tap()
-        XCTAssertTrue(element(app, "powerpoint.placeholder").waitForExistence(timeout: 10),
-                      "Opening the deck shows the PowerPoint screen, not the PDF reader")
+        XCTAssertTrue(element(app, "presentation.error").waitForExistence(timeout: 60),
+                      "Opening the deck shows the presentation screen, not the PDF reader")
+        XCTAssertFalse(element(app, "presentation.counter").exists)
         XCTAssertFalse(element(app, "pdf.pageLabel").exists)
     }
 

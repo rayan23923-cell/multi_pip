@@ -13,6 +13,7 @@ public struct DocumentService: Sendable {
     /// The text viewer shows at most this many characters.
     public static let maximumDisplayedTextLength = 500_000
     static let folderName = "Documents"
+    static let generatedFolderName = "Generated"
 
     private let documentStore: any Repository<Document>
     private let filesDirectory: URL
@@ -50,6 +51,14 @@ public struct DocumentService: Sendable {
 
     public func fileURL(for document: Document) -> URL {
         filesDirectory.appendingPathComponent(document.file.relativePath)
+    }
+
+    /// Where files TaskLens makes from a document are kept, such as the slide
+    /// images of a PowerPoint file. They are deleted with the document.
+    public func generatedFilesDirectory(for id: DocumentID) -> URL {
+        filesDirectory
+            .appendingPathComponent(Self.generatedFolderName, isDirectory: true)
+            .appendingPathComponent(id.rawValue.uuidString, isDirectory: true)
     }
 
     // MARK: Import
@@ -191,7 +200,7 @@ public struct DocumentService: Sendable {
         return document
     }
 
-    /// Deletes the record and its stored file.
+    /// Deletes the record, its stored file and any files made from it.
     public func delete(_ id: DocumentID) async throws {
         let document = try await documentStore.require(id: id)
         try await documentStore.delete(id: id)
@@ -201,19 +210,35 @@ public struct DocumentService: Sendable {
             // The record is gone; a missing file is not worth failing the delete.
             logger.warning("Could not remove file for document \(id): \(error)")
         }
+        try? FileManager.default.removeItem(at: generatedFilesDirectory(for: id))
     }
 
     /// Deletes stored files no document refers to any more, e.g. after a
-    /// workspace and its documents were deleted. Returns how many were removed.
+    /// workspace and its documents were deleted, and files generated from
+    /// documents that no longer exist. Returns how many were removed.
     /// Files newer than `minimumAge` are kept, so an import in progress
     /// (file written, record not yet saved) is never touched.
     @discardableResult
     public func removeOrphanedFiles(minimumAge: TimeInterval = 60) async throws -> Int {
-        let folder = filesDirectory.appendingPathComponent(Self.folderName, isDirectory: true)
-        guard let stored = try? FileManager.default.contentsOfDirectory(atPath: folder.path) else { return 0 }
-        let referenced = Set(try await documentStore.fetchAll().map { ($0.file.relativePath as NSString).lastPathComponent })
-        var removed = 0
+        let documents = try await documentStore.fetchAll()
         let cutoff = clock.now().addingTimeInterval(-minimumAge)
+        var removed = Self.removeUnreferenced(
+            in: filesDirectory.appendingPathComponent(Self.folderName, isDirectory: true),
+            keeping: Set(documents.map { ($0.file.relativePath as NSString).lastPathComponent }),
+            olderThan: cutoff
+        )
+        removed += Self.removeUnreferenced(
+            in: filesDirectory.appendingPathComponent(Self.generatedFolderName, isDirectory: true),
+            keeping: Set(documents.map(\.id.rawValue.uuidString)),
+            olderThan: cutoff
+        )
+        if removed > 0 { logger.info("Removed \(removed) orphaned files") }
+        return removed
+    }
+
+    private static func removeUnreferenced(in folder: URL, keeping referenced: Set<String>, olderThan cutoff: Date) -> Int {
+        guard let stored = try? FileManager.default.contentsOfDirectory(atPath: folder.path) else { return 0 }
+        var removed = 0
         for name in stored where !referenced.contains(name) {
             let url = folder.appendingPathComponent(name)
             let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
@@ -222,7 +247,6 @@ public struct DocumentService: Sendable {
                 removed += 1
             }
         }
-        if removed > 0 { logger.info("Removed \(removed) orphaned files") }
         return removed
     }
 

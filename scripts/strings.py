@@ -576,8 +576,6 @@ STRINGS = [
      "ستُحذف النسخة المحفوظة في TaskLens."),
     ("documents.openFailed", "This file could not be opened.", "تعذّر فتح هذا الملف."),
     ("documents.kind.powerpoint", "PowerPoint Presentation", "عرض PowerPoint تقديمي"),
-    ("documents.powerpoint.notYet", "Presenting PowerPoint files isn't available yet. The file is saved in TaskLens.",
-     "عرض ملفات PowerPoint غير متاح بعد. الملف محفوظ في TaskLens."),
 
     ("pdf.page", "Page %lld of %lld", "صفحة %lld من %lld"),
     ("pdf.previousPage", "Previous Page", "الصفحة السابقة"),

@@ -160,7 +160,7 @@ struct DocumentRow: View {
         case .image: "photo"
         case .text: "doc.plaintext"
         case .document: "doc"
-        case .powerpoint: PowerPointDocumentView.symbolName
+        case .powerpoint: "rectangle.on.rectangle"
         }
     }
 }

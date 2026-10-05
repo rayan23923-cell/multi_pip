@@ -57,8 +57,29 @@ struct PresentationDocumentTests {
         }
     }
 
-    @Test func onlyPDFAndImagesAreSupportedToday() {
-        #expect(PresentationSourceType.allCases.filter(\.isSupported) == [.pdf, .image])
+    @Test func pdfImagesAndPowerPointAreSupported() {
+        #expect(PresentationSourceType.allCases.filter(\.isSupported) == [.pdf, .image, .powerpoint])
+    }
+
+    @Test func powerPointHasOneRenderedImagePerSlide() throws {
+        let deck = document(.powerpoint)
+        let presentation = try PresentationDocument.powerPoint(deck, renderedSlideCount: 3, createdAt: Fixtures.date)
+        #expect(presentation.sourceType == .powerpoint)
+        #expect(presentation.documentID == deck.id)
+        #expect(presentation.title == deck.title)
+        #expect(presentation.slides.map(\.source) == (0..<3).map { .renderedImage(deck.id, index: $0) })
+        #expect(presentation.slides.map(\.displayNumber) == [1, 2, 3])
+        #expect(presentation.slides.allSatisfy { $0.source.documentID == deck.id })
+        #expect(deck.lastReadPage == 2)
+    }
+
+    @Test func powerPointRejectsNoSlidesAndOtherKinds() {
+        #expect(throws: TaskLensError.validationFailed(.emptyContent)) {
+            try PresentationDocument.powerPoint(document(.powerpoint), renderedSlideCount: 0, createdAt: Fixtures.date)
+        }
+        #expect(throws: TaskLensError.unsupportedContent(type: "pdf")) {
+            try PresentationDocument.powerPoint(document(.pdf), renderedSlideCount: 3, createdAt: Fixtures.date)
+        }
     }
 
     @Test func buildingAPresentationLeavesTheReadingPageAlone() throws {

@@ -11,8 +11,14 @@ enum SampleDocuments {
     static let presentationImagesArgument = "-TaskLensSeedPresentationImages"
     /// With the argument above, also imports "Sample Deck.pptx" and tries a fake "Broken Deck.pptx" (refused).
     static let powerPointArgument = "-TaskLensSeedPowerPoint"
+    /// A real deck from a UI test, base64; with the PowerPoint argument it is imported as "Slides A" and "Slides B".
+    static let powerPointDeckEnvironmentKey = "TASKLENS_SEED_PPTX"
 
-    static func seedIfRequested(_ service: DocumentService, arguments: [String] = ProcessInfo.processInfo.arguments) async {
+    static func seedIfRequested(
+        _ service: DocumentService,
+        arguments: [String] = ProcessInfo.processInfo.arguments,
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) async {
         guard arguments.contains(launchArgument),
               (try? await service.documents(in: nil).isEmpty) == true
         else { return }
@@ -27,6 +33,11 @@ enum SampleDocuments {
         if arguments.contains(powerPointArgument) {
             _ = try? await service.importData(powerPoint(), filename: "Sample Deck.pptx", contentType: nil)
             _ = try? await service.importData(Data("%PDF-1.4".utf8), filename: "Broken Deck.pptx", contentType: nil)
+            if let deck = environment[powerPointDeckEnvironmentKey].flatMap({ Data(base64Encoded: $0) }) {
+                for title in ["Slides A", "Slides B"] {
+                    _ = try? await service.importData(deck, filename: "\(title).pptx", contentType: nil)
+                }
+            }
         }
     }
 

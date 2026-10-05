@@ -114,8 +114,10 @@ public struct PresentationView: View {
             } else {
                 slideFailed
             }
-        case .image(let id):
-            ImageSlideView(model: model, documentID: id)
+        case .image, .renderedImage:
+            if let source = model.currentSlide?.source {
+                ImageSlideView(model: model, source: source)
+            }
         case nil:
             slideFailed
         }
@@ -260,19 +262,20 @@ private struct PDFSlideView: UIViewRepresentable {
     }
 }
 
-/// One image, aspect-fit, decoded for the screen size when it appears.
+/// One image, aspect-fit, decoded for the screen size when it appears: an
+/// imported image or a rendered PowerPoint slide.
 private struct ImageSlideView: View {
     let model: PresentationModel
-    let documentID: DocumentID
+    let source: PresentationSlideSource
     @State private var image: CGImage?
-    @State private var loadedID: DocumentID?
+    @State private var loadedID: PresentationSlideSource?
     @State private var failed = false
     @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                if let image, loadedID == documentID {
+                if let image, loadedID == source {
                     Image(decorative: image, scale: displayScale)
                         .resizable()
                         .scaledToFit()
@@ -286,13 +289,13 @@ private struct ImageSlideView: View {
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
-            .task(id: documentID) {
+            .task(id: source) {
                 failed = false
                 let longestSide = max(geometry.size.width, geometry.size.height) * displayScale
-                let decoded = await model.image(for: documentID, maxPixelSize: longestSide)
+                let decoded = await model.image(for: source, maxPixelSize: longestSide)
                 guard !Task.isCancelled else { return }
                 image = decoded
-                loadedID = documentID
+                loadedID = source
                 failed = decoded == nil
             }
         }
