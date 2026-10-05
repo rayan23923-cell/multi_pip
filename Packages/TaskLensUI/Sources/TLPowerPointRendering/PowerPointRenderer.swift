@@ -453,23 +453,32 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
     func snapshot(_ cssRect: CGRect, webIndex: Int, slide: Int, deckAspect: Double, longestSidePixels: Int,
                   format: PowerPointRenderer.ImageFormat) async throws -> Shot {
         let scrollView = webView.scrollView
-        let zoom = scrollView.zoomScale
-        let target = CGPoint(x: cssRect.minX * zoom, y: cssRect.minY * zoom)
-        scrollView.setContentOffset(target, animated: false)
+        scrollView.setContentOffset(CGPoint(x: cssRect.minX * scrollView.zoomScale, y: cssRect.minY * scrollView.zoomScale), animated: false)
         let pictureCount = try await decodePictures(onSlide: webIndex)
-        let offset = scrollView.contentOffset
-
-        let rect = CGRect(x: target.x - offset.x, y: target.y - offset.y, width: cssRect.width * zoom, height: cssRect.height * zoom)
-        // A slide that doesn't fit in the view would come out cropped.
-        guard webView.bounds.insetBy(dx: -1, dy: -1).contains(rect) else {
-            PowerPointRenderer.recordFailure("slide \(slide) rect \(rect) bounds \(webView.bounds) zoom \(zoom)")
-            throw PowerPointRenderError.renderingFailed(.snapshotFailed(slide: slide))
-        }
-        let configuration = WKSnapshotConfiguration()
-        configuration.rect = rect
         let pixelWidth = deckAspect >= 1 ? Double(longestSidePixels) : Double(longestSidePixels) * deckAspect
-        configuration.snapshotWidth = NSNumber(value: pixelWidth / Double(screenScale))
-        configuration.afterScreenUpdates = true
+
+        // WebKit can change the page zoom after the first layout, so the slide's
+        // rect is worked out again from the zoom of the moment before each
+        // snapshot, and a snapshot taken while the zoom changed is not kept.
+        func configuration() throws -> (WKSnapshotConfiguration, CGFloat) {
+            let zoom = scrollView.zoomScale
+            let target = CGPoint(x: cssRect.minX * zoom, y: cssRect.minY * zoom)
+            if abs(scrollView.contentOffset.x - target.x) > 0.5 || abs(scrollView.contentOffset.y - target.y) > 0.5 {
+                scrollView.setContentOffset(target, animated: false)
+            }
+            let offset = scrollView.contentOffset
+            let rect = CGRect(x: target.x - offset.x, y: target.y - offset.y, width: cssRect.width * zoom, height: cssRect.height * zoom)
+            // A slide that doesn't fit in the view would come out cropped.
+            guard webView.bounds.insetBy(dx: -1, dy: -1).contains(rect) else {
+                PowerPointRenderer.recordFailure("slide \(slide) rect \(rect) bounds \(webView.bounds) zoom \(zoom)")
+                throw PowerPointRenderError.renderingFailed(.snapshotFailed(slide: slide))
+            }
+            let configuration = WKSnapshotConfiguration()
+            configuration.rect = rect
+            configuration.snapshotWidth = NSNumber(value: pixelWidth / Double(screenScale))
+            configuration.afterScreenUpdates = true
+            return (configuration, zoom)
+        }
 
         // WebKit paints a newly scrolled-in area in tiles, a little later. Where it
         // hasn't painted yet the page color shows, so a snapshot with that color in
@@ -479,6 +488,7 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
         var previous: [UInt8]?
         for attempt in 0..<Self.snapshotAttempts {
             if attempt > 0 { try await pause(.milliseconds(50 * attempt)) }
+            let (configuration, zoom) = try configuration()
             var shot = try await capture(configuration, slide: slide, format: format)
             if shot.unpainted {
                 // Page color, or a picture that happens to be that color? With the
@@ -489,12 +499,16 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
                 if check.unpainted { continue }
                 shot = check
             }
+            guard scrollView.zoomScale == zoom else {
+                previous = nil
+                continue
+            }
             shot.retries = attempt
             if pictureCount == 0 || shot.fingerprint == previous { return shot }
             previous = shot.fingerprint
         }
         PowerPointRenderer.recordFailure("slide \(slide) was not fully painted or settled after \(Self.snapshotAttempts) snapshots: "
-            + "\(PowerPointRenderer.lastUnpaintedArea ?? "-") rect \(rect) bounds \(webView.bounds) zoom \(zoom) "
+            + "\(PowerPointRenderer.lastUnpaintedArea ?? "-") bounds \(webView.bounds) zoom \(scrollView.zoomScale) "
             + "offset \(scrollView.contentOffset) content \(scrollView.contentSize) css \(cssRect)")
         throw PowerPointRenderError.renderingFailed(.snapshotFailed(slide: slide))
     }
