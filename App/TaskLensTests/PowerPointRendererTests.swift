@@ -85,6 +85,24 @@ struct PowerPointRendererTests {
         }
     }
 
+    /// A9.4 regression for the A9.2 zoom fix (3075c48): a slide captured while
+    /// WebKit was still settling its zoom came out magnified, with a white
+    /// corner. Renders the non-16:9 decks back to back and checks all four corners.
+    @Test func repeatedRendersKeepEverySlideInFrame() async throws {
+        for round in 1...3 {
+            for name in ["aspect-4x3", "aspect-square"] {
+                try await withOutput { destination in
+                    let slide = try #require(try await render(name, to: destination).slides.first)
+                    let pixels = try Pixels(slide.fileURL)
+                    for (x, y) in [(0.03, 0.03), (0.97, 0.03), (0.03, 0.97), (0.97, 0.97)] {
+                        #expect(pixels.matches((30, 60, 220), atX: x, y: y), "\(name) round \(round) corner \(x),\(y)")
+                    }
+                    #expect(pixels.matches((255, 255, 255), atX: 0.5, y: 0.75), "\(name) round \(round) frame inside")
+                }
+            }
+        }
+    }
+
     @Test func auditDeckRendersEveryKindOfContent() async throws {
         // Text, fonts, pictures, shapes, table, chart, background, layout, Arabic,
         // mixed text, a 4000×2250 picture, long text, 40 objects, complex layout.

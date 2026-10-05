@@ -8,14 +8,17 @@ final class PowerPointPresentationUITests: XCTestCase {
     }
 
     /// Imports `Fixtures/presentation-20.pptx` twice, as "Slides A" and "Slides B".
-    private func launch() throws -> XCUIApplication {
+    /// `fresh: false` relaunches over the store the last launch left, as after the app was quit.
+    private func launch(fresh: Bool = true) throws -> XCUIApplication {
         let bundle = Bundle(for: PowerPointPresentationUITests.self)
         let url = try XCTUnwrap(bundle.url(forResource: "presentation-20", withExtension: "pptx")
             ?? bundle.url(forResource: "presentation-20", withExtension: "pptx", subdirectory: "Fixtures"))
         let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-TaskLensUITestStore",
-                               "-TaskLensResetStore", "-TaskLensSeedDocuments", "-TaskLensSeedPowerPoint"]
-        app.launchEnvironment["TASKLENS_SEED_PPTX"] = try Data(contentsOf: url).base64EncodedString()
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-TaskLensUITestStore"]
+        if fresh {
+            app.launchArguments += ["-TaskLensResetStore", "-TaskLensSeedDocuments", "-TaskLensSeedPowerPoint"]
+            app.launchEnvironment["TASKLENS_SEED_PPTX"] = try Data(contentsOf: url).base64EncodedString()
+        }
         app.launch()
         return app
     }
@@ -94,7 +97,9 @@ final class PowerPointPresentationUITests: XCTestCase {
         tap(app, "commandCenter.documents")
         XCTAssertTrue(element(app, "documentRow.Slides A").waitForExistence(timeout: 10))
         XCTAssertTrue(element(app, "documentRow.Slides A").label.contains("PowerPoint Presentation"))
+        var started = Date()
         open(app, "Slides A", expecting: "Slide 1 of 20")
+        let firstOpen = Date().timeIntervalSince(started)
 
         // Navigation, bounds and Go to Slide.
         XCTAssertFalse(element(app, "presentation.previous").isEnabled, "Previous is off on the first slide")
@@ -152,5 +157,19 @@ final class PowerPointPresentationUITests: XCTestCase {
         open(app, "Slides A", expecting: "Slide 5 of 20")
         back(app)
         open(app, "Slides B", expecting: "Slide 9 of 20")
+        back(app)
+
+        // A9.4: after the app is quit and launched again, both decks open from
+        // their cached slides on the slide they were left on.
+        app.terminate()
+        let relaunched = try launch(fresh: false)
+        tap(relaunched, "commandCenter.documents")
+        XCTAssertTrue(element(relaunched, "documentRow.Slides A").waitForExistence(timeout: 10))
+        started = Date()
+        open(relaunched, "Slides A", expecting: "Slide 5 of 20")
+        let restartOpen = Date().timeIntervalSince(started)
+        back(relaunched)
+        open(relaunched, "Slides B", expecting: "Slide 9 of 20")
+        print(String(format: "PPTX A94 UI firstOpen=%.2fs openAfterRestart=%.2fs (including UI waits)", firstOpen, restartOpen))
     }
 }
