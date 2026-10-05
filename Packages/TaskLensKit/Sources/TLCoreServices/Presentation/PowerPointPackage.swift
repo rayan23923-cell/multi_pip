@@ -36,16 +36,43 @@ public enum PowerPointPackage {
     }
 
     static func inspect(_ data: Data) -> Summary? {
-        // Reads in place: an imported file may be up to 200 MB and memory-mapped.
-        data.withUnsafeBytes { bytes in directory(bytes).flatMap(summary) }
+        var rejection: Rejection?
+        return inspect(data, rejection: &rejection)
     }
 
-    private static func summary(_ entries: [Entry]) -> Summary? {
+    /// Why `validate` rejects `data`, or nil when it accepts it. Explains a
+    /// rejection; it never changes what is accepted.
+    public enum Rejection: Equatable, Sendable {
+        /// Not a ZIP package, or not a PowerPoint one: damaged, truncated or another kind of file.
+        case malformed
+        /// A macro project, unsafe paths, or sizes that point to a ZIP bomb.
+        case unsafe
+    }
+
+    public static func rejection(of data: Data) -> Rejection? {
+        var rejection: Rejection?
+        return inspect(data, rejection: &rejection) == nil ? (rejection ?? .malformed) : nil
+    }
+
+    private static func inspect(_ data: Data, rejection: inout Rejection?) -> Summary? {
+        // Reads in place: an imported file may be up to 200 MB and memory-mapped.
+        data.withUnsafeBytes { bytes in
+            guard let entries = directory(bytes, rejection: &rejection) else { return nil }
+            return summary(entries, rejection: &rejection)
+        }
+    }
+
+    private static func summary(_ entries: [Entry], rejection: inout Rejection?) -> Summary? {
         let names = Set(entries.map(\.name))
-        guard names.contains("[Content_Types].xml"), names.contains("ppt/presentation.xml"),
-              // A macro project means a renamed .pptm.
-              !names.contains("ppt/vbaProject.bin")
-        else { return nil }
+        // A macro project means a renamed .pptm.
+        guard !names.contains("ppt/vbaProject.bin") else {
+            rejection = .unsafe
+            return nil
+        }
+        guard names.contains("[Content_Types].xml"), names.contains("ppt/presentation.xml") else {
+            rejection = .malformed
+            return nil
+        }
         return Summary(
             entryCount: entries.count,
             slidePartCount: entries.filter { isSlidePart($0.name) }.count,
@@ -64,6 +91,12 @@ public enum PowerPointPackage {
 
     /// The central directory, or nil when the archive breaks any of the rules above.
     static func directory(_ bytes: UnsafeRawBufferPointer) -> [Entry]? {
+        var rejection: Rejection?
+        return directory(bytes, rejection: &rejection)
+    }
+
+    private static func directory(_ bytes: UnsafeRawBufferPointer, rejection: inout Rejection?) -> [Entry]? {
+        rejection = .malformed
         guard bytes.count >= 22, read32(bytes, 0) == localHeader else { return nil }
 
         // The end-of-directory record sits in the last 22 bytes plus an optional comment.
@@ -76,9 +109,13 @@ public enum PowerPointPackage {
         let count = Int(read16(bytes, end + 10))
         let directorySize = Int(read32(bytes, end + 12)), directoryOffset = Int(read32(bytes, end + 16))
         // Split archives and ZIP64 (over 65,535 entries or 4 GB) are not PowerPoint files TaskLens accepts.
-        guard disk == 0, directoryDisk == 0, count > 0, count < 0xFFFF, count <= maximumEntries,
+        guard disk == 0, directoryDisk == 0, count > 0, count < 0xFFFF,
               directoryOffset != 0xFFFF_FFFF, directoryOffset + directorySize <= end
         else { return nil }
+        guard count <= maximumEntries else {
+            rejection = .unsafe
+            return nil
+        }
 
         var entries: [Entry] = []
         var total: Int64 = 0
@@ -95,15 +132,19 @@ public enum PowerPointPackage {
             let nameEnd = offset + 46 + nameLength
             guard nameEnd <= end, let name = String(bytes: UnsafeRawBufferPointer(rebasing: bytes[(offset + 46)..<nameEnd]), encoding: .utf8) else { return nil }
 
-            guard isSafe(name) else { return nil }
             total += uncompressed
-            guard total <= maximumUncompressedSize else { return nil }
-            if uncompressed > ratioCheckThreshold, uncompressed / max(compressed, 1) > maximumRatio { return nil }
+            guard isSafe(name), total <= maximumUncompressedSize,
+                  uncompressed <= ratioCheckThreshold || uncompressed / max(compressed, 1) <= maximumRatio
+            else {
+                rejection = .unsafe
+                return nil
+            }
 
             entries.append(Entry(name: name, method: method, compressedSize: compressed,
                                  uncompressedSize: uncompressed, localHeaderOffset: localOffset))
             offset = nameEnd + extraLength + commentLength
         }
+        rejection = nil
         return entries
     }
 

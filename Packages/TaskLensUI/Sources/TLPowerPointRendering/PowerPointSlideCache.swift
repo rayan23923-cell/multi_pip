@@ -23,9 +23,10 @@ import TLFoundation
 /// cancelled or interrupted render never looks like a cache. Opening a file
 /// that is already rendering waits for that render instead of starting another.
 ///
-/// Errors are reported as `TaskLensError`: `unsupportedContent` for files
-/// WebKit can't open (including decks with speaker notes) and
-/// `persistenceFailed(.read)` for anything else, with nothing left behind.
+/// A file the import check (A9.1) rejects is never rendered. Errors are
+/// reported as `PowerPointFailure`, with nothing left behind. A caller that is
+/// cancelled gets `cancelled`; the render itself stops when no other caller
+/// is waiting for it.
 public struct PowerPointSlideCache: PowerPointSlideImageProviding {
     /// Bump when rendered images change for the same file (a renderer fix, new
     /// settings), so caches made by older builds are rendered again.
@@ -55,7 +56,8 @@ public struct PowerPointSlideCache: PowerPointSlideImageProviding {
 
     public func slideImages(for document: Document, fileURL: URL) async throws -> [URL] {
         let directory = slidesDirectory(for: document.id)
-        let source = try Self.sourceFacts(fileURL)
+        let source: SourceFacts
+        do { source = try Self.sourceFacts(fileURL) } catch { throw PowerPointFailure.storageFailure }
         if let cached = validSlides(in: directory, document: document.id, source: source, fileURL: fileURL) {
             events.record(.hit)
             return cached
@@ -66,7 +68,6 @@ public struct PowerPointSlideCache: PowerPointSlideImageProviding {
                 events.record(.hit)
                 return cached
             }
-            events.record(.render)
             return try await render(document.id, fileURL: fileURL, source: source, into: directory)
         }
     }
@@ -80,9 +81,11 @@ public struct PowerPointSlideCache: PowerPointSlideImageProviding {
         try? FileManager.default.removeItem(at: directory)
         Self.removeUnfinishedRenders(in: parent)
         Self.removeAbandonedRendererFolders()
+        // The import check again, on the stored file: a rejected file is never rendered.
+        let hash = try await Task.detached(priority: .userInitiated) { try Self.checkedSource(fileURL) }.value
+        events.record(.render)
         let staging = parent.appendingPathComponent("Slides-\(UUID().uuidString)\(Self.unfinishedSuffix)", isDirectory: true)
         do {
-            let hash = try await Task.detached(priority: .userInitiated) { try Self.sha256(of: fileURL) }.value
             let output = try await PowerPointRenderer().render(fileURL, to: staging, options: options)
             guard !output.slides.isEmpty else { throw PowerPointRenderError.renderingFailed(.noVisibleSlides) }
             let manifest = Manifest(
@@ -96,13 +99,35 @@ public struct PowerPointSlideCache: PowerPointSlideImageProviding {
                 longestSidePixels: options.longestSidePixels,
                 createdAt: Date()
             )
-            try JSONEncoder().encode(manifest).write(to: staging.appendingPathComponent(Self.manifestName), options: .atomic)
+            do {
+                try JSONEncoder().encode(manifest).write(to: staging.appendingPathComponent(Self.manifestName), options: .atomic)
+            } catch { throw PowerPointFailure.storageFailure }
             // The finished render becomes the cache in one rename.
-            try FileManager.default.moveItem(at: staging, to: directory)
-            return (0..<output.slides.count).map { directory.appendingPathComponent(Self.fileName(index: $0)) }
+            do {
+                try FileManager.default.moveItem(at: staging, to: directory)
+            } catch { throw PowerPointFailure.storageFailure }
+            // The new cache must pass the same check as any other before it is used.
+            guard let slides = validSlides(in: directory, document: id, source: source, fileURL: fileURL),
+                  slides.count == output.slides.count
+            else {
+                try? FileManager.default.removeItem(at: directory)
+                throw PowerPointFailure.corruptedCache
+            }
+            return slides
         } catch {
             try? FileManager.default.removeItem(at: staging)
-            throw Self.taskLensError(for: error)
+            throw Self.failure(for: error, fileURL: fileURL)
+        }
+    }
+
+    /// The stored file's SHA-256, after the import check (A9.1) accepts it again.
+    static func checkedSource(_ url: URL) throws -> String {
+        let data: Data
+        do { data = try Data(contentsOf: url, options: .mappedIfSafe) } catch { throw PowerPointFailure.storageFailure }
+        switch PowerPointPackage.rejection(of: data) {
+        case .unsafe: throw PowerPointFailure.securityRejected
+        case .malformed: throw PowerPointFailure.invalidSource
+        case nil: return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
         }
     }
 
@@ -225,19 +250,16 @@ public struct PowerPointSlideCache: PowerPointSlideImageProviding {
 
     static func fileName(index: Int) -> String { String(format: "slide-%03d.png", index + 1) }
 
-    static func taskLensError(for error: any Error) -> any Error {
-        switch error as? PowerPointRenderError {
-        case .invalidPresentation, .unsupportedContent:
-            TaskLensError.unsupportedContent(type: "pptx")
-        case .cancelled:
-            CancellationError()
-        case .some(let failure):
-            TaskLensError.persistenceFailed(operation: .read, details: "PowerPoint slides: \(failure)")
-        case nil:
-            error is CancellationError || error is TaskLensError
-                ? error
-                : TaskLensError.persistenceFailed(operation: .read, details: "PowerPoint slides: \(error)")
-        }
+    /// Classifies a render failure. A refused deck is `speakerNotesUnsupported`
+    /// only when OfficeImport's code and the deck's own parts both say so.
+    @MainActor
+    static func failure(for error: any Error, fileURL: URL) -> PowerPointFailure {
+        guard case .unsupportedContent? = error as? PowerPointRenderError else { return PowerPointFailure(error) }
+        // "<domain> <code>", recorded by the renderer that just failed; renders run one at a time.
+        let detail = PowerPointRenderer.lastFailureDetail?.split(separator: " ") ?? []
+        let code = detail.count == 2 && detail[0].contains("OfficeImport") ? Int(detail[1]) : nil
+        let hasNotes = (try? PowerPointDeck.read(contentsOf: fileURL))?.hasSpeakerNotes
+        return PowerPointFailure(error, officeImportCode: code, hasSpeakerNotes: hasNotes)
     }
 
     // MARK: One render per document
@@ -245,16 +267,39 @@ public struct PowerPointSlideCache: PowerPointSlideImageProviding {
     @MainActor private static let renders = Renders()
 
     /// Renders in progress, so a document being rendered is not rendered twice.
+    /// A caller that is cancelled stops waiting with `cancelled`; the render is
+    /// cancelled too when nobody else is waiting for it.
     @MainActor
     private final class Renders {
-        private var tasks: [DocumentID: Task<[URL], any Error>] = [:]
+        @MainActor
+        private final class Render {
+            let task: Task<[URL], any Error>
+            var waiters = 0
+            init(_ task: Task<[URL], any Error>) { self.task = task }
+        }
 
-        func run(_ id: DocumentID, _ render: @escaping @Sendable @MainActor () async throws -> [URL]) async throws -> [URL] {
-            if let task = tasks[id] { return try await task.value }
-            let task = Task { try await render() }
-            tasks[id] = task
-            defer { tasks[id] = nil }
-            return try await task.value
+        private var renders: [DocumentID: Render] = [:]
+
+        func run(_ id: DocumentID, _ body: @escaping @Sendable @MainActor () async throws -> [URL]) async throws -> [URL] {
+            let render: Render
+            if let running = renders[id], !running.task.isCancelled {
+                render = running
+            } else {
+                render = Render(Task { try await body() })
+                renders[id] = render
+            }
+            render.waiters += 1
+            defer {
+                render.waiters -= 1
+                if render.waiters == 0, renders[id] === render { renders[id] = nil }
+            }
+            let urls = try await withTaskCancellationHandler {
+                try await render.task.value
+            } onCancel: {
+                Task { @MainActor in if render.waiters <= 1 { render.task.cancel() } }
+            }
+            if Task.isCancelled { throw PowerPointFailure.cancelled }
+            return urls
         }
     }
 

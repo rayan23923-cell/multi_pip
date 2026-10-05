@@ -413,7 +413,7 @@ private struct Pixels {
 }
 
 /// Stored (uncompressed) ZIP archives for hostile files.
-private enum MiniZip {
+enum MiniZip {
     static func make(_ entries: [(String, String)]) -> Data {
         var body = Data(), directory = Data()
         for (name, text) in entries {

@@ -29,6 +29,9 @@ public final class PresentationModel {
     public private(set) var pdf: PDFDocument?
     /// Image titles seen so far, for VoiceOver.
     public private(set) var imageTitles: [DocumentID: String] = [:]
+    /// Why a PowerPoint file failed to load (A9.5.1), for the failure screen.
+    /// The engine's phase is unchanged: `error(.unsupportedSource)` or `error(.unreadable)`.
+    public private(set) var powerPointFailure: PowerPointFailure?
 
     /// Saves where this presentation is left; nil keeps nothing.
     public let sessionRecorder: PresentationSessionRecorder?
@@ -92,7 +95,8 @@ public final class PresentationModel {
             await restore(saved)
         case .powerPoint(let id):
             if let slideImages {
-                await engine.load(from: ImagePresentationLoader(powerPoint: id, slideImages: slideImages, documentService: documentService))
+                let loader = ImagePresentationLoader(powerPoint: id, slideImages: slideImages, documentService: documentService)
+                await engine.load(from: PowerPointLoad(loader: loader) { [weak self] in self?.powerPointFailure = $0 })
             } else {
                 await engine.load(from: NoSlideImages())
             }
@@ -277,6 +281,24 @@ extension PresentationRequest {
         case .pdf(let id): .pdf(id)
         case .images(let ids): .images(ids)
         case .powerPoint(let id): .powerPoint(id)
+        }
+    }
+}
+
+/// Loads a PowerPoint file and reports why it failed, as a `PowerPointFailure`.
+/// The engine still gets the error it always got, so its phase is unchanged.
+private struct PowerPointLoad: PresentationLoading {
+    let loader: ImagePresentationLoader
+    let report: @MainActor @Sendable (PowerPointFailure) -> Void
+
+    func loadPresentation() async throws -> PresentationDocument {
+        do {
+            return try await loader.loadPresentation()
+        } catch {
+            let failure = PowerPointFailure(error)
+            await report(failure)
+            // Errors from the renderer and cache are mapped; the loader's own pass through unchanged.
+            throw error is PowerPointFailure || error is PowerPointRenderError ? failure.presentationError : error
         }
     }
 }

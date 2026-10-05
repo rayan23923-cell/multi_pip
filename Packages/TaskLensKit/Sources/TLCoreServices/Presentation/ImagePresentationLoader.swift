@@ -82,7 +82,10 @@ public struct ImagePresentationLoader: PresentationLoading {
         let document = try await documentService.document(id: id)
         guard document.kind == .powerpoint else { throw TaskLensError.unsupportedContent(type: document.kind.rawValue) }
         let images = try await slideImages.slideImages(for: document, fileURL: documentService.fileURL(for: document))
-        for url in images { try Self.checkReadable(at: url) }
+        // Rendered images that no longer read are a broken cache, not a broken file.
+        for url in images {
+            do { try Self.checkReadable(at: url) } catch { throw PowerPointFailure.corruptedCache }
+        }
         return try PresentationDocument.powerPoint(document, renderedSlideCount: images.count, createdAt: clock.now())
     }
 

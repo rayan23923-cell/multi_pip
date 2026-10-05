@@ -9,6 +9,7 @@ import TLDomain
 public protocol PowerPointSlideImageProviding: Sendable {
     /// The slide images in presentation order, rendered first when there are
     /// none yet. All or nothing: it throws rather than return some of them.
+    /// The app's provider throws `PowerPointFailure`.
     func slideImages(for document: Document, fileURL: URL) async throws -> [URL]
 
     /// Where the image of a zero-based slide is, once rendered.
