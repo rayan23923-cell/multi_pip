@@ -1,0 +1,74 @@
+name: Publish wiki
+
+# Copies docs/wiki, the phase reports and the main docs to the GitHub Wiki.
+# Runs when those files change, or by hand. The wiki must have one page
+# (create any page once in the Wiki tab) before the first run can push to it.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/project-thread-0s4dmt
+      - claude/project-thread-c6pz8t
+    paths:
+      - docs/wiki/**
+      - docs/reports/**
+      - docs/roadmap/**
+      - docs/ARCHITECTURE.md
+      - docs/device-testing.md
+      - .github/workflows/wiki.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wiki
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish wiki
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build pages
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/pages"
+          mkdir -p "$out"
+          cp docs/wiki/*.md "$out/"
+          cp docs/ARCHITECTURE.md "$out/Architecture.md"
+          cp docs/device-testing.md "$out/Device-Testing.md"
+          cp docs/roadmap/roadmap-v2-summary.md "$out/Roadmap-v2-Summary.md"
+          # Each report becomes a page named Report-<file name>, with dots as dashes.
+          for f in docs/reports/*/*.md; do
+            name=$(basename "$f" .md)
+            cp "$f" "$out/Report-${name//./-}.md"
+          done
+          cp docs/reports/*/*.jpg "$out/" 2>/dev/null || true
+          ls "$out"
+
+      - name: Push to the wiki
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          url="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git"
+          if ! git clone --depth 1 "$url" wiki; then
+            echo "::error::The wiki has no pages yet. Open the Wiki tab, create any page once, then run this workflow again."
+            exit 1
+          fi
+          # Replace the generated pages; keep nothing stale.
+          find wiki -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R "$RUNNER_TEMP/pages/." wiki/
+          cd wiki
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Wiki already up to date."
+            exit 0
+          fi
+          git commit -m "Publish wiki from ${GITHUB_SHA::7}"
+          git push origin HEAD
