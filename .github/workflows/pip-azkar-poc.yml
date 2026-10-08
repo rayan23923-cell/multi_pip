@@ -1,0 +1,48 @@
+name: PiP azkar POC build
+
+# Compile check for the standalone PiPAzkarPOC project (no signing, no device).
+on:
+  push:
+    branches: [claude/pip-azkar-poc]
+    paths: [PiPAzkarPOC/**, .github/workflows/pip-azkar-poc.yml]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      - name: Build for iOS device (unsigned)
+        working-directory: PiPAzkarPOC
+        run: |
+          set -o pipefail
+          xcodebuild -project IslamicPiPPOC.xcodeproj -scheme IslamicPiPPOC \
+            -configuration Debug -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO build | tee ../device-build.log | grep -E 'error|warning:|BUILD' || true
+          grep -q 'BUILD SUCCEEDED' ../device-build.log
+
+      - name: Build for iOS Simulator
+        working-directory: PiPAzkarPOC
+        run: |
+          set -o pipefail
+          xcodebuild -project IslamicPiPPOC.xcodeproj -scheme IslamicPiPPOC \
+            -configuration Debug -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tee ../sim-build.log | grep -E 'error|warning:|BUILD' || true
+          grep -q 'BUILD SUCCEEDED' ../sim-build.log
+
+      - name: Check Info.plist background mode
+        run: |
+          APP=$(find ~/Library/Developer/Xcode/DerivedData -path '*Debug-iphoneos/IslamicPiPPOC.app' | head -1)
+          plutil -p "$APP/Info.plist" | tee /dev/stderr | grep -A2 UIBackgroundModes | grep -q audio
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pip-azkar-build-logs
+          path: '*-build.log'
+          if-no-files-found: ignore
