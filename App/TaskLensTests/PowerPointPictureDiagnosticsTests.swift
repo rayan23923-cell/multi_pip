@@ -19,11 +19,11 @@ struct PowerPointPictureDiagnosticsTests {
     enum Mode: String, CaseIterable, Sendable { case rendererLike, asyncDecoding, slowSnapshots }
 
     /// Run 37755491218 showed the page itself links only 8–10 different pictures
-    /// for the 80 slides, whatever the decoding or snapshot timing. These decks
-    /// tell apart what the importer goes by: 6 is the original, 6c gives every
-    /// picture file a unique comment near its start, 6d gives every picture
-    /// different top rows.
-    @Test(arguments: ["6-large-80-slides", "6c-large-80-marked-media", "6d-large-80-distinct-tops"])
+    /// for the 80 slides, whatever the decoding or snapshot timing; run
+    /// 37759690439 showed unique bytes at the start of each file, or different
+    /// top rows, don't change that. 6e gives every picture its own pixel size;
+    /// 6g puts every picture at its own position on the slide.
+    @Test(arguments: ["6-large-80-slides", "6e-large-80-sizes", "6g-large-80-positions"])
     func whichPictureEachSlideShows(deckName: String) async throws {
         let mode = Mode.rendererLike
         let bundle = Bundle(for: DiagnosticsToken.self)
