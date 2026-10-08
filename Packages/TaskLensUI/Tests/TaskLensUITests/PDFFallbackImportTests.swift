@@ -392,7 +392,8 @@ struct PDFFallbackImportTests {
         while fallback.importedPDF == nil, ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(10))
         }
-        let id = try #require(fallback.importedPDF)
+        let id = try #require(fallback.importedPDF,
+                              "error: \(fallback.errorMessage ?? "none"), importing: \(fallback.isImporting)")
         #expect(await pdfPresentation(id).slideCount == 5)
     }
 
