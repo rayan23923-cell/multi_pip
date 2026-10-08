@@ -126,6 +126,13 @@ public final class AppRouter {
         append(route, to: selectedTab)
     }
 
+    /// Replaces the screen on top of the selected tab, so Back goes where it
+    /// went from the replaced screen. Pushes when the tab shows its root.
+    public func replaceTop(with route: AppRoute) {
+        let current = path(for: selectedTab)
+        setPath(Array(current.dropLast()) + [route], for: selectedTab)
+    }
+
     /// Switches tab and shows `route` on top of that tab's root (deep links, intents).
     public func open(_ route: AppRoute, in tab: AppTab) {
         selectedTab = tab

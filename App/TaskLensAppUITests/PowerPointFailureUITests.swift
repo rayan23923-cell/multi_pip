@@ -17,6 +17,8 @@ final class PowerPointFailureUITests: XCTestCase {
         app.launchArguments = ["-AppleLanguages", "(\(language))", "-AppleLocale", locale, "-TaskLensUITestStore",
                                "-TaskLensResetStore", "-TaskLensSeedDocuments", "-TaskLensSeedPowerPoint"] + extra
         app.launchEnvironment["TASKLENS_SEED_PPTX_NOTES"] = try Data(contentsOf: url).base64EncodedString()
+        // Import PDF takes these picks instead of the system file picker (A9.5.3).
+        app.launchEnvironment["TASKLENS_FALLBACK_PDFS"] = "cancel"
         app.launch()
         return app
     }
@@ -55,8 +57,8 @@ final class PowerPointFailureUITests: XCTestCase {
 
     // MARK: Generic failure
 
-    /// Rendering fails: Try Again runs the same pipeline again, Import PDF calls
-    /// its (A9.5.3) placeholder, Cancel goes back. The PDF reader keeps its page.
+    /// Rendering fails: Try Again runs the same pipeline again, Import PDF with
+    /// the picker cancelled keeps the screen, Cancel goes back. The PDF reader keeps its page.
     func testGenericFailureRetriesCallsImportAndCancels() throws {
         let app = try launch()
         tap(app, "commandCenter.documents")
@@ -80,7 +82,7 @@ final class PowerPointFailureUITests: XCTestCase {
         waitFor(app, "presentation.failure.title", label: "Couldn't display this presentation", timeout: 60)
         assertActions(app, ["retry", "importPDF", "cancel"])
 
-        // Import PDF reaches its callback; the fallback itself is A9.5.3, so the screen stays.
+        // Import PDF with the picker cancelled: the screen stays.
         tap(app, "presentation.failure.importPDF")
         XCTAssertTrue(element(app, "presentation.failure.title").waitForExistence(timeout: 5))
         XCTAssertEqual(app.state, .runningForeground)

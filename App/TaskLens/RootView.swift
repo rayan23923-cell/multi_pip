@@ -243,9 +243,10 @@ private extension View {
                 ))
             case .powerPoint(let id):
                 // A PowerPoint file opens straight into the presentation of its slides.
-                container.presentationView(.powerPoint(id))
+                container.presentationView(.powerPoint(id)).id(route)
             case .presentation(let request):
-                container.presentationView(request)
+                // Its own identity per request: a PDF imported from a PowerPoint failure replaces the screen.
+                container.presentationView(request).id(route)
             }
         }
     }
@@ -254,15 +255,24 @@ private extension View {
 private extension AppContainer {
     @MainActor
     func presentationView(_ request: PresentationRequest) -> PresentationView {
-        PresentationView(model: PresentationModel(
-            request: request,
-            documentService: documents,
-            sessionStore: presentationSessions,
-            slideImages: powerPointSlides,
-            // A9.5.2 shows Import PDF on the PowerPoint failure screen; the PDF
-            // fallback it starts (choose a PDF, import it, present it) is A9.5.3.
-            onImportPDF: {}
-        ))
+        // Import PDF on the PowerPoint failure screen: pick a PDF, import it, present it.
+        var pdfFallback: PDFFallbackImport?
+        var onImportPDF: (@MainActor () -> Void)?
+        if case .powerPoint(let id) = request {
+            let fallback = PDFFallbackImport(failedPresentation: id, documentService: documents, picker: ScriptedPDFPicks.picker())
+            pdfFallback = fallback
+            onImportPDF = { fallback.choosePDF() }
+        }
+        return PresentationView(
+            model: PresentationModel(
+                request: request,
+                documentService: documents,
+                sessionStore: presentationSessions,
+                slideImages: powerPointSlides,
+                onImportPDF: onImportPDF
+            ),
+            pdfFallback: pdfFallback
+        )
     }
 }
 

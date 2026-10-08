@@ -28,9 +28,12 @@ private func powerPointPackage() -> Data {
     return body + directory + end
 }
 
+/// The same package, for the PDF fallback tests (A9.5.3).
+func scriptedDeckPackage() -> Data { powerPointPackage() }
+
 /// Slide images that fail, then succeed, in the order given: a stand-in for
 /// the cache and renderer, throwing the same `PowerPointFailure` they throw.
-private final class ScriptedSlides: PowerPointSlideImageProviding, @unchecked Sendable {
+final class ScriptedSlides: PowerPointSlideImageProviding, @unchecked Sendable {
     enum Step { case fail(PowerPointFailure), slides(Int) }
 
     private let documents: DocumentService

@@ -1,4 +1,5 @@
 import Foundation
+import PresentationFeature
 import TLCoreServices
 import UIKit
 import UniformTypeIdentifiers
@@ -110,5 +111,46 @@ enum SampleDocuments {
         }
         return join([body, directory, le32(0x0605_4B50), le16(0), le16(0), le16(3), le16(3),
                      le32(directory.count), le32(body.count), le16(0)])
+    }
+}
+
+/// UI tests can't drive the system file picker, so with `-TaskLensUITestStore`
+/// and this environment key, Import PDF on the PowerPoint failure screen takes
+/// the next scripted pick instead. Each pick is written to a temporary file and
+/// imported through the real fallback import, like a file from the picker.
+/// Picks are separated by ";": "cancel", or "<file name>:<base64 data>".
+@MainActor
+enum ScriptedPDFPicks {
+    static let environmentKey = "TASKLENS_FALLBACK_PDFS"
+    private static var picks: [String]?
+
+    static func picker(
+        arguments: [String] = ProcessInfo.processInfo.arguments,
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> PDFFallbackImport.Picker {
+        guard arguments.contains("-TaskLensUITestStore"), let value = environment[environmentKey] else { return .system }
+        if picks == nil { picks = value.components(separatedBy: ";") }
+        return .scripted { next() }
+    }
+
+    /// The next pick's file; nil when it is "cancel" or none is left.
+    private static func next() -> URL? {
+        guard var remaining = picks, !remaining.isEmpty else { return nil }
+        let pick = remaining.removeFirst()
+        picks = remaining
+        guard let colon = pick.firstIndex(of: ":"),
+              let data = Data(base64Encoded: String(pick[pick.index(after: colon)...]))
+        else { return nil }
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ScriptedPDFPicks", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let url = folder.appendingPathComponent(String(pick[..<colon]))
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try data.write(to: url)
+            return url
+        } catch {
+            return nil
+        }
     }
 }

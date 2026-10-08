@@ -40,7 +40,7 @@ public final class PresentationModel {
     private let sessionStore: PresentationSessionStore?
     /// Renders (or finds) the slide images of a PowerPoint file.
     private let slideImages: (any PowerPointSlideImageProviding)?
-    /// Import PDF on the failure screen. Nil hides the action.
+    /// Import PDF on the failure screen: starts the PDF fallback (A9.5.3). Nil hides the action.
     private let onImportPDF: (@MainActor () -> Void)?
 
     public init(
@@ -185,7 +185,7 @@ public final class PresentationModel {
         await load()
     }
 
-    /// Hands Import PDF to the caller. The PDF fallback itself is A9.5.3.
+    /// Hands Import PDF to the caller, which starts the PDF fallback (`PDFFallbackImport`).
     public func importPDF() {
         guard failureContent?.canImportPDF == true else { return }
         onImportPDF?()

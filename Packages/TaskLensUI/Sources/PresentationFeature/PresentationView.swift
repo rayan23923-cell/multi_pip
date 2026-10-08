@@ -4,6 +4,8 @@ import TLCoreServices
 import TLDesignSystem
 import TLDomain
 import TLLocalization
+import TLNavigation
+import UniformTypeIdentifiers
 
 /// Shows one slide at a time with Previous, Next and a "Slide 12 / 48" counter.
 ///
@@ -12,6 +14,8 @@ import TLLocalization
 /// slides on the chosen interval; the controls' visibility has no timer.
 public struct PresentationView: View {
     @State private var model: PresentationModel
+    /// Import PDF on the PowerPoint failure screen (A9.5.3); nil for other sources.
+    @State private var pdfFallback: PDFFallbackImport?
     @State private var showsControls = true
     @State private var isGoingToSlide = false
     @State private var slideInput = ""
@@ -19,9 +23,13 @@ public struct PresentationView: View {
     @State private var intervalInput = ""
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppRouter.self) private var router: AppRouter?
 
-    public init(model: PresentationModel) {
+    /// `pdfFallback` is what the model's Import PDF callback starts; this
+    /// screen shows its picker and opens the PDF it imports.
+    public init(model: PresentationModel, pdfFallback: PDFFallbackImport? = nil) {
         _model = State(initialValue: model)
+        _pdfFallback = State(initialValue: pdfFallback)
     }
 
     public var body: some View {
@@ -64,6 +72,10 @@ public struct PresentationView: View {
         } message: {
             Text(L10nKey.presentationAutoPlayCustomMessage)
         }
+        .modifier(PDFFallbackPresenter(fallback: pdfFallback) { pdf in
+            // The PDF takes this screen's place, so Back goes where it would have gone from here.
+            router?.replaceTop(with: .presentation(.pdf(pdf)))
+        })
         .task { await model.load() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background { model.didEnterBackground() }
@@ -250,6 +262,37 @@ public struct PresentationView: View {
         }
         .accessibilityValue(Text(L10n.format(.presentationAutoPlaySeconds, model.autoPlayInterval)))
         .accessibilityIdentifier("presentation.interval")
+    }
+}
+
+/// The file picker, progress and error alert of Import PDF, and opening the
+/// imported PDF. Does nothing without a fallback.
+private struct PDFFallbackPresenter: ViewModifier {
+    let fallback: PDFFallbackImport?
+    let open: @MainActor (DocumentID) -> Void
+
+    func body(content: Content) -> some View {
+        if let model = fallback {
+            @Bindable var fallback = model
+            content
+                .fileImporter(isPresented: $fallback.isChoosing, allowedContentTypes: [.pdf], allowsMultipleSelection: false) { result in
+                    switch result {
+                    case .success(let urls): Task { await model.picked(urls.first) }
+                    case .failure: model.pickerFailed()
+                    }
+                }
+                .overlay {
+                    if model.isImporting {
+                        ProgressView().accessibilityIdentifier("presentation.importingPDF")
+                    }
+                }
+                .errorAlert(message: $fallback.errorMessage)
+                .onChange(of: model.importedPDF) { _, pdf in
+                    if let pdf { open(pdf) }
+                }
+        } else {
+            content
+        }
     }
 }
 
