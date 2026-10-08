@@ -120,33 +120,33 @@ struct PowerPointDeckTests {
     /// A9.5.6: what a slide can show is its own pictures and its layout's,
     /// master's and theme's, never another slide's or an outside one.
     @Test func picturesASlideCanShow() throws {
-        func internal(_ id: String, _ type: String, _ target: String) -> (id: String, type: String, target: String, external: Bool) {
+        func inPackage(_ id: String, _ type: String, _ target: String) -> (id: String, type: String, target: String, external: Bool) {
             (id: id, type: type, target: target, external: false)
         }
         let rels = DeckXML.relationships
         let deck = try PowerPointDeck.read(DeckXML.deck(parts: 2, order: [1, 2], extra: [
             TestZip.Entry("ppt/slides/_rels/slide1.xml.rels", rels([
-                internal("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"),
-                internal("rId2", "image", "../media/photo1.jpg"),
-                internal("rId3", "slide", "slide2.xml"),
+                inPackage("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"),
+                inPackage("rId2", "image", "../media/photo1.jpg"),
+                inPackage("rId3", "slide", "slide2.xml"),
                 (id: "rId4", type: "image", target: "https://example.invalid/a.png", external: true),
             ])),
             TestZip.Entry("ppt/slides/_rels/slide2.xml.rels", rels([
-                internal("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"),
-                internal("rId2", "image", "../media/photo2.jpg"),
+                inPackage("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"),
+                inPackage("rId2", "image", "../media/photo2.jpg"),
             ])),
             TestZip.Entry("ppt/slideLayouts/slideLayout1.xml", "<layout/>"),
             TestZip.Entry("ppt/slideLayouts/_rels/slideLayout1.xml.rels", rels([
-                internal("rId1", "slideMaster", "../slideMasters/slideMaster1.xml"),
+                inPackage("rId1", "slideMaster", "../slideMasters/slideMaster1.xml"),
             ])),
             TestZip.Entry("ppt/slideMasters/slideMaster1.xml", "<master/>"),
             TestZip.Entry("ppt/slideMasters/_rels/slideMaster1.xml.rels", rels([
-                internal("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"),
-                internal("rId2", "theme", "../theme/theme1.xml"),
-                internal("rId3", "image", "../media/logo.png"),
+                inPackage("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"),
+                inPackage("rId2", "theme", "../theme/theme1.xml"),
+                inPackage("rId3", "image", "../media/logo.png"),
             ])),
             TestZip.Entry("ppt/theme/theme1.xml", "<theme/>"),
-            TestZip.Entry("ppt/theme/_rels/theme1.xml.rels", rels([internal("rId1", "image", "../media/texture.png")])),
+            TestZip.Entry("ppt/theme/_rels/theme1.xml.rels", rels([inPackage("rId1", "image", "../media/texture.png")])),
             TestZip.Entry("ppt/media/photo1.jpg", "jpg"),
             TestZip.Entry("ppt/media/photo2.jpg", "jpg"),
             TestZip.Entry("ppt/media/logo.png", "png"),
