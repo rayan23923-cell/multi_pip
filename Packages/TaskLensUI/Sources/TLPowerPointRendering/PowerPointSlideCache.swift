@@ -21,7 +21,9 @@ import TLFoundation
 /// A render goes into a new folder next to the cache and becomes the cache
 /// only after every slide rendered and its metadata is written, so a failed,
 /// cancelled or interrupted render never looks like a cache. Opening a file
-/// that is already rendering waits for that render instead of starting another.
+/// that is already rendering waits for that render instead of starting another,
+/// and a render started after a cancelled one (Try Again, opening it again)
+/// waits until the cancelled one has ended.
 ///
 /// A file the import check (A9.1) rejects is never rendered. Errors are
 /// reported as `PowerPointFailure`, with nothing left behind. A caller that is
@@ -269,39 +271,63 @@ public struct PowerPointSlideCache: PowerPointSlideImageProviding {
     /// Renders in progress, so a document being rendered is not rendered twice.
     /// A caller that is cancelled stops waiting with `cancelled`; the render is
     /// cancelled too when nobody else is waiting for it.
+    ///
+    /// A render stays here until it has finished, even when cancelled: a cancelled
+    /// render can still be writing its staging folder or moving it into place,
+    /// so the next render of that document (Try Again, opening it again) waits
+    /// for it to end before touching the same folders. A finished render is
+    /// never joined, so a retry always makes a fresh attempt.
     @MainActor
     private final class Renders {
         @MainActor
         private final class Render {
-            let task: Task<[URL], any Error>
+            var task: Task<[URL], any Error>?
             var waiters = 0
-            init(_ task: Task<[URL], any Error>) { self.task = task }
+            /// Set inside the task, before any waiter sees its result.
+            var isFinished = false
+            var canJoin: Bool { !isFinished && task?.isCancelled == false }
         }
 
         private var renders: [DocumentID: Render] = [:]
 
         func run(_ id: DocumentID, _ body: @escaping @Sendable @MainActor () async throws -> [URL]) async throws -> [URL] {
             let render: Render
-            if let running = renders[id], !running.task.isCancelled {
+            if let running = renders[id], running.canJoin {
                 render = running
             } else {
-                render = Render(Task { try await body() })
-                renders[id] = render
+                let previous = renders[id]?.task
+                let next = Render()
+                next.task = Task {
+                    defer {
+                        next.isFinished = true
+                        if self.renders[id] === next { self.renders[id] = nil }
+                    }
+                    if let previous { _ = await previous.result }
+                    if Task.isCancelled { throw PowerPointFailure.cancelled }
+                    return try await body()
+                }
+                renders[id] = next
+                render = next
             }
+            guard let task = render.task else { throw PowerPointFailure.unknown }
             render.waiters += 1
-            defer {
-                render.waiters -= 1
-                if render.waiters == 0, renders[id] === render { renders[id] = nil }
-            }
+            defer { render.waiters -= 1 }
             let urls = try await withTaskCancellationHandler {
-                try await render.task.value
+                try await task.value
             } onCancel: {
-                Task { @MainActor in if render.waiters <= 1 { render.task.cancel() } }
+                Task { @MainActor in if render.waiters <= 1 { render.task?.cancel() } }
             }
             if Task.isCancelled { throw PowerPointFailure.cancelled }
             return urls
         }
+
+        /// True while a render of this document runs or is still finishing. For tests.
+        func isRendering(_ id: DocumentID) -> Bool { renders[id] != nil }
     }
+
+    /// True while a render of this document runs or is still finishing after a cancel.
+    @_spi(Testing) @MainActor
+    public static func isRendering(_ id: DocumentID) -> Bool { renders.isRendering(id) }
 
     // MARK: Diagnostics
 
