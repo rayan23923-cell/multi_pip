@@ -162,13 +162,16 @@ with zipfile.ZipFile(buffer) as source, zipfile.ZipFile(out / "missing-slide.ppt
 print("missing-slide.pptx written")
 
 
-# 9. 1, 3, 10, 50 and 100 slides: Arabic and English text, a 960×540 photo on every third slide.
+# 9. 1, 3, 10, 50 and 100 slides: Arabic and English text, a 960×540 photo on slide 3.
+# One photo per deck: on the iOS 26.5 simulator WebKit links slides to other
+# slides' photos, which the renderer refuses (A9.5.6), so these decks, which
+# test scale, caching and recovery, keep to one.
 def scale(count):
     prs = deck()
     for n in range(1, count + 1):
         slide = prs.slides.add_slide(prs.slide_layouts[6])
         text(slide, f"Slide {n} — الشريحة {n}", 0.3, 36)
-        if n % 3 == 0:
+        if n == 3:
             image = Image.new("RGB", (960, 540), ((n * 37) % 256, (n * 91) % 256, (n * 53) % 256))
             draw = ImageDraw.Draw(image)
             for x in range(0, 960, 16):
