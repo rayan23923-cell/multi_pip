@@ -18,14 +18,14 @@ struct PowerPointPictureDiagnosticsTests {
 
     enum Mode: String, CaseIterable, Sendable { case rendererLike, asyncDecoding, slowSnapshots }
 
-    /// Runs 37755491218, 37759690439 and 37763182353: the page itself links only
-    /// 6–12 different pictures for the 80 slides, whatever the decoding, the
-    /// snapshot timing, the picture bytes, sizes or positions. The renderer
-    /// turns page JavaScript off; this compares with it on, in case the
-    /// importer's own page script is what sets each picture.
-    @Test(arguments: [false, true])
-    func whichPictureEachSlideShows(pageJavaScript: Bool) async throws {
-        let deckName = "6-large-80-slides"
+    /// Runs 37755491218 to 37767204600: the page OfficeImport makes links only
+    /// 6–12 different pictures for the 80 slides (slide 3 links slide 1's), with
+    /// no page script involved, whatever the decoding, snapshot timing, picture
+    /// bytes, sizes or positions. Every slide's picture has the same
+    /// relationship id (rId2); 6h gives each its own. 4 has six pictures.
+    @Test(arguments: [("6-large-80-slides", 80, 0), ("6h-large-80-unique-ids", 80, 0), ("4-images-shapes", 6, 1)])
+    func whichPictureEachSlideShows(deckName: String, slideCount: Int, colorOffset: Int) async throws {
+        let pageJavaScript = false
         let mode = Mode.rendererLike
         let bundle = Bundle(for: DiagnosticsToken.self)
         let deck = try #require(bundle.url(forResource: "acceptance-\(deckName)", withExtension: "pptx")
@@ -75,10 +75,10 @@ struct PowerPointPictureDiagnosticsTests {
             """)
             struct State: Decodable { var ready: Bool; var rects: [[Double]] }
             let state = try JSONDecoder().decode(State.self, from: Data(json.utf8))
-            if state.ready, state.rects.count == 80 { rects = state.rects; break }
+            if state.ready, state.rects.count == slideCount { rects = state.rects; break }
             try await Task.sleep(for: .milliseconds(100))
         }
-        try #require(rects.count == 80, "80 slides laid out")
+        try #require(rects.count == slideCount, "every slide laid out")
 
         let structure = try await evaluate(webView, """
         (() => {
@@ -88,10 +88,10 @@ struct PowerPointPictureDiagnosticsTests {
           return JSON.stringify({ scripts, loading: document.querySelectorAll('div.loading-slide').length, sample });
         })()
         """)
-        print("PPTX A956DIAG js=\(pageJavaScript) structure: \(structure)")
+        print("PPTX A956DIAG \(deckName) structure: \(structure)")
         var linked = 0, held = 0, shown = 0
         var allLinks: [String] = []
-        for index in 0..<80 {
+        for index in 0..<slideCount {
             let number = index + 1
             // What the page links and what its image holds (drawn into a canvas).
             let info = try await evaluate(webView, """
@@ -136,7 +136,7 @@ struct PowerPointPictureDiagnosticsTests {
                 }
             }
 
-            let expected = number % 6
+            let expected = (number - colorOffset) % 6
             let linkedNumber = pictures.first.flatMap { Int($0.src.filter(\.isNumber)) }
             let heldIndex = pictures.first.flatMap { Self.parse($0.color) }.map(Self.nearest)
             let shownIndex = snapshotColor.map(Self.nearest)
@@ -144,12 +144,12 @@ struct PowerPointPictureDiagnosticsTests {
             if heldIndex == expected { held += 1 }
             if shownIndex == expected { shown += 1 }
             allLinks.append(pictures.first?.src ?? "-")
-            print("PPTX A956DIAG js=\(pageJavaScript) slide \(number): pictures=\(pictures.count) linked=\(pictures.first?.src ?? "-") "
+            print("PPTX A956DIAG \(deckName) slide \(number): pictures=\(pictures.count) linked=\(pictures.first?.src ?? "-") "
                 + "w=\(pictures.first?.w ?? 0) held=\(pictures.first?.color ?? "-")→\(heldIndex.map(String.init) ?? "?") "
                 + "shown=\(shownIndex.map(String.init) ?? "?") expected=\(expected)"
                 + (pictures.count > 1 ? " more=\(pictures.dropFirst().map(\.src))" : ""))
         }
-        print("PPTX A956DIAG js=\(pageJavaScript) summary: distinctLinks=\(Set(allLinks).count) linkedOK=\(linked)/80 heldOK=\(held)/80 shownOK=\(shown)/80 zoom=\(webView.scrollView.zoomScale)")
+        print("PPTX A956DIAG \(deckName) summary: distinctLinks=\(Set(allLinks).count) linkedOK=\(linked)/\(slideCount) heldOK=\(held)/\(slideCount) shownOK=\(shown)/\(slideCount) zoom=\(webView.scrollView.zoomScale)")
     }
 
     // MARK: Helpers
