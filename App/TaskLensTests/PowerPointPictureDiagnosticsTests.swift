@@ -18,13 +18,14 @@ struct PowerPointPictureDiagnosticsTests {
 
     enum Mode: String, CaseIterable, Sendable { case rendererLike, asyncDecoding, slowSnapshots }
 
-    /// Run 37755491218 showed the page itself links only 8–10 different pictures
-    /// for the 80 slides, whatever the decoding or snapshot timing; run
-    /// 37759690439 showed unique bytes at the start of each file, or different
-    /// top rows, don't change that. 6e gives every picture its own pixel size;
-    /// 6g puts every picture at its own position on the slide.
-    @Test(arguments: ["6-large-80-slides", "6e-large-80-sizes", "6g-large-80-positions"])
-    func whichPictureEachSlideShows(deckName: String) async throws {
+    /// Runs 37755491218, 37759690439 and 37763182353: the page itself links only
+    /// 6–12 different pictures for the 80 slides, whatever the decoding, the
+    /// snapshot timing, the picture bytes, sizes or positions. The renderer
+    /// turns page JavaScript off; this compares with it on, in case the
+    /// importer's own page script is what sets each picture.
+    @Test(arguments: [false, true])
+    func whichPictureEachSlideShows(pageJavaScript: Bool) async throws {
+        let deckName = "6-large-80-slides"
         let mode = Mode.rendererLike
         let bundle = Bundle(for: DiagnosticsToken.self)
         let deck = try #require(bundle.url(forResource: "acceptance-\(deckName)", withExtension: "pptx")
@@ -39,7 +40,7 @@ struct PowerPointPictureDiagnosticsTests {
         let frame = CGRect(x: 0, y: 0, width: 1000, height: ceil(1000 / (16.0 / 9.0)) + 2)
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .nonPersistent()
-        configuration.defaultWebpagePreferences.allowsContentJavaScript = false
+        configuration.defaultWebpagePreferences.allowsContentJavaScript = pageJavaScript
         let webView = WKWebView(frame: frame, configuration: configuration)
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         let window = UIWindow(windowScene: scene)
@@ -79,6 +80,15 @@ struct PowerPointPictureDiagnosticsTests {
         }
         try #require(rects.count == 80, "80 slides laid out")
 
+        let structure = try await evaluate(webView, """
+        (() => {
+          const scripts = Array.from(document.scripts).map(s => (s.src || 'inline ' + s.textContent.length + ' chars: ' + s.textContent.slice(0, 300)));
+          const slides = document.querySelectorAll('div.slide');
+          const sample = [0, 2, 40].map(i => slides[i] ? slides[i].outerHTML.replace(/\\s+/g, ' ').slice(0, 700) : '-');
+          return JSON.stringify({ scripts, loading: document.querySelectorAll('div.loading-slide').length, sample });
+        })()
+        """)
+        print("PPTX A956DIAG js=\(pageJavaScript) structure: \(structure)")
         var linked = 0, held = 0, shown = 0
         var allLinks: [String] = []
         for index in 0..<80 {
@@ -134,12 +144,12 @@ struct PowerPointPictureDiagnosticsTests {
             if heldIndex == expected { held += 1 }
             if shownIndex == expected { shown += 1 }
             allLinks.append(pictures.first?.src ?? "-")
-            print("PPTX A956DIAG \(deckName) slide \(number): pictures=\(pictures.count) linked=\(pictures.first?.src ?? "-") "
+            print("PPTX A956DIAG js=\(pageJavaScript) slide \(number): pictures=\(pictures.count) linked=\(pictures.first?.src ?? "-") "
                 + "w=\(pictures.first?.w ?? 0) held=\(pictures.first?.color ?? "-")→\(heldIndex.map(String.init) ?? "?") "
                 + "shown=\(shownIndex.map(String.init) ?? "?") expected=\(expected)"
                 + (pictures.count > 1 ? " more=\(pictures.dropFirst().map(\.src))" : ""))
         }
-        print("PPTX A956DIAG \(deckName) summary: distinctLinks=\(Set(allLinks).count) linkedOK=\(linked)/80 heldOK=\(held)/80 shownOK=\(shown)/80 zoom=\(webView.scrollView.zoomScale)")
+        print("PPTX A956DIAG js=\(pageJavaScript) summary: distinctLinks=\(Set(allLinks).count) linkedOK=\(linked)/80 heldOK=\(held)/80 shownOK=\(shown)/80 zoom=\(webView.scrollView.zoomScale)")
     }
 
     // MARK: Helpers
