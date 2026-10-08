@@ -117,6 +117,47 @@ struct PowerPointDeckTests {
         #expect(deck.externalHyperlinkCount == 1)
     }
 
+    /// A9.5.6: what a slide can show is its own pictures and its layout's,
+    /// master's and theme's, never another slide's or an outside one.
+    @Test func picturesASlideCanShow() throws {
+        func internal(_ id: String, _ type: String, _ target: String) -> (id: String, type: String, target: String, external: Bool) {
+            (id: id, type: type, target: target, external: false)
+        }
+        let rels = DeckXML.relationships
+        let deck = try PowerPointDeck.read(DeckXML.deck(parts: 2, order: [1, 2], extra: [
+            TestZip.Entry("ppt/slides/_rels/slide1.xml.rels", rels([
+                internal("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"),
+                internal("rId2", "image", "../media/photo1.jpg"),
+                internal("rId3", "slide", "slide2.xml"),
+                (id: "rId4", type: "image", target: "https://example.invalid/a.png", external: true),
+            ])),
+            TestZip.Entry("ppt/slides/_rels/slide2.xml.rels", rels([
+                internal("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"),
+                internal("rId2", "image", "../media/photo2.jpg"),
+            ])),
+            TestZip.Entry("ppt/slideLayouts/slideLayout1.xml", "<layout/>"),
+            TestZip.Entry("ppt/slideLayouts/_rels/slideLayout1.xml.rels", rels([
+                internal("rId1", "slideMaster", "../slideMasters/slideMaster1.xml"),
+            ])),
+            TestZip.Entry("ppt/slideMasters/slideMaster1.xml", "<master/>"),
+            TestZip.Entry("ppt/slideMasters/_rels/slideMaster1.xml.rels", rels([
+                internal("rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"),
+                internal("rId2", "theme", "../theme/theme1.xml"),
+                internal("rId3", "image", "../media/logo.png"),
+            ])),
+            TestZip.Entry("ppt/theme/theme1.xml", "<theme/>"),
+            TestZip.Entry("ppt/theme/_rels/theme1.xml.rels", rels([internal("rId1", "image", "../media/texture.png")])),
+            TestZip.Entry("ppt/media/photo1.jpg", "jpg"),
+            TestZip.Entry("ppt/media/photo2.jpg", "jpg"),
+            TestZip.Entry("ppt/media/logo.png", "png"),
+            TestZip.Entry("ppt/media/texture.png", "png"),
+        ]))
+        let shared: Set = ["ppt/media/logo.png", "ppt/media/texture.png"]
+        #expect(deck.slides[0].pictureParts == shared.union(["ppt/media/photo1.jpg"]))
+        #expect(deck.slides[1].pictureParts == shared.union(["ppt/media/photo2.jpg"]))
+        #expect(try PowerPointDeck.read(DeckXML.deck(parts: 1, order: [1])).slides[0].pictureParts.isEmpty)
+    }
+
     @Test func speakerNotesArePresentNotRead() throws {
         #expect(try PowerPointDeck.read(DeckXML.deck(parts: 1, order: [1])).hasSpeakerNotes == false)
         let withNotes = DeckXML.deck(parts: 1, order: [1], extra: [TestZip.Entry("ppt/notesSlides/notesSlide1.xml", "not xml at all")])

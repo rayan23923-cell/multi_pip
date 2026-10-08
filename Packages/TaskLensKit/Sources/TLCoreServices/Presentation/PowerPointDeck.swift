@@ -26,6 +26,9 @@ public enum PowerPointRenderError: Error, Equatable, Sendable {
         case noVisibleSlides
         case snapshotFailed(slide: Int)
         case writeFailed
+        /// WebKit linked a slide to a picture of another slide (A9.5.6: seen with
+        /// OfficeImport on iOS 26.5), so the slide would show the wrong picture.
+        case picturesMixedUp(slide: Int)
     }
 }
 
@@ -46,6 +49,9 @@ public struct PowerPointDeck: Equatable, Sendable {
         public var part: String
         /// `show="0"` on the slide: skipped when presenting.
         public var isHidden: Bool
+        /// Every picture the slide can show: its own, and those of its layout,
+        /// master and theme (package paths of `image` relationships).
+        public var pictureParts: Set<String> = []
     }
 
     public var slides: [Slide]
@@ -117,6 +123,7 @@ public struct PowerPointDeck: Equatable, Sendable {
             var slides: [Slide] = []
             var seenIDs = Set<UInt32>(), seenParts = Set<String>()
             var hyperlinks = 0, resources = 0
+            var pictureCache: [String: Set<String>] = [:]
             for element in presentation.elements where element.name == "sldId" {
                 guard let id = element.attributes["id"].flatMap(UInt32.init),
                       let rID = element.relationshipID,
@@ -138,7 +145,8 @@ public struct PowerPointDeck: Equatable, Sendable {
                     }
                 }
                 slides.append(Slide(position: slides.count + 1, slideID: id, part: relationship.target,
-                                    isHidden: show == "0" || show == "false"))
+                                    isHidden: show == "0" || show == "false",
+                                    pictureParts: try pictures(reachableFrom: relationship.target, cache: &pictureCache)))
             }
 
             return PowerPointDeck(
@@ -146,6 +154,28 @@ public struct PowerPointDeck: Equatable, Sendable {
                 hasSpeakerNotes: entries.keys.contains { $0.hasPrefix("ppt/notesSlides/") },
                 externalHyperlinkCount: hyperlinks, externalResourceCount: resources
             )
+        }
+
+        // MARK: Pictures
+
+        /// Relationships that lead away from the slide being drawn, to other slides or to notes.
+        static let unrelatedTypes: Set<String> = ["slide", "notesSlide", "notesMaster", "handoutMaster", "presentation"]
+
+        /// The image parts a part uses, directly or through its layout, master,
+        /// theme, charts or diagrams. Parts already visited count once.
+        func pictures(reachableFrom part: String, cache: inout [String: Set<String>]) throws -> Set<String> {
+            if let known = cache[part] { return known }
+            cache[part] = []
+            var found = Set<String>()
+            for used in try relationships(of: part).values where !used.isExternal && entries[used.target] != nil {
+                if used.type == "image" {
+                    found.insert(used.target)
+                } else if !Self.unrelatedTypes.contains(used.type), used.target.hasSuffix(".xml") {
+                    found.formUnion(try pictures(reachableFrom: used.target, cache: &cache))
+                }
+            }
+            cache[part] = found
+            return found
         }
 
         // MARK: Relationships

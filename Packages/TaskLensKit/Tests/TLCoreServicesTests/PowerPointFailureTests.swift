@@ -19,6 +19,7 @@ struct PowerPointFailureTests {
             (.renderingFailed(.slideSizeMismatch), .renderingFailed),
             (.renderingFailed(.noVisibleSlides), .renderingFailed),
             (.renderingFailed(.snapshotFailed(slide: 4)), .renderingFailed),
+            (.renderingFailed(.picturesMixedUp(slide: 3)), .renderingFailed),
             (.renderingFailed(.writeFailed), .storageFailure),
             (.webViewFailed, .renderingFailed),
             (.timeout, .timeout),

@@ -250,6 +250,23 @@ struct PowerPointRendererTests {
         }
     }
 
+    /// A9.5.6: OfficeImport on iOS 26.5 linked slides to other slides'
+    /// pictures. A link two slides share is fine only if both can show it.
+    @Test func picturesOfAnotherSlideAreCaught() {
+        let check = PowerPointRenderer.slideWithMixedUpPictures
+        let logo = "ppt/media/logo.png", a = "ppt/media/a.jpg", b = "ppt/media/b.jpg", c = "ppt/media/c.jpg"
+        // Each slide its own picture, plus a shared master logo.
+        #expect(check([["1.jpg", "L.png"], ["2.jpg", "L.png"], ["3.jpg", "L.png"]],
+                      [[a, logo], [b, logo], [c, logo]]) == nil)
+        // Slide 3 shows slide 1's picture.
+        #expect(check([["1.jpg"], ["2.jpg"], ["1.jpg"]], [[a], [b], [c]]) == 3)
+        // The same picture placed on two slides.
+        #expect(check([["1.jpg"], ["1.jpg"]], [[a], [a]]) == nil)
+        // Slides with no pictures of their own are not judged.
+        #expect(check([["1.jpg"], ["1.jpg"]], [[a], []]) == nil)
+        #expect(check([[], []], [[a], [b]]) == nil)
+    }
+
     // MARK: Performance
 
     @Test func performance() async throws {

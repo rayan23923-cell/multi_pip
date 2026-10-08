@@ -157,6 +157,15 @@ public final class PowerPointRenderer {
             }
             let webAspect = layout.slideSize.width / max(layout.slideSize.height, 1)
             guard abs(webAspect / deck.aspectRatio - 1) < 0.02 else { throw PowerPointRenderError.renderingFailed(.slideSizeMismatch) }
+            let links = try await web.pictureLinks()
+            guard links.count == layout.rects.count else {
+                throw PowerPointRenderError.renderingFailed(.slideCountMismatch(expected: layout.rects.count, rendered: links.count))
+            }
+            if let slide = Self.slideWithMixedUpPictures(links: pairs.map { links[$0.webIndex] },
+                                                         pictures: pairs.map(\.slide.pictureParts)) {
+                Self.recordFailure("slide \(slide) links a picture of another slide")
+                throw PowerPointRenderError.renderingFailed(.picturesMixedUp(slide: slide))
+            }
 
             let snapshotStarted = clock.now
             var slides: [Output.Slide] = []
@@ -193,6 +202,27 @@ public final class PowerPointRenderer {
             if let error = error as? PowerPointRenderError { throw error }
             throw PowerPointRenderError.webViewFailed
         }
+    }
+
+    // MARK: Pictures
+
+    /// The first slide (one-based) that WebKit linked to a picture it can't
+    /// show, or nil. OfficeImport has been seen linking a slide to another
+    /// slide's picture (A9.5.6, iOS 26.5). Two slides may share a picture link
+    /// only if the deck lets them show a picture in common: the same
+    /// picture, layout, master or theme. Slides without pictures of their own
+    /// in the deck aren't judged.
+    @_spi(Testing) public nonisolated static func slideWithMixedUpPictures(links: [[String]], pictures: [Set<String>]) -> Int? {
+        var slidesByLink: [String: [Int]] = [:]
+        for (index, slideLinks) in links.enumerated() where !pictures[index].isEmpty {
+            for link in Set(slideLinks) {
+                for earlier in slidesByLink[link, default: []] where pictures[earlier].isDisjoint(with: pictures[index]) {
+                    return index + 1
+                }
+                slidesByLink[link, default: []].append(index)
+            }
+        }
+        return nil
     }
 
     // MARK: Setup
@@ -439,6 +469,18 @@ private final class WebSession: NSObject, WKNavigationDelegate, WKUIDelegate {
             }
             try await tick()
         }
+    }
+
+    /// For each slide WebKit laid out, the links of the raster pictures it shows.
+    func pictureLinks() async throws -> [[String]] {
+        let json = try await evaluate("""
+        JSON.stringify(Array.from(document.querySelectorAll('div.slide')).map(s => Array.from(s.querySelectorAll('img'))
+          .map(i => i.getAttribute('src') || '').filter(src => /\\.(jpe?g|png|gif|tiff?|bmp|heic|webp)$/i.test(src))))
+        """)
+        guard let links = try? JSONDecoder().decode([[String]].self, from: Data(json.utf8)) else {
+            throw PowerPointRenderError.webViewFailed
+        }
+        return links
     }
 
     /// Requests the page made to anything but the file and WebKit's own local scheme.
