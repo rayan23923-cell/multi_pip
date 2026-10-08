@@ -54,6 +54,8 @@ struct PresentationAcceptanceFilesTests {
         let slides: Int
         /// The slide whose rendering is printed (one-based).
         let shown: Int
+        /// Prints every slide, small, so each picture can be checked against its slide.
+        var everySlide = false
         var testDescription: String { name }
     }
 
@@ -63,7 +65,9 @@ struct PresentationAcceptanceFilesTests {
         Deck(name: "3-arabic-rtl", slides: 5, shown: 2),
         Deck(name: "4-images-shapes", slides: 6, shown: 1),
         Deck(name: "5-tables-charts", slides: 5, shown: 3),
-        Deck(name: "6-large-80-slides", slides: 80, shown: 80),
+        Deck(name: "6-large-80-slides", slides: 80, shown: 80, everySlide: true),
+        // The same deck with its pictures named image001…image080 instead of image1…image80.
+        Deck(name: "6b-large-80-padded-media", slides: 80, shown: 80, everySlide: true),
     ]
 
     /// Import → check → render → cache → present → navigate → Auto Play to the
@@ -94,6 +98,9 @@ struct PresentationAcceptanceFilesTests {
             let image = await model.image(for: source, maxPixelSize: 828)
             #expect(image != nil, "\(deck.name): slide \(number) is drawn")
             if number == deck.shown, let image { emit("A956-\(deck.name)-\(number)", image) }
+            if deck.everySlide, let small = await model.image(for: source, maxPixelSize: 160) {
+                emit("A956S-\(deck.name)-\(number)", small)
+            }
         }
         model.didLeave()
 
