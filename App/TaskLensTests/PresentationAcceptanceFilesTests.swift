@@ -38,7 +38,7 @@ struct PresentationAcceptanceFilesTests {
             cache = PowerPointSlideCache(documentService: documents)
         }
 
-        func open(_ request: PresentationRequest, sleep: PresentationAutoPlayer.Sleep,
+        func open(_ request: PresentationRequest, sleep: PresentationAutoPlayer.Sleep?,
                   onImportPDF: (@MainActor () -> Void)? = {}) async -> PresentationModel {
             let model = PresentationModel(request: request, documentService: documents, sessionStore: sessions,
                                           slideImages: cache, autoPlaySleep: sleep, onImportPDF: onImportPDF)
@@ -57,7 +57,7 @@ struct PresentationAcceptanceFilesTests {
         var testDescription: String { name }
     }
 
-    static let decks = [
+    nonisolated static let decks = [
         Deck(name: "1-simple-text", slides: 3, shown: 1),
         Deck(name: "2-multi-slide-15", slides: 15, shown: 2),
         Deck(name: "3-arabic-rtl", slides: 5, shown: 2),
