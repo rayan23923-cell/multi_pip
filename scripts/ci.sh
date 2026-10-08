@@ -123,6 +123,9 @@ APP_TEST_FILTER=(-skip-testing:TaskLensAppUITests/ScreenshotTour)
 if [[ "${UI_TESTS:-false}" != "true" ]]; then
   APP_TEST_FILTER=(-skip-testing:TaskLensAppUITests)
 fi
+# TEMPORARY (A9.5.6 diagnosis, to be reverted): only the picture diagnostics,
+# so no other test loads a PowerPoint file in the same process meanwhile.
+APP_TEST_FILTER=(-only-testing:TaskLensTests/PowerPointPictureDiagnosticsTests)
 
 step "App + share extension: build and test on iPhone 11 simulator (UI tests: ${UI_TESTS:-false})"
 xcodebuild test \
