@@ -18,11 +18,17 @@ struct PowerPointPictureDiagnosticsTests {
 
     enum Mode: String, CaseIterable, Sendable { case rendererLike, asyncDecoding, slowSnapshots }
 
-    @Test(arguments: Mode.allCases)
-    func whichPictureEachSlideShows(mode: Mode) async throws {
+    /// Run 37755491218 showed the page itself links only 8–10 different pictures
+    /// for the 80 slides, whatever the decoding or snapshot timing. These decks
+    /// tell apart what the importer goes by: 6 is the original, 6c gives every
+    /// picture file a unique comment near its start, 6d gives every picture
+    /// different top rows.
+    @Test(arguments: ["6-large-80-slides", "6c-large-80-marked-media", "6d-large-80-distinct-tops"])
+    func whichPictureEachSlideShows(deckName: String) async throws {
+        let mode = Mode.rendererLike
         let bundle = Bundle(for: DiagnosticsToken.self)
-        let deck = try #require(bundle.url(forResource: "acceptance-6-large-80-slides", withExtension: "pptx")
-            ?? bundle.url(forResource: "acceptance-6-large-80-slides", withExtension: "pptx", subdirectory: "Fixtures"))
+        let deck = try #require(bundle.url(forResource: "acceptance-\(deckName)", withExtension: "pptx")
+            ?? bundle.url(forResource: "acceptance-\(deckName)", withExtension: "pptx", subdirectory: "Fixtures"))
         let work = FileManager.default.temporaryDirectory.appendingPathComponent("A956Diag-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: work) }
@@ -74,6 +80,7 @@ struct PowerPointPictureDiagnosticsTests {
         try #require(rects.count == 80, "80 slides laid out")
 
         var linked = 0, held = 0, shown = 0
+        var allLinks: [String] = []
         for index in 0..<80 {
             let number = index + 1
             // What the page links and what its image holds (drawn into a canvas).
@@ -126,12 +133,13 @@ struct PowerPointPictureDiagnosticsTests {
             if linkedNumber.map({ $0 % 6 }) == expected || linkedNumber == number { linked += 1 }
             if heldIndex == expected { held += 1 }
             if shownIndex == expected { shown += 1 }
-            print("PPTX A956DIAG \(mode.rawValue) slide \(number): pictures=\(pictures.count) linked=\(pictures.first?.src ?? "-") "
+            allLinks.append(pictures.first?.src ?? "-")
+            print("PPTX A956DIAG \(deckName) slide \(number): pictures=\(pictures.count) linked=\(pictures.first?.src ?? "-") "
                 + "w=\(pictures.first?.w ?? 0) held=\(pictures.first?.color ?? "-")→\(heldIndex.map(String.init) ?? "?") "
                 + "shown=\(shownIndex.map(String.init) ?? "?") expected=\(expected)"
                 + (pictures.count > 1 ? " more=\(pictures.dropFirst().map(\.src))" : ""))
         }
-        print("PPTX A956DIAG \(mode.rawValue) summary: linkedOK=\(linked)/80 heldOK=\(held)/80 shownOK=\(shown)/80 zoom=\(webView.scrollView.zoomScale)")
+        print("PPTX A956DIAG \(deckName) summary: distinctLinks=\(Set(allLinks).count) linkedOK=\(linked)/80 heldOK=\(held)/80 shownOK=\(shown)/80 zoom=\(webView.scrollView.zoomScale)")
     }
 
     // MARK: Helpers
